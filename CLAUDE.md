@@ -94,6 +94,16 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   - `game_kit.*`: top bar, clock (2-minute idle pause), win flash, the
     standard menus (`menu_two_player`, `menu_solo`) and stats screens,
     drawing helpers for custom-drawn boards.
+  - `cards.*` + `cards/card_font_*.c`: playing cards for every card game
+    (Tom, 2026-10-03): a face is just the rank and a suit, as large as fit -
+    index strip at the top (rank, suit right after it, sized for "10" so all
+    match; this is what shows in cascades and fans) and one big suit below.
+    Faces cream in every theme, red = `piece_a`, black = `stone_dark`,
+    table = `felt`, selected = amber border. Backs: 4 patterns (Lattice,
+    Stripes, Dots, Starry Night) x 3 colors (blue, red, green). Fonts from
+    DejaVu via lv_font_conv (ranks Condensed Bold, suits Sans).
+    `tools/preview/card_mockups.cpp` renders table mockups (Klondike,
+    FreeCell, Blackjack, video poker).
   - `ai_task.*`: one background job on a core-0 FreeRTOS task with a stop
     flag (device); the preview stub runs it at once.
 - Games so far: Sudoku, Light Switch (5x5, par via GF(2) solve, two-tap

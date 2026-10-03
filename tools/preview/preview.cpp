@@ -34,6 +34,7 @@
 #include "ui/shell.h"
 #include "ui/widgets.h"
 
+void card_mockup(int w, const char* title, const char* status);
 static uint32_t fake_ms = 0;
 static uint32_t tick() { return fake_ms; }
 static void flush(lv_display_t* d, const lv_area_t*, uint8_t*) { lv_display_flush_ready(d); }
@@ -713,6 +714,22 @@ int main(int argc, char** argv)
         shot(out + "_dark_36_mastercyd_solved.ppm");
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Card games: mockups of the shared card graphics (not games yet)
+        static const char* const names[5][2] = {{"Cards", "Faces and backs"}, {"0:42", "Klondike"},
+                                                {"1:10", "FreeCell"}, {"Bet 10", "Blackjack"},
+                                                {"Credits 95", "Poker"}};
+        for (int t = 0; t < 2; ++t) {
+            ui::app_set_theme(t ? ui::Theme::Dark : ui::Theme::Light);
+            for (int k = 0; k < 5; ++k) {
+                card_mockup(k, names[k][0], names[k][1]);
+                run(20);
+                shot(out + (t ? "_dark" : "_light") + "_50_cards_" + std::to_string(k) + ".ppm");
+            }
+        }
+        ui::app_set_theme(ui::Theme::Light);
+        ui::app_go_home_now();
     }
 
     {   // How To Play: every page of every game (light), a few also dark.
