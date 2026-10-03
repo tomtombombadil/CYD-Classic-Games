@@ -4,6 +4,7 @@
 #include "../../src/games/common/puzzle_stats.h"
 #include "../../src/games/common/two_player.h"
 #include "../../src/games/checkers/checkers_core.h"
+#include "../../src/games/chess/chess_core.h"
 #include "../../src/games/fourconnect/fourconnect_core.h"
 #include "../../src/games/lightswitch/lightswitch_core.h"
 #include "../../src/games/reversi/reversi_core.h"
@@ -290,6 +291,139 @@ static void test_checkers()
     CHECK(hard >= 5);
 }
 
+// ---- Chess: move generation checked by perft against published counts ----
+static void load_fen(chess::Position& p, const char* fen)
+{
+    using namespace chess;
+    p = Position{};
+    int r = 7, f = 0;
+    const char* c = fen;
+    for (; *c && *c != ' '; ++c) {
+        if (*c == '/') { --r; f = 0; continue; }
+        if (*c >= '1' && *c <= '8') { f += *c - '0'; continue; }
+        const char* pcs = "pnbrqk";
+        const bool black = *c >= 'a';
+        const char lc = black ? *c : static_cast<char>(*c + 32);
+        int pc = 0;
+        for (int k = 0; k < 6; ++k) if (pcs[k] == lc) pc = k + 1;
+        p.sq[r * 8 + f] = static_cast<uint8_t>(pc | ((black ? 1 : 0) << 3));
+        if (pc == King) p.king[black ? 1 : 0] = static_cast<uint8_t>(r * 8 + f);
+        ++f;
+    }
+    ++c;
+    p.side = *c == 'b' ? 1 : 0;
+    c += 2;
+    p.castle = 0;
+    for (; *c && *c != ' '; ++c) {
+        if (*c == 'K') p.castle |= 1;
+        if (*c == 'Q') p.castle |= 2;
+        if (*c == 'k') p.castle |= 4;
+        if (*c == 'q') p.castle |= 8;
+    }
+    ++c;
+    p.ep = (*c == '-') ? -1 : static_cast<int8_t>((c[1] - '1') * 8 + (c[0] - 'a'));
+    p.hash = p.compute_hash();
+}
+
+static uint64_t perft(const chess::Position& p, int depth)
+{
+    chess::MoveList l;
+    chess::generate(p, l);
+    if (depth == 1) return l.n;
+    uint64_t n = 0;
+    for (int k = 0; k < l.n; ++k) {
+        chess::Position q = p;
+        q.make(l.m[k]);
+        n += perft(q, depth - 1);
+    }
+    return n;
+}
+
+static uint32_t now_ms()
+{
+    using namespace std::chrono;
+    return static_cast<uint32_t>(duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count());
+}
+
+static void test_chess()
+{
+    using namespace chess;
+    struct { const char* fen; int depth; uint64_t nodes; } cases[] = {
+        {"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 4, 197281},
+        {"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 3, 97862},   // "Kiwipete"
+        {"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 4, 43238},
+        {"r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 3, 9467},
+        {"rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", 3, 62379},
+    };
+    for (auto& c : cases) {
+        Position p;
+        load_fen(p, c.fen);
+        const uint64_t n = perft(p, c.depth);
+        if (n != c.nodes) printf("perft %s depth %d: %llu, want %llu\n", c.fen, c.depth,
+                                 (unsigned long long)n, (unsigned long long)c.nodes);
+        CHECK(n == c.nodes);
+    }
+    // Fool's mate: checkmate detected, Black wins
+    Game g;
+    auto play_uci = [&](const char* mv) {
+        MoveList l; g.legal(l);
+        const int from = (mv[1] - '1') * 8 + (mv[0] - 'a'), to = (mv[3] - '1') * 8 + (mv[2] - 'a');
+        for (int k = 0; k < l.n; ++k) if (l.m[k].from == from && l.m[k].to == to) return g.play(k);
+        return false;
+    };
+    CHECK(play_uci("f2f3") && play_uci("e7e5") && play_uci("g2g4") && play_uci("d8h4"));
+    CHECK(g.end() == End::Checkmate && g.result() == 1);
+    // Save/load replays to the same position
+    uint8_t* buf = new uint8_t[Game::kSaveBytes];
+    CHECK(g.serialize(buf, Game::kSaveBytes));
+    Game* back = new Game();
+    CHECK(back->deserialize(buf, Game::kSaveBytes) && back->pos.hash == g.pos.hash && back->result() == 1);
+    delete back;
+    delete[] buf;
+    // Repetition: knights out and back twice
+    Game r;
+    auto rp = [&](const char* mv) {
+        MoveList l; r.legal(l);
+        const int from = (mv[1] - '1') * 8 + (mv[0] - 'a'), to = (mv[3] - '1') * 8 + (mv[2] - 'a');
+        for (int k = 0; k < l.n; ++k) if (l.m[k].from == from && l.m[k].to == to) return r.play(k);
+        return false;
+    };
+    for (int k = 0; k < 2; ++k) { rp("g1f3"); rp("g8f6"); rp("f3g1"); rp("f6g8"); }
+    CHECK(r.end() == End::Repetition);
+    // Computer: finds mate in one; Hard beats Easy
+    Position m1;
+    load_fen(m1, "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1");      // Rd8#
+    Game mg;
+    mg.pos = m1;
+    mg.hashes[0] = m1.hash;
+    MoveList l;
+    mg.legal(l);
+    const int pick = best_move(mg, 1, 5, now_ms);
+    CHECK(pick >= 0 && l.m[pick].from == 3 && l.m[pick].to == 59);
+    int hard = 0;
+    double worst = 0;
+    for (int n = 0; n < 2; ++n) {
+        Game* q = new Game();
+        const int hs = n & 1;
+        while (q->result() == -1 && q->plies < 160) {
+            const int lvl = q->turn() == hs ? 2 : 0;
+            const uint32_t t0 = now_ms();
+            q->play(best_move(*q, lvl, 900 + n * 11 + q->plies, now_ms));
+            if (lvl == 2 && now_ms() - t0 > worst) worst = now_ms() - t0;
+        }
+        hard += q->result() == hs;
+        if (q->result() == -1) {   // unfinished after 80 moves: count material
+            int mat[2] = {0, 0};
+            const int v[7] = {0, 1, 3, 3, 5, 9, 0};
+            for (int s = 0; s < 64; ++s) if (q->pos.sq[s]) mat[side_of(q->pos.sq[s])] += v[piece_of(q->pos.sq[s])];
+            hard += mat[hs] > mat[hs ^ 1] + 3;
+        }
+        delete q;
+    }
+    printf("chess hard vs easy: %d/2, worst hard move %.0f ms\n", hard, worst);
+    CHECK(hard == 2);
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -331,6 +465,7 @@ int main()
     test_lightswitch();
     test_reversi();
     test_checkers();
+    test_chess();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

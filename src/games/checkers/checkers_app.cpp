@@ -192,18 +192,24 @@ int      saved_plies = -1;
 void save()
 {
     if (!G || !ui::shell().save_game) return;
-    static uint8_t buf[kSaveBytes];
-    const size_t n = G->serialize(buf, sizeof buf);
-    match::save_state(buf + n, sizeof buf - n);
-    ui::shell().save_game(kId, buf, sizeof buf);
+    uint8_t* buf = new (std::nothrow) uint8_t[kSaveBytes];
+    if (!buf) return;
+    const size_t n = G->serialize(buf, kSaveBytes);
+    match::save_state(buf + n, kSaveBytes - n);
+    ui::shell().save_game(kId, buf, kSaveBytes);
+    delete[] buf;
 }
 
 bool load(Game& g, match::State& st)
 {
-    static uint8_t buf[kSaveBytes];
+    uint8_t* buf = new (std::nothrow) uint8_t[kSaveBytes];
+    if (!buf) return false;
     const ui::Shell& H = ui::shell();
-    const size_t n = H.load_game ? H.load_game(kId, buf, sizeof buf) : 0;
-    return n == kSaveBytes && g.deserialize(buf, n) && match::read_state(buf + Game::kSaveBytes, match::kStateBytes, st);
+    const size_t n = H.load_game ? H.load_game(kId, buf, kSaveBytes) : 0;
+    const bool ok = n == kSaveBytes && g.deserialize(buf, n)
+                 && match::read_state(buf + Game::kSaveBytes, match::kStateBytes, st);
+    delete[] buf;
+    return ok;
 }
 
 bool flipped() { return match::state().mode == twoplayer::Mode::Computer && match::state().human_side == 1; }

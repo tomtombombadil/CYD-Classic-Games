@@ -18,6 +18,7 @@
 #include "games/lightswitch/lightswitch_core.h"
 #include "games/registry.h"
 #include "games/checkers/checkers_core.h"
+#include "games/chess/chess_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -496,6 +497,39 @@ int main(int argc, char** argv)
         shot(out + "_dark_24_checkers.ppm");
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Chess vs the computer: player is White, an opening, a knight picked,
+        // then a long-press on a black piece; and the promotion question
+        chess::Game* g = new chess::Game();
+        const char* opening[] = {"e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "g8f6", "d2d3", "f8c5", "c2c3"};
+        for (const char* mv : opening) {
+            chess::MoveList l; g->legal(l);
+            const int from = (mv[1] - '1') * 8 + (mv[0] - 'a'), to = (mv[3] - '1') * 8 + (mv[2] - 'a');
+            for (int k = 0; k < l.n; ++k) if (l.m[k].from == from && l.m[k].to == to) { g->play(k); break; }
+        }
+        std::vector<uint8_t> buf(chess::Game::kSaveBytes + match::kStateBytes);
+        g->serialize(buf.data(), buf.size());
+        match::State st; st.human_side = 1; st.seconds = 254;     // the player has Black
+        { match::State keep = match::state(); match::state() = st;
+          match::save_state(buf.data() + chess::Game::kSaveBytes, match::kStateBytes);
+          match::state() = keep; }
+        save_game("chess", buf.data(), buf.size());
+        ui::app_open_game_now(games::find("chess"));
+        shot(out + "_light_26_chess.ppm");
+        preview_tap_square(57);                                  // b8 knight... moved: c6
+        preview_tap_square(42);
+        shot(out + "_light_27_chess_pick.ppm");
+        preview_tap_square(42);
+        preview_tap_square(26, 700);                             // long-press the white bishop on c4
+        shot(out + "_light_28_chess_peek.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("chess"));
+        shot(out + "_dark_26_chess.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        delete g;
     }
 
     // 5. "All games": back to the picker, which now offers the last game

@@ -17,3 +17,4 @@ GAME(fourconnect, "FourConnect", Strategy, kVsComputer | kPassAndPlay | kNetwork
 GAME(tictactoe, "Tic-Tac-Toe", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Three in a row; the Hard computer never loses")
 GAME(reversi, "Reversi", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Outflank and flip; legal moves shown as dots; Hard plays the endgame perfectly")
 GAME(checkers, "Checkers", Strategy, kVsComputer | kPassAndPlay | kNetwork, "American checkers: compulsory jumps, multi-jumps tapped step by step, kings")
+GAME(chess, "Chess", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Full rules; tap a piece, then its square; long-press any piece to see its moves")

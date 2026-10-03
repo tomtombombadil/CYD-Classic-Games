@@ -78,7 +78,7 @@ void update_status()
             snprintf(in, sizeof in, "%s. %s", extra,
                      S.mode == Mode::Computer ? twoplayer::level_name(S.level) : "Pass and play");
         else if (S.mode == Mode::Computer)
-            snprintf(in, sizeof in, "vs Computer, %s. You: %s",
+            snprintf(in, sizeof in, "Computer: %s. You: %s",
                      twoplayer::level_name(S.level), side_name(S.human_side));
         else
             snprintf(in, sizeof in, "Pass and play. %s moves first", G.sides.side1);
