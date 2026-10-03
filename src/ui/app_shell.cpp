@@ -15,18 +15,21 @@ namespace {
 Shell      H{};
 UiSettings S{};
 int        current = -1;                 // open game (registry index), -1 = picker
-int        page = 0;                     // picker page
+int        page = 0;                     // page of the open category
+int        cat_open = -1;                // category page shown, -1 = category list
 
 // ---- Picker layout ------------------------------------------------------------
-// Top to bottom: title bar with the ☰ menu, a "Continue <last game>" card,
-// then the games as tiles grouped by category (2 per row, so titles like
-// "Minesweeper" fit on a 240-px screen without breaking). Whatever doesn't
-// fit goes on further pages, switched with big < > buttons at the bottom:
-// no scrolling, every target is a tap.
+// First screen: title bar with the ☰ menu, a "Continue <last game>" card,
+// then the categories as a text list (Tom's choice: Puzzle, Strategy, Word,
+// Dice, Other Games), each with its game count. A category opens its own
+// page: back key, the category name, and its games as tiles, 2 per row (so
+// titles like "Minesweeper" fit on a 240-px screen without breaking).
+// Tiles that don't fit go on further pages, switched with big < > keys at
+// the bottom: no scrolling, every target is a tap.
 constexpr int kCols = 2;                 // tiles per row
 
 struct PickerGeom {
-    int pad, gap, top_h, cont_h, head_h, tile_w, tile_h, icon, pager_h;
+    int pad, gap, top_h, cont_h, tile_w, tile_h, icon, pager_h;
 };
 
 PickerGeom geom()
@@ -37,7 +40,6 @@ PickerGeom geom()
     g.gap     = m.large ? 10 : 6;
     g.top_h   = m.large ? 44 : 32;
     g.cont_h  = m.large ? 100 : 70;
-    g.head_h  = lv_font_get_line_height(bar_font()) + (m.large ? 6 : 4);
     g.tile_w  = (m.w - 2 * g.pad - (kCols - 1) * g.gap) / kCols;
     g.icon    = m.large ? 60 : 44;
     // icon + up to two lines of title
@@ -46,74 +48,37 @@ PickerGeom geom()
     return g;
 }
 
-// One picker line: a category heading or a row of up to kCols tiles.
-struct Line {
-    bool heading;
-    int  cat;                            // heading: category
-    int  first, n;                       // tiles: indexes into `order`
-};
 constexpr int kMaxGames = 64;
-constexpr int kMaxLines = kMaxGames + 2 * games::kCategories;
-int  order[kMaxGames];                   // registry indexes, grouped by category
-Line lines[kMaxLines];
-int  line_n = 0;
-int  page_start[kMaxLines + 1];          // first line of each page
-int  page_n = 0;
+int order[kMaxGames];                    // registry indexes in the open category
+int order_n = 0;
+int rows_per_page = 1;
+int page_n = 1;
 
-int line_h(const Line& l, const PickerGeom& g) { return l.heading ? g.head_h : g.tile_h; }
-
-void build_lines()
+int games_in(int cat)
 {
     int n = 0;
-    line_n = 0;
-    for (int c = 0; c < games::kCategories; ++c) {
-        const int first = n;
-        for (int i = 0; i < games::count() && n < kMaxGames; ++i)
-            if (static_cast<int>(games::get(i).category) == c) order[n++] = i;
-        if (n == first) continue;
-        lines[line_n++] = Line{true, c, 0, 0};
-        for (int k = first; k < n; k += kCols)
-            lines[line_n++] = Line{false, c, k, (n - k) < kCols ? (n - k) : kCols};
-    }
+    for (int i = 0; i < games::count(); ++i)
+        if (static_cast<int>(games::get(i).category) == cat) ++n;
+    return n;
 }
 
-// Split the lines into pages that fit between `top` and the bottom of the
-// screen (minus the pager row when there is more than one page). A heading
-// never ends a page; a category that runs onto the next page gets its
-// heading again there.
+void collect(int cat)
+{
+    order_n = 0;
+    for (int i = 0; i < games::count() && order_n < kMaxGames; ++i)
+        if (static_cast<int>(games::get(i).category) == cat) order[order_n++] = i;
+}
+
+// Rows of tiles that fit below `top`; with more rows than that, the pager
+// row takes room at the bottom.
 void paginate(int top, const PickerGeom& g)
 {
-    const int bottom_all = metrics().h - g.pad;
-    for (int with_pager = 0; with_pager < 2; ++with_pager) {
-        const int bottom = with_pager ? bottom_all - g.pager_h - g.gap : bottom_all;
-        page_n = 0;
-        int y = top, k = 0;
-        page_start[page_n++] = 0;
-        while (k < line_n) {
-            int need = line_h(lines[k], g);
-            if (lines[k].heading && k + 1 < line_n) need += g.gap / 2 + line_h(lines[k + 1], g);
-            if (y + need > bottom && y > top) {
-                page_start[page_n++] = k;
-                // A page that starts mid-category repeats its heading
-                y = lines[k].heading ? top : top + g.head_h + g.gap / 2;
-                continue;
-            }
-            y += line_h(lines[k], g) + (lines[k].heading ? g.gap / 2 : g.gap);
-            ++k;
-        }
-        page_start[page_n] = line_n;
-        if (page_n == 1) return;             // fits without a pager
-    }
-}
-
-int page_of_game(int idx)
-{
-    for (int p = 0; p < page_n; ++p)
-        for (int k = page_start[p]; k < page_start[p + 1]; ++k)
-            if (!lines[k].heading)
-                for (int t = 0; t < lines[k].n; ++t)
-                    if (order[lines[k].first + t] == idx) return p;
-    return 0;
+    const int rows = (order_n + kCols - 1) / kCols;
+    auto fit = [&](int bottom) { const int r = (bottom - top + g.gap) / (g.tile_h + g.gap); return r < 1 ? 1 : r; };
+    const int bottom = metrics().h - g.pad;
+    rows_per_page = fit(bottom);
+    if (rows > rows_per_page) rows_per_page = fit(bottom - g.pager_h - g.gap);
+    page_n = rows ? (rows + rows_per_page - 1) / rows_per_page : 1;
 }
 
 void picker_build();
@@ -125,14 +90,29 @@ void tile_cb(lv_event_t* e)
 
 void rebuild_async(void*) { picker_build(); }
 
+// Rebuilding deletes the key that was tapped, so it happens after the event
+void rebuild_later() { lv_async_call(rebuild_async, nullptr); }
+
 void pager_cb(lv_event_t* e)
 {
     const int step = static_cast<int>(reinterpret_cast<intptr_t>(lv_event_get_user_data(e)));
     const int next = page + step;
     if (next < 0 || next >= page_n) return;
     page = next;
-    // Rebuilding deletes this button, so do it after the event is done
-    lv_async_call(rebuild_async, nullptr);
+    rebuild_later();
+}
+
+void category_cb(lv_event_t* e)
+{
+    cat_open = static_cast<int>(reinterpret_cast<intptr_t>(lv_event_get_user_data(e)));
+    page = 0;
+    rebuild_later();
+}
+
+void back_cb(lv_event_t*)
+{
+    cat_open = -1;
+    rebuild_later();
 }
 
 void menu_cb(lv_event_t* e);
@@ -212,50 +192,87 @@ int make_continue(lv_obj_t* scr, int y, const PickerGeom& g)
     return y + g.cont_h + g.gap + (m.large ? 4 : 2);
 }
 
-void picker_build()
+void screen_begin()
 {
     metrics_update();
-    const Metrics& m = metrics();
-    const Palette& P = pal();
-    const PickerGeom g = geom();
     lv_obj_t* scr = lv_screen_active();
     lv_obj_clean(scr);
-    lv_obj_set_style_bg_color(scr, P.screen, 0);
+    lv_obj_set_style_bg_color(scr, pal().screen, 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
     lv_obj_set_scrollable(scr, false);
+}
 
-    // Title bar
-    int y = m.large ? 2 : 1;
-    lv_obj_t* t = label(scr, "Classic Games", title_font(), P.ink);
-    lv_obj_set_pos(t, g.pad, y + (g.top_h - lv_font_get_line_height(title_font())) / 2);
+// Title bar: optional back key, title, ☰. Returns the y below it.
+int title_bar(const char* title, bool back, const PickerGeom& g)
+{
+    const Metrics& m = metrics();
+    lv_obj_t* scr = lv_screen_active();
+    const int y = m.large ? 2 : 1;
+    int tx = g.pad;
+    if (back) {
+        const int bw = g.top_h * 3 / 2;
+        lv_obj_t* b = make_key(scr, bw, g.top_h, back_cb, 0);
+        lv_obj_set_pos(b, m.large ? 2 : 1, y);
+        key_label(b, LV_SYMBOL_LEFT, menu_font());
+        tx = bw + (m.large ? 10 : 6);
+    }
+    lv_obj_t* t = label(scr, title, title_font(), pal().ink);
+    lv_obj_set_pos(t, tx, y + (g.top_h - lv_font_get_line_height(title_font())) / 2);
     const int hb_w = g.top_h * 3 / 2;
     lv_obj_t* hb = make_hamburger(scr, hb_w, g.top_h, menu_cb, 0);
     lv_obj_set_pos(hb, m.w - (m.large ? 2 : 1) - hb_w, y);
-    y += g.top_h + g.gap;
+    return y + g.top_h + g.gap;
+}
 
+void build_category_list()
+{
+    const Metrics& m = metrics();
+    const PickerGeom g = geom();
+    lv_obj_t* scr = lv_screen_active();
+    int y = title_bar("Classic Games", false, g);
     y = make_continue(scr, y, g);
 
-    build_lines();
-    paginate(y, g);
+    const int n = games::kCategories;
+    const int gap = m.large ? 8 : 5;
+    int key_h = (m.h - g.pad - y - (n - 1) * gap) / n;
+    const int cap = m.large ? 58 : 40;
+    if (key_h > cap) key_h = cap;
+    const lv_font_t* f = m.large ? &lv_font_montserrat_20 : &lv_font_montserrat_20;
+    const lv_font_t* fc = m.large ? &lv_font_montserrat_20 : &lv_font_montserrat_14;
+    for (int c = 0; c < n; ++c) {
+        const int count = games_in(c);
+        lv_obj_t* k = make_key(scr, m.w - 2 * g.pad, key_h, count ? category_cb : nullptr, c);
+        lv_obj_set_pos(k, g.pad, y);
+        lv_obj_t* l = label(k, games::category_title(static_cast<games::Category>(c)), f, pal().ink);
+        lv_obj_align(l, LV_ALIGN_LEFT_MID, m.large ? 14 : 10, 0);
+        char cnt[16];
+        if (count) snprintf(cnt, sizeof cnt, "%d " LV_SYMBOL_RIGHT, count);
+        else       snprintf(cnt, sizeof cnt, "soon");
+        lv_obj_t* r = label(k, cnt, fc, pal().muted);
+        lv_obj_align(r, LV_ALIGN_RIGHT_MID, m.large ? -14 : -10, 0);
+        if (!count) set_dim(k, true);
+        y += key_h + gap;
+    }
+}
+
+void build_category_page()
+{
+    const Metrics& m = metrics();
+    const PickerGeom g = geom();
+    lv_obj_t* scr = lv_screen_active();
+    const int top = title_bar(games::category_short(static_cast<games::Category>(cat_open)), true, g);
+    collect(cat_open);
+    paginate(top, g);
     if (page >= page_n) page = page_n - 1;
     if (page < 0) page = 0;
 
-    auto heading = [&](int cat) {
-        lv_obj_t* h = label(scr, games::category_name(static_cast<games::Category>(cat)),
-                            bar_font(), P.muted);
-        lv_obj_set_pos(h, g.pad + 2, y + g.head_h - lv_font_get_line_height(bar_font()));
-        y += g.head_h + g.gap / 2;
-    };
-    for (int k = page_start[page]; k < page_start[page + 1]; ++k) {
-        const Line& l = lines[k];
-        if (l.heading) {
-            heading(l.cat);
-        } else {
-            if (k == page_start[page]) heading(l.cat);     // continued category
-            for (int i = 0; i < l.n; ++i)
-                make_tile(scr, order[l.first + i], g.pad + i * (g.tile_w + g.gap), y, g);
-            y += g.tile_h + g.gap;
-        }
+    int y = top;
+    const int first = page * rows_per_page * kCols;
+    const int last = first + rows_per_page * kCols < order_n ? first + rows_per_page * kCols : order_n;
+    for (int k = first; k < last; k += kCols) {
+        for (int i = 0; i < kCols && k + i < last; ++i)
+            make_tile(scr, order[k + i], g.pad + i * (g.tile_w + g.gap), y, g);
+        y += g.tile_h + g.gap;
     }
 
     if (page_n > 1) {
@@ -271,10 +288,17 @@ void picker_build()
         set_dim(next, page == page_n - 1);
         char pg[16];
         snprintf(pg, sizeof pg, "%d / %d", page + 1, page_n);
-        lv_obj_t* pl = label(scr, pg, menu_font(), P.muted);
+        lv_obj_t* pl = label(scr, pg, menu_font(), pal().muted);
         lv_obj_align(pl, LV_ALIGN_BOTTOM_MID, 0,
                      -(g.pad + (g.pager_h - lv_font_get_line_height(menu_font())) / 2));
     }
+}
+
+void picker_build()
+{
+    screen_begin();
+    if (cat_open >= 0 && games_in(cat_open) > 0) build_category_page();
+    else { cat_open = -1; build_category_list(); }
 }
 
 // ---- Picker menu ------------------------------------------------------------------
@@ -317,18 +341,18 @@ void save_settings()
     if (H.save_settings) H.save_settings(S);
 }
 
-void app_begin(const Shell& shell, const UiSettings& settings)
+void app_begin(const Shell& shell, const UiSettings& settings, const CustomThemes& themes)
 {
     H = shell;
     S = settings;
+    set_custom_themes(themes);
     set_theme(S.theme);
     metrics_update();
     styles_apply();
     if (H.set_brightness) H.set_brightness(S.brightness);
     current = -1;
-    build_lines();
-    paginate(0, geom());
-    page = page_of_game(games::find(S.last_game));
+    cat_open = -1;
+    page = 0;
     picker_build();
 }
 
@@ -364,13 +388,8 @@ void app_open_game_now(int index)
 
 void app_go_home_now()
 {
-    const int was = current;
     close_current();
-    if (was >= 0) {
-        build_lines();
-        paginate(0, geom());
-        page = page_of_game(was);
-    }
+    cat_open = -1;                       // "All games" = the category list
     picker_build();
 }
 
@@ -394,12 +413,25 @@ void app_theme_changed()
 void picker_open_menu()
 {
     overlay_begin("CYD Classic Games");
-    overlay_button(overlay(), "Display & touch", menu_cb, kSettings);
+    overlay_button(overlay(), "Settings", menu_cb, kSettings);
     overlay_button(overlay(), "Back", menu_cb, kClose, true);
     char info[128];
     snprintf(info, sizeof info, "%s, firmware %s", H.board_name ? H.board_name : "",
              H.firmware_version ? H.firmware_version : "");
     overlay_text(info, true);
+}
+
+void picker_open_category(int category)
+{
+    close_overlays();
+    cat_open = category;
+    page = 0;
+    picker_build();
+}
+
+void picker_next_page()
+{
+    if (page + 1 < page_n) { ++page; picker_build(); }
 }
 
 } // namespace ui

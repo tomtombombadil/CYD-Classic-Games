@@ -9,63 +9,123 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **[CYD Classic Games Web Flasher](https://tomtombombadil.github.io/CYD-Classic-Games/)**
 (Chrome or Edge on a computer).
 
-> **Status:** early. The game picker is in and **Sudoku** (from
-> [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0) is the
-> first game. More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the
-> plan.
+> **Status:** early, growing. Five games so far: **Sudoku** (from
+> [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
+> **Light Switch**, **Sliding Tiles**, **FourConnect** and **Tic-Tac-Toe**.
+> More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
+
+<img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
 
 ## Screenshots
 
-**2.8" and 3.2" boards (240×320)**: the game picker (light and dark), Sudoku,
-Digit 1st with notes (dark theme), a hint pointing at a cell, Sudoku's ☰ menu.
+**2.8" and 3.2" boards (240×320)**: the game picker, the Puzzles page,
+Sudoku (light, and Digit 1st with notes in dark), FourConnect against the
+computer, Tic-Tac-Toe pass-and-play, Sliding Tiles, Light Switch, Settings,
+and a custom theme being made and used.
 
 <p>
-<img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker, light theme">
-<img src="docs/screenshots/small_picker_dark.png" width="240" alt="Game picker, dark theme">
+<img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
+<img src="docs/screenshots/small_puzzles.png" width="240" alt="Puzzle Games page">
 <img src="docs/screenshots/small_sudoku_light.png" width="240" alt="Sudoku in progress, light theme">
 <img src="docs/screenshots/small_sudoku_notes_dark.png" width="240" alt="Sudoku, Digit 1st mode with notes, dark theme">
-<img src="docs/screenshots/small_sudoku_hint.png" width="240" alt="Sudoku hint pointing at a cell">
-<img src="docs/screenshots/small_sudoku_menu.png" width="240" alt="Sudoku menu with All games">
+<img src="docs/screenshots/small_fourconnect.png" width="240" alt="FourConnect against the computer">
+<img src="docs/screenshots/small_tictactoe.png" width="240" alt="Tic-Tac-Toe, X wins">
+<img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
+<img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
+<img src="docs/screenshots/small_settings_dark.png" width="240" alt="Settings, dark theme">
+<img src="docs/screenshots/small_theme_editor.png" width="240" alt="Custom theme editor">
+<img src="docs/screenshots/small_theme_palette.png" width="240" alt="Picking a color from the palette">
+<img src="docs/screenshots/small_sudoku_custom.png" width="240" alt="Sudoku in a custom theme">
 </p>
 
-**3.5" and 4.0" boards (320×480)**: the game picker, Sudoku (with
-digits-left counts), its menu, stats, a solved puzzle, Display & touch (dark
-theme).
+**3.5" and 4.0" boards (320×480)**: the picker, the Strategy page, Sudoku,
+FourConnect (dark theme), the two-player menu and FourConnect stats.
 
 <p>
 <img src="docs/screenshots/large_picker_light.png" width="320" alt="Game picker on a 320x480 board">
+<img src="docs/screenshots/large_strategy.png" width="320" alt="Strategy Games page">
 <img src="docs/screenshots/large_sudoku_light.png" width="320" alt="Sudoku in progress on a 320x480 board">
-<img src="docs/screenshots/large_sudoku_menu.png" width="320" alt="Sudoku menu">
-<img src="docs/screenshots/large_sudoku_stats.png" width="320" alt="Sudoku stats">
-<img src="docs/screenshots/large_sudoku_solved.png" width="320" alt="Solved Sudoku">
-<img src="docs/screenshots/large_settings_dark.png" width="320" alt="Display and touch settings, dark theme">
+<img src="docs/screenshots/large_fourconnect_dark.png" width="320" alt="FourConnect, dark theme">
+<img src="docs/screenshots/large_twoplayer_menu.png" width="320" alt="Two-player menu: computer levels, pass and play">
+<img src="docs/screenshots/large_fourconnect_stats.png" width="320" alt="FourConnect stats">
 </p>
 
 ## Games
 
 | Game | Category | Play |
 |---|---|---|
-| Sudoku | Puzzles | Solo, four levels graded by solving technique |
+| Sudoku | Puzzle Games | Solo, four levels graded by solving technique |
+| Light Switch | Puzzle Games | Solo, Easy / Medium / Hard, with par and hints |
+| Sliding Tiles | Puzzle Games | Solo, 3x3, 4x4 (the 15-Puzzle) or 5x5 |
+| FourConnect | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
+| Tic-Tac-Toe | Strategy Games | vs computer (Hard never loses) or pass-and-play |
 
-Coming next (proposed order in [docs/SPEC.md](docs/SPEC.md)): quick games
-like Lights Out, Tic-Tac-Toe, the 15-Puzzle and Four in a Row, then Othello,
-Checkers and Chess against the computer, pass-and-play and CYD to CYD.
+Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
+greyed out, until it's built). Coming next: Reversi, Checkers and Chess, then
+more puzzles, word and dice games. The plan is in [docs/SPEC.md](docs/SPEC.md).
 
-## The game picker
+## Starting up and the game picker
 
-The board starts on the game picker.
+The board shows one of three title screens (a different one each time it
+starts). Tap anywhere to go on to the game picker.
 
 - **Continue** (the yellow card) reopens the last game you played, where you
   left off, in one tap. It shows how far along that game is.
-- Below it, every game as a tile, grouped by category. Tap one to play it.
-  When there are more games than fit, big **<** and **>** buttons at the
-  bottom switch pages.
-- **☰ menu:** Display & touch (theme, brightness, color fixes, touch
-  calibration), shared by every game.
+- Below it, the categories: **Puzzle Games, Strategy Games, Word Games, Dice
+  Games, Other Games**, each with how many games it has. Tap one to see its
+  games as icons, and tap a game to play. The **<** key in the top bar goes
+  back. Categories without games yet say "soon".
+- **☰ menu:** Settings, shared by every game.
 - Inside a game, **☰ → All games** saves the game and comes back here.
 
-Every game saves itself and keeps its own stats. Theme, brightness and
-touch calibration are shared.
+Every game saves itself and keeps its own stats. Theme, sound, brightness
+and touch calibration are shared.
+
+## Settings
+
+**☰ → Settings** (from the picker or any game):
+
+- **Theme:** Light, Dark, or one of three **Custom** themes. Pick Custom 1, 2
+  or 3, then **Edit** it: each of the 10 color buttons (background, board,
+  grid lines, text, your marks, selected, matching, row/column, buttons,
+  accent) opens a palette of 48 colors. Tap one and the change shows at
+  once, in every game. **Default** puts a color back; **Reset: Light /
+  Dark** starts the theme over from Light or Dark.
+- **Sound: On / Off.** Short beeps for taps, moves, mistakes and wins,
+  through a speaker on the board's speaker connector. Off = silent play.
+- **Brightness**, **Invert colors**, **Swap red/blue**, **Recalibrate** and
+  **Touch test** (see below).
+
+## Two-player games
+
+FourConnect and Tic-Tac-Toe share one menu: **New game vs computer** (Easy,
+Medium, Hard), **Pass and play** (two people share one board and take
+turns), and Wireless (coming). Against the computer you and the computer
+take turns going first, game by game. The computer thinks on the board's
+second processor core, so the screen never freezes. Its levels look ahead
+fewer or more moves; it never throws a game on purpose. Leaving a started
+game against the computer for a new one counts as a loss.
+
+- **FourConnect:** tap anywhere in a column to drop a disc there. Four in a
+  row (across, up or diagonal) wins; the four get a green ring. A dot marks
+  the last disc played.
+- **Tic-Tac-Toe:** tap a square. Hard plays perfectly: the best you can do
+  is a draw.
+- **Play again** appears when a game ends.
+
+## Light Switch
+
+Tapping a light flips it and its four neighbours. Turn every light off. The
+top bar shows your moves and **par**, the fewest presses that can solve this
+board. **Hint** works like Sudoku's: the first tap outlines a light that is
+part of a shortest solution, the second tap presses it.
+
+## Sliding Tiles
+
+Put the tiles in order with the gap last. Tap any tile in the gap's row or
+column: it and the tiles between it and the gap slide over. Tiles already in
+their home spot are tinted. 3x3 (Easy), 4x4 (the classic 15-Puzzle) and
+5x5 (Hard).
 
 ## Sudoku
 
@@ -101,7 +161,7 @@ the tool row (**Undo**, **Notes**, input mode, **Hint**); the digits 1-9.
 - **Solving** flashes the screen (colors invert a few times) and leaves the
   finished board on screen. Open the ☰ menu when you're ready for a new game.
 - **☰ menu:** new game (Easy, Medium, Hard, Expert), restart, **Stats**,
-  **All games**, and **Display & touch**. Buttons act on the first tap;
+  **All games**, and **Settings**. Buttons act on the first tap;
   nothing asks "are you sure".
 
 ### Difficulty
@@ -132,6 +192,9 @@ difficulty, time and hints used, and every puzzle you leave for a new game
 after playing it (marked "Gave up"). The Stats screen shows solves, average
 and best time per difficulty, and your most recent games. **Delete last**
 removes the most recent entry and **Clear all** wipes that game's history.
+The puzzles record level, moves and time (best time and fewest moves per
+level). Two-player games record wins, losses and draws against each
+computer level, and who won each pass-and-play game.
 
 - **With a microSD card** (3.2", 3.5" and 4.0" boards): saved to
   `CYD-Classic-Games/<game>.csv` on the card (e.g. `sudoku.csv`), full
@@ -152,15 +215,16 @@ flash it at address **0x0** with Espressif's Flash Download Tool.
 ## Supported boards
 
 Boards are named by screen size, display driver and touch type. Check the
-text printed on the back of the board.
+text printed on the back of the board. The `TTB-CYD-CG_` prefix marks the
+file as CYD Classic Games.
 
 | Firmware file | Printed on the back | Tested |
 |---|---|---|
-| `CYD_2.8in_ILI9341_Resistive.bin` | ESP32-2432S028 (often with R) — usually single micro-USB | **Untested** |
-| `CYD_2.8in_ST7789_Resistive.bin` | ESP32-2432S028 (often with R) — usually micro-USB + USB-C | Yes |
-| `CYD_3.2in_ST7789_Resistive.bin` | 3.2" LCD Display, ESP32-32E, 240x320, Resistive Touch | Yes |
-| `CYD_3.5in_ST7796_Resistive.bin` | 3.5" LCD Display, ESP32-32E, 320x480, Resistive Touch | **Untested** |
-| `CYD_4.0in_ST7796_Resistive.bin` | 4.0" LCD Display, ESP32-32E, 320x480, Resistive Touch | Yes |
+| `TTB-CYD-CG_2.8in_ILI9341_Resistive.bin` | ESP32-2432S028 (often with R) — usually single micro-USB | **Untested** |
+| `TTB-CYD-CG_2.8in_ST7789_Resistive.bin` | ESP32-2432S028 (often with R) — usually micro-USB + USB-C | Yes |
+| `TTB-CYD-CG_3.2in_ST7789_Resistive.bin` | 3.2" LCD Display, ESP32-32E, 240x320, Resistive Touch | Yes |
+| `TTB-CYD-CG_3.5in_ST7796_Resistive.bin` | 3.5" LCD Display, ESP32-32E, 320x480, Resistive Touch | **Untested** |
+| `TTB-CYD-CG_4.0in_ST7796_Resistive.bin` | 4.0" LCD Display, ESP32-32E, 320x480, Resistive Touch | Yes |
 
 **Untested:** the 2.8" ILI9341 and 3.5" ST7796 builds use the same code and
 pin maps as their tested siblings but haven't been run on that hardware.
@@ -180,18 +244,18 @@ Garbled or blank screen: install the other 2.8" version.
 
 ## Brightness
 
-**☰ → Display & touch → Brightness** sets the backlight. It never goes fully
+**☰ → Settings → Brightness** sets the backlight. It never goes fully
 dark, and it's remembered.
 
 ## Touch calibration
 
 On first boot (or when the **BOOT** button is held while powering on), the
 screen shows corner arrows — tap each tip precisely. The calibration is saved
-to flash and reused. To redo it: **☰ → Display & touch → Recalibrate**.
+to flash and reused. To redo it: **☰ → Settings → Recalibrate**.
 
 ## Colors look wrong?
 
-Panels vary between production runs. Open **☰ → Display & touch**: use
+Panels vary between production runs. Open **☰ → Settings**: use
 **Invert colors** if colors look like a photo negative, and **Swap red/blue**
 if blue shows as red. The fix is saved on the board.
 For a dark screen on purpose, use **Theme: Dark** instead.

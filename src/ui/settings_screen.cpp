@@ -1,9 +1,10 @@
-// Display & touch: theme, brightness, panel color fixes, touch calibration
+// Settings: theme, sound, brightness, panel color fixes, touch calibration
 // and the touch test. Shared by every game and the picker.
 #include <cstdio>
 #include <cstring>
 #include <lvgl.h>
 #include "shell.h"
+#include "sound.h"
 #include "theme.h"
 #include "widgets.h"
 
@@ -13,7 +14,7 @@ namespace {
 
 void (*back_fn)() = nullptr;
 
-enum Action : intptr_t { kTheme, kInvert, kSwapRb, kRecal, kTouchTest, kBack };
+enum Action : intptr_t { kTheme, kInvert, kSwapRb, kRecal, kTouchTest, kBack, kSound };
 
 void brightness_cb(lv_event_t* e)
 {
@@ -130,16 +131,13 @@ void action_cb(lv_event_t* e)
 {
     const Shell& H = shell();
     switch (reinterpret_cast<intptr_t>(lv_event_get_user_data(e))) {
-        case kTheme: {
-            UiSettings& S = settings();
-            S.theme = S.theme == Theme::Dark ? Theme::Light : Theme::Dark;
-            set_theme(S.theme);
-            styles_apply();
-            app_theme_changed();               // rebuild what's underneath
+        case kTheme: theme_open(); break;
+        case kSound:
+            settings().sound = !settings().sound;
             save_settings();
+            if (settings().sound) sound(Sound::Place);   // let them hear it's on
             settings_open(back_fn);
             break;
-        }
         case kInvert: if (H.toggle_invert) H.toggle_invert(); break;
         case kSwapRb: if (H.toggle_swap_rb) H.toggle_swap_rb(); break;
         case kRecal:
@@ -156,16 +154,17 @@ void action_cb(lv_event_t* e)
 
 } // namespace
 
+void settings_reopen() { settings_open(back_fn); }
+
 void settings_open(void (*back)())
 {
     back_fn = back;
     const Shell& H = shell();
     const UiSettings& S = settings();
     const bool large = metrics().large;
-    overlay_begin("Display & touch");
-    char theme_txt[32];
-    snprintf(theme_txt, sizeof theme_txt, "Theme: %s", theme_name(S.theme));
-    overlay_button(overlay(), theme_txt, action_cb, kTheme);
+    overlay_begin("Settings");
+    overlay_pair("Theme", action_cb, kTheme,
+                 S.sound ? "Sound: On" : "Sound: Off", action_cb, kSound);
 
     // Brightness: label + slider, applied while dragging, saved on release
     lv_obj_t* row = lv_obj_create(overlay());

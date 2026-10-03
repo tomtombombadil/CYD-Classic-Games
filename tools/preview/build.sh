@@ -13,10 +13,9 @@ for f in $(find "$LVGL/src" -name '*.c'); do
   [ $(jobs -p | wc -l) -ge 8 ] && wait
 done
 wait
-SRC="$ROOT/src/ui/app_shell.cpp $ROOT/src/ui/settings_screen.cpp $ROOT/src/ui/widgets.cpp $ROOT/src/ui/theme.cpp
-     $ROOT/src/games/sudoku/sudoku_app.cpp $ROOT/src/games/sudoku/sudoku_screen.cpp $ROOT/src/games/sudoku/sudoku_board_view.cpp
-     $ROOT/src/games/sudoku/sudoku_game.cpp $ROOT/src/games/sudoku/sudoku_core.cpp $ROOT/src/games/sudoku/sudoku_grader.cpp
-     $ROOT/src/games/sudoku/sudoku_stats.cpp $ROOT/tools/preview/preview_stubs.cpp"
+# Everything under src/ui and src/games except device-only files (the ones
+# that include Arduino.h; preview_stubs.cpp stands in for them).
+SRC="$(find "$ROOT/src/ui" "$ROOT/src/games" -name '*.cpp' ! -name registry.cpp | xargs grep -L '<Arduino.h>' | sort | tr '\n' ' ') $ROOT/tools/preview/preview_stubs.cpp"
 FLAGS="-std=c++17 -O1 -Wall -DCYD_PREVIEW -DLV_CONF_INCLUDE_SIMPLE -I$ROOT/include -I$LVGL -I$ROOT/src"
 g++ $FLAGS "$ROOT/tools/preview/preview.cpp" $SRC "$ROOT/src/games/registry.cpp" "$OUT"/obj/*.o -lm -o "$OUT/preview"
 g++ $FLAGS -DCYD_PAGING_TEST "$ROOT/tools/preview/preview.cpp" $SRC "$ROOT/tools/preview/paging_ops.cpp" \

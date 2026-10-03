@@ -12,10 +12,16 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "games/common/match.h"
+#include "games/common/puzzle_stats.h"
+#include "games/common/two_player.h"
+#include "games/lightswitch/lightswitch_core.h"
 #include "games/registry.h"
+#include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
 #include "games/sudoku/sudoku_screen.h"
 #include "games/sudoku/sudoku_stats.h"
+#include "games/common/game_kit.h"
 #include "ui/shell.h"
 #include "ui/widgets.h"
 
@@ -68,8 +74,50 @@ static size_t load_game(const char* id, uint8_t* buf, size_t cap)
 }
 static void save_game(const char* id, const uint8_t* buf, size_t len) { files[id].assign(buf, buf + len); }
 
-static bool stats_read(const char*, void (*fn)(const char*, void*), void* ctx)
+// Made-up history for the stats screens of the newer games
+static bool other_stats(const char* id, void (*fn)(const char*, void*), void* ctx)
 {
+    char line[120], body[96];
+    uint32_t seq = 0;
+    if (!strcmp(id, "fourconnect") || !strcmp(id, "tictactoe")) {
+        const twoplayer::Sides sides = !strcmp(id, "tictactoe") ? twoplayer::Sides{"X", "O"}
+                                                                : twoplayer::Sides{"Red", "Yellow"};
+        fn(twoplayer::kCsvHeader, ctx);
+        const int data[][4] = {{0,0,0,19},{0,1,0,23},{0,1,1,31},{0,2,1,27},{0,2,2,42},{1,0,0,30},{1,0,1,25},{1,0,2,42}};
+        for (auto& d : data) {
+            twoplayer::Record r;
+            r.mode = static_cast<twoplayer::Mode>(d[0]);
+            r.level = static_cast<twoplayer::Level>(d[1]);
+            r.result = static_cast<twoplayer::Result>(d[2]);
+            r.moves = static_cast<uint16_t>(d[3]);
+            r.seconds = 60 + 7 * d[3];
+            twoplayer::format_body(body, sizeof body, r, sides);
+            snprintf(line, sizeof line, "%lu,%s", (unsigned long)++seq, body);
+            fn(line, ctx);
+        }
+        return true;
+    }
+    const char* const lv_slide[3] = {"3x3", "4x4", "5x5"};
+    const char* const lv_light[3] = {"Easy", "Medium", "Hard"};
+    const char* const* names = !strcmp(id, "sliding") ? lv_slide : lv_light;
+    fn(puzzle::kCsvHeader, ctx);
+    const int data[][4] = {{0,1,24,41},{1,1,131,212},{1,0,40,95},{1,1,98,170},{2,1,402,733},{0,1,19,30}};
+    for (auto& d : data) {
+        puzzle::Record r;
+        r.level = static_cast<uint8_t>(d[0]);
+        r.solved = d[1];
+        r.moves = static_cast<uint16_t>(d[2]);
+        r.seconds = static_cast<uint32_t>(d[3]);
+        puzzle::format_body(body, sizeof body, r, names);
+        snprintf(line, sizeof line, "%lu,%s", (unsigned long)++seq, body);
+        fn(line, ctx);
+    }
+    return true;
+}
+
+static bool stats_read(const char* id, void (*fn)(const char*, void*), void* ctx)
+{
+    if (strcmp(id, "sudoku") != 0) return other_stats(id, fn, ctx);
     using namespace sudoku::stats;
     const uint32_t data[][4] = {   // difficulty, result, seconds, hints
         {0,0,301,0},{0,0,275,0},{1,0,512,0},{1,1,840,1},{1,0,468,2},{2,0,1104,0},
@@ -104,6 +152,20 @@ static bool fake_touch(int16_t* x, int16_t* y)
 // A Medium puzzle part-way through: some right digits, two empty cells kept
 // free for staging, notes in a few cells, 2:05 on the clock.
 static int first_empty = -1, second_empty = -1;
+static const char* const kSlideLevels[3] = {"3x3", "4x4", "5x5"};
+// The solo menu of whatever game is open: its ☰ key is on the screen; tap it
+[[maybe_unused]] static void kit_preview_menu()
+{
+    lv_obj_t* scr = lv_screen_active();
+    for (uint32_t i = 0; i < lv_obj_get_child_count(scr); ++i) {
+        lv_obj_t* c = lv_obj_get_child(scr, (int32_t)i);
+        if (lv_obj_get_child_count(c) == 3 && lv_obj_is_clickable(c)) {   // the 3 bars
+            lv_obj_send_event(c, LV_EVENT_CLICKED, nullptr);
+            return;
+        }
+    }
+}
+
 [[maybe_unused]] static void stage_sudoku_save()
 {
     static sudoku::Game g;
@@ -159,25 +221,32 @@ int main(int argc, char** argv)
     sh.firmware_version = "v0.1.0";
     sh.board_name = W == 240 ? "3.2\" ST7789 Resistive" : "4.0\" ST7796 Resistive";
 
+    static ui::CustomThemes themes;      // slot 0: a green/brown custom theme
+    {
+        ui::CustomTheme& c = themes.slot[0];
+        c.base = 0;
+        const uint32_t pick[ui::kRoles] = {0xE1F9DC, 0xFFFFFF, 0xB3F2A6, 0x24282D, 0x174482,
+                                           0xE49258, 0xF2E3A6, 0xDCF9F4, 0xFFFFFF, 0x39C91D};
+        for (int r = 0; r < ui::kRoles; ++r) { c.color[r] = pick[r]; c.set |= 1u << r; }
+    }
+
 #ifdef CYD_PAGING_TEST
     ui::UiSettings fresh;
-    ui::app_begin(sh, fresh);
-    shot(out + "_page1.ppm");
-    for (int p = 2; p <= 4; ++p) {
-        ui::app_go_home_now();            // no-op switch keeps the page
-        lv_obj_t* scr = lv_screen_active();
-        // Tap the ">" pager key: the last child created on the picker
-        lv_obj_t* next = lv_obj_get_child(scr, (int32_t)lv_obj_get_child_count(scr) - 2);
-        lv_obj_send_event(next, LV_EVENT_CLICKED, nullptr);
-        run(30);
-        shot(out + "_page" + std::to_string(p) + ".ppm");
+    ui::app_begin(sh, fresh, themes);
+    shot(out + "_list.ppm");
+    for (int c = 0; c < games::kCategories; ++c) {
+        ui::picker_open_category(c);
+        for (int p = 1; p <= 3; ++p) {
+            shot(out + "_cat" + std::to_string(c) + "_page" + std::to_string(p) + ".ppm");
+            ui::picker_next_page();
+        }
     }
     fprintf(stderr, "peak LVGL heap use: %u B\n", peak_used);
     return 0;
 #else
     // 1. First boot: no game played yet
     ui::UiSettings fresh;
-    ui::app_begin(sh, fresh);
+    ui::app_begin(sh, fresh, themes);
     shot(out + "_light_0_picker_new.ppm");
 
     // 2. Picker with "Continue Sudoku" (light, dark) and its menu
@@ -186,17 +255,36 @@ int main(int argc, char** argv)
     strcpy(played.last_game, "sudoku");
     for (int t = 0; t < 2; ++t) {
         played.theme = t ? ui::Theme::Dark : ui::Theme::Light;
-        ui::app_begin(sh, played);
+        ui::app_begin(sh, played, themes);
         shot(out + (t ? "_dark" : "_light") + "_0_picker.ppm");
+        ui::picker_open_category(0);
+        shot(out + (t ? "_dark" : "_light") + "_0_category.ppm");
     }
-    ui::app_begin(sh, played);
+    ui::app_begin(sh, played, themes);
     ui::picker_open_menu();
     shot(out + "_dark_0_picker_menu.ppm");
+    ui::settings_open(ui::picker_open_menu);
+    shot(out + "_dark_0_settings.ppm");
+    ui::theme_open();
+    shot(out + "_dark_0_theme.ppm");
+    ui::app_set_theme(ui::Theme::Custom1);
+    ui::theme_open();
+    shot(out + "_custom_0_theme.ppm");
+    ui::theme_open_editor(0);
+    shot(out + "_custom_0_editor.ppm");
+    ui::theme_open_palette(0, ui::Role::Selected);
+    shot(out + "_custom_0_palette.ppm");
     ui::close_overlays();
+    ui::app_open_game_now(games::find("sudoku"));
+    sudoku_ui::tap_cell(40);
+    shot(out + "_custom_1_sudoku.ppm");
+    ui::app_go_home_now();
+    shot(out + "_custom_0_picker.ppm");
+    ui::app_set_theme(ui::Theme::Light);
 
     // 3. Sudoku, staged like CYD-Sudoku's screenshots
     played.theme = ui::Theme::Light;
-    ui::app_begin(sh, played);
+    ui::app_begin(sh, played, themes);
     ui::app_open_game_now(games::find("sudoku"));
     run(30);
 
@@ -257,7 +345,86 @@ int main(int argc, char** argv)
     shot(out + "_light_9_touch_test.ppm");
     ui::close_overlays();
 
-    // 4. "All games": back to the picker, which now offers the solved game
+    // 4. The stage-2 games
+    ui::app_go_home_now();
+    ui::picker_open_category(0);
+    shot(out + "_light_11_puzzles.ppm");
+    ui::picker_open_category(1);
+    shot(out + "_light_12_strategy.ppm");
+    {   // Sliding Tiles: a 4x4 two slides from solved
+        sliding::Puzzle p; p.reset(4); p.tap(14); p.tap(10);
+        sliding::Puzzle st; st.reset(4); sliding::Rng rng(5); st.shuffle(rng);
+        uint8_t buf[2 * sliding::Puzzle::kSaveBytes + 6] = {};
+        size_t n = st.serialize(buf, sizeof buf);       // a shuffled board on screen
+        n += st.serialize(buf + n, sizeof buf - n);
+        buf[n++] = 1; buf[n++] = 0;
+        buf[n] = 95;                                    // 1:35 on the clock
+        save_game("sliding", buf, sizeof buf);
+        ui::app_open_game_now(games::find("sliding"));
+        shot(out + "_light_13_sliding.ppm");
+        ui::app_go_home_now();
+        n = p.serialize(buf, sizeof buf);               // two slides from solved
+        n += st.serialize(buf + n, sizeof buf - n);
+        save_game("sliding", buf, sizeof buf);
+        ui::app_open_game_now(games::find("sliding"));
+        shot(out + "_light_14_sliding_near.ppm");
+        ui::app_go_home_now();
+    }
+    {   // Light Switch, Medium
+        lightswitch::Puzzle p; lightswitch::Rng rng(11); p.generate(1, rng);
+        p.press(p.hint());
+        uint8_t buf[lightswitch::Puzzle::kSaveBytes + 6] = {};
+        size_t n = p.serialize(buf, sizeof buf);
+        buf[n++] = 1; buf[n++] = 0; buf[n] = 42;
+        save_game("lightswitch", buf, sizeof buf);
+        ui::app_open_game_now(games::find("lightswitch"));
+        shot(out + "_light_15_lightswitch.ppm");
+        kit_preview_menu();
+        shot(out + "_light_16_lightswitch_menu.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+    }
+    {   // FourConnect vs the computer (Medium), a few moves in
+        ui::app_open_game_now(games::find("fourconnect"));
+        const int mine[] = {3, 3, 2, 4};
+        for (int c : mine) { match::human_move(c); run(600); }
+        shot(out + "_light_17_fourconnect.ppm");
+        match::open_menu();
+        shot(out + "_light_18_twoplayer_menu.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        ui::settings().theme = ui::Theme::Dark;
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("fourconnect"));
+        shot(out + "_dark_17_fourconnect.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+    {   // Tic-Tac-Toe, pass and play: X wins
+        ui::app_open_game_now(games::find("tictactoe"));
+        match::state().mode = twoplayer::Mode::PassAndPlay;
+        match::restart_view();
+        const int seq[] = {4, 0, 2, 1, 6};             // X takes the 2-4-6 diagonal
+        for (int i : seq) { match::human_move(i); run(50); }
+        shot(out + "_light_19_tictactoe.ppm");
+        ui::app_go_home_now();
+        ui::app_open_game_now(games::find("tictactoe"));
+        shot(out + "_light_20_tictactoe_again.ppm");
+        match::open_menu();
+        ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_open_game_now(games::find("fourconnect"));
+        kit::stats_two_player("fourconnect", {"Red", "Yellow"}, match::open_menu);
+        shot(out + "_light_21_fourconnect_stats.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_open_game_now(games::find("sliding"));
+        kit::stats_solo("sliding", kSlideLevels, nullptr);
+        shot(out + "_light_22_sliding_stats.ppm");
+        ui::close_overlays();
+    }
+
+    // 5. "All games": back to the picker, which now offers the last game
     ui::app_go_home_now();
     shot(out + "_light_10_picker_after.ppm");
     fprintf(stderr, "peak LVGL heap use: %u B\n", peak_used);

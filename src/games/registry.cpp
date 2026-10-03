@@ -26,13 +26,26 @@ constexpr int kCount = sizeof kGames / sizeof kGames[0];
 
 } // namespace
 
-const char* category_name(Category c)
+const char* category_title(Category c)
+{
+    switch (c) {
+        case Category::Puzzles:  return "Puzzle Games";
+        case Category::Strategy: return "Strategy Games";
+        case Category::Word:     return "Word Games";
+        case Category::Dice:     return "Dice Games";
+        case Category::Other:    return "Other Games";
+    }
+    return "";
+}
+
+const char* category_short(Category c)
 {
     switch (c) {
         case Category::Puzzles:  return "Puzzles";
         case Category::Strategy: return "Strategy";
         case Category::Word:     return "Word";
         case Category::Dice:     return "Dice";
+        case Category::Other:    return "Other";
     }
     return "";
 }

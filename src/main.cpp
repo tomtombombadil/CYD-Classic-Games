@@ -6,8 +6,11 @@
 #include "app/save_store.h"
 #include "app/settings_store.h"
 #include "app/stats_store.h"
+#include "app/themes_store.h"
 #include "hal/lvgl_port.h"
 #include "hal/panel_prefs.h"
+#include "hal/speaker.h"
+#include "hal/splash.h"
 #include "hal/touch_cal.h"
 #include "ui/shell.h"
 
@@ -67,6 +70,12 @@ void toggle_swap_rb()
 
 void flash_invert(bool on) { panel_prefs_flash(lvgl_port_gfx(), on); }
 
+void play_tones(const ui::Tone* t, int n)
+{
+    static_assert(sizeof(ui::Tone) == sizeof(SpeakerTone), "tone layouts differ");
+    speaker_play(reinterpret_cast<const SpeakerTone*>(t), n);
+}
+
 void recalibrate()
 {
     // Calibration draws with LovyanGFX directly; restarting afterwards gives
@@ -93,12 +102,23 @@ void setup()
     }
 
     legacy_import();
+    speaker_begin();
+
+    // Splash: a different one of the title images each boot, then a tap
+    ui::UiSettings settings = settings_store_load();
+    lvgl_port_set_brightness(settings.brightness);
+    const int shown = settings.splash_next % splash_count();
+    settings.splash_next = static_cast<uint8_t>((shown + 1) % splash_count());
+    settings_store_save(settings);
+    splash_show(lvgl_port_gfx(), shown);
 
     ui::Shell sh{};
     sh.random_seed       = hw_seed;
     sh.load_game         = save_store_load;
     sh.save_game         = save_store_save;
     sh.save_settings     = settings_store_save;
+    sh.save_themes       = themes_store_save;
+    sh.play_tones        = play_tones;
     sh.toggle_invert     = toggle_invert;
     sh.toggle_swap_rb    = toggle_swap_rb;
     sh.flash_invert      = flash_invert;
@@ -112,7 +132,7 @@ void setup()
     sh.stats_location    = stats_store_location;
     sh.firmware_version  = CYD_GAMES_VERSION;
     sh.board_name        = BOARD_NAME;
-    ui::app_begin(sh, settings_store_load());
+    ui::app_begin(sh, settings, themes_store_load());
     Serial.printf("[app] picker up, free heap %lu\n", (unsigned long)ESP.getFreeHeap());
 }
 
@@ -120,5 +140,6 @@ void loop()
 {
     const uint32_t wait_ms = lvgl_port_loop();
     ui::app_tick(millis());
+    speaker_loop();
     delay(wait_ms < 5 ? wait_ms : 5);
 }

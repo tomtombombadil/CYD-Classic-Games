@@ -6,15 +6,16 @@ v1.0.0; all of its board support, touch handling and tooling carries over.
 
 ## 1. Target hardware & constraints
 
-Same boards and firmware names as CYD-Sudoku:
+Same boards as CYD-Sudoku. Firmware files carry the `TTB-CYD-CG_` prefix
+(Tom, 2026-10-02) so they can't be mixed up with CYD-Sudoku's:
 
 | Firmware file | Env | Tested on hardware |
 |---|---|---|
-| `CYD_2.8in_ILI9341_Resistive.bin` | `cyd28_ili9341_res` | No |
-| `CYD_2.8in_ST7789_Resistive.bin` | `cyd28_st7789_res` | Yes (CYD-Sudoku) |
-| `CYD_3.2in_ST7789_Resistive.bin` | `cyd32_st7789_res` | Yes (CYD-Sudoku) |
-| `CYD_3.5in_ST7796_Resistive.bin` | `cyd35_st7796_res` | No |
-| `CYD_4.0in_ST7796_Resistive.bin` | `cyd40_st7796_res` | Yes (CYD-Sudoku) |
+| `TTB-CYD-CG_2.8in_ILI9341_Resistive.bin` | `cyd28_ili9341_res` | No |
+| `TTB-CYD-CG_2.8in_ST7789_Resistive.bin` | `cyd28_st7789_res` | Yes (CYD-Sudoku) |
+| `TTB-CYD-CG_3.2in_ST7789_Resistive.bin` | `cyd32_st7789_res` | Yes (CYD-Sudoku) |
+| `TTB-CYD-CG_3.5in_ST7796_Resistive.bin` | `cyd35_st7796_res` | No |
+| `TTB-CYD-CG_4.0in_ST7796_Resistive.bin` | `cyd40_st7796_res` | Yes (CYD-Sudoku) |
 
 Budget (CYD-Sudoku v1.0.0 as the baseline):
 - Program flash 3 MB. Shared base (Arduino core, LVGL, fonts, LovyanGFX)
@@ -33,14 +34,26 @@ Budget (CYD-Sudoku v1.0.0 as the baseline):
   renderer for 240x320 and 320x480 screenshots and memory use.
 
 ## 3. Shell
-- **Game picker** at boot: tiles grouped by category (Puzzles, Strategy,
-  Word, Dice), paged if needed. Top of the screen: "Continue <last game>".
-- Inside a game, the ☰ menu has: new game, restart, stats, Display & touch,
+- **Splash** at boot: one of three title images (alternating each boot,
+  sized for 240x320 or 320x480), "press anywhere to play": a tap goes on
+  to the picker.
+- **Game picker**: "Continue <last game>" at the top, then the categories
+  as a text list: Puzzle Games, Strategy Games, Word Games, Dice Games,
+  Other Games. A category opens a page of game icons (paged if needed).
+- Inside a game, the ☰ menu has: new game, restart, stats, Settings,
   All games.
-- **Display & touch** is shared: theme (Light/Dark), brightness, invert
-  colors, swap red/blue, recalibrate, touch test, player name (once
+- **Settings** is shared: Theme, Sound On/Off (silent play), brightness,
+  invert colors, swap red/blue, recalibrate, touch test, player name (once
   multiplayer exists).
+- **Themes**: Light, Dark, and three Custom themes. A custom theme starts
+  from Light or Dark; the player picks colors for 10 roles (background,
+  cells, grid lines, ink, your entries, selected, same digit, row/column,
+  buttons, accent) from a 48-color palette. Saved on the board.
+- **Sound**: short tones through the CYD speaker connector (taps, moves,
+  errors, wins). Off = silent play.
 - **Stats** per game, same style as Sudoku (CSV on SD where usable).
+- **Long-press**: allowed but not preferred, never the only way to do
+  something; each use is agreed with Tom first.
 
 ## 4. Game list
 
@@ -52,15 +65,14 @@ Candidates, grouped. Order of building is in section 6.
 | Sudoku | Port of CYD-Sudoku v1.0.0 as-is |
 | Minesweeper | Flag mode toggle (like Sudoku's Notes) |
 | Nonograms | Generated puzzles, checked for one solution |
-| Lights Out | Tiny |
+| Light Switch (Lights Out) | Tiny; name to confirm |
 | Sliding Tiles (15-Puzzle) | Tap a tile next to the gap |
 | Peg Solitaire | Tap peg, tap hole |
-| Mastermind | Colors or symbols |
+| Code Breaker (Mastermind) | Colors or symbols; name to confirm |
 | Memory Match | Symbols, not cards |
 | 2048 | Tap the board edge to slide (no swipes) |
-| Sokoban | Needs freely licensed or generated levels |
-| Kakuro / KenKen | Reuse Sudoku's grid UI |
-| Sokoban | |
+| Box Pusher (Sokoban) | Needs freely licensed or generated levels; name to confirm |
+| Kakuro / Math Cages (KenKen) | Reuse Sudoku's grid UI; name to confirm |
 
 
 **Strategy (vs computer, pass-and-play, CYD vs CYD)**
@@ -68,26 +80,26 @@ Candidates, grouped. Order of building is in section 6.
 |---|---|
 | Chess | Own MIT engine; levels by depth/time |
 | Checkers | Strong AI is cheap |
-| Othello | Strong AI is cheap |
-| Four in a Row (Connect Four) | Can play perfectly; easy levels hold back |
+| Reversi (Othello) | Strong AI is cheap; Reversi is the public-domain name |
+| FourConnect (Connect Four) | Can play perfectly; easy levels hold back |
 | Mancala (Kalah) | Two rows of six pits |
 | Tic-Tac-Toe / Ultimate Tic-Tac-Toe | Ultimate is the interesting one |
 | Nine Men's Morris | Big targets |
 | Gomoku | 15x15, 16 px cells on 240-wide boards |
-| Battleship | Two grids, flip between them |
+| Sea Battle (Battleship) | Two grids, flip between them; name to confirm |
 
 **Word**
 | Game | Notes |
 |---|---|
-| Word Guess (Wordle-style) | Public-domain word list; on-screen keyboard |
+| CYD-dle (Wordle-style) | Public-domain word list; on-screen keyboard |
 | Trivia | Question bank license to check (Open Trivia DB is CC BY-SA) |
 | Hangman | word guess by letter with limit to bad guesses |
-| Wheel of Fortune | phrase guess with spinning reward/fail aspect |
+| Spin & Solve (Wheel of Fortune) | phrase guess with spinning reward/fail aspect; name to confirm |
 
 **Dice**
 | Game | Notes |
 |---|---|
-| Yaht-CYD | Yahtzee by a non-trademarked name (a.k.a. "Five Dice") |
+| Yaht-CYD | Yahtzee by a non-trademarked name |
 | Farkle | Push-your-luck |
 
 **Maybe later / poor fit:** Go 9x9 (weak AI), Solitaire/Klondike/FreeCell/Blackjack/Poker (cards too small on 2.8" perhaps if the card only shows the number and a symbol of the suit),
@@ -105,36 +117,49 @@ Chinese checkers, Dots and Boxes (thin tap targets).
   with its own rules engine.
 - Disconnects: the game pauses and is saved on both boards; either can
   resume when the other reappears, or end it.
-- Games: chess, checkers, Othello, Four in a Row first; later Mancala,
-  Ultimate Tic-Tac-Toe, Nine Men's Morris, Battleship, Gomoku.
+- Games: chess, checkers, Reversi, FourConnect first; later Mancala,
+  Ultimate Tic-Tac-Toe, Nine Men's Morris, Sea Battle, Gomoku.
+- Every two-player game also has vs computer and pass-and-play (one CYD
+  handed back and forth).
 
 ## 6. Plan
 1. **Repo seeded from CYD-Sudoku:** boards, HAL, CI, flasher, preview,
    tests. Game picker + registry. Sudoku moved in as the first game.
    Saves/stats per game. *Done 2026-10-02.*
-2. **Quick games** to prove the registry and picker: Lights Out,
-   Tic-Tac-Toe, 15-Puzzle, Four in a Row (with AI).
-3. **Strategy:** Othello, Checkers, then Chess. Shared "tap piece, tap
+2. **Shell + quick games:** splash, category picker, Settings with sound
+   and custom themes; Light Switch, Tic-Tac-Toe, Sliding Tiles (15-Puzzle),
+   FourConnect (vs computer + pass-and-play). *Built 2026-10-02, waiting
+   for hardware testing.*
+3. **Strategy:** Reversi, Checkers, then Chess. Shared "tap piece, tap
    square" board UI, AI task on core 0, pass-and-play.
-4. **Multiplayer** (ESP-NOW) for Four in a Row, Othello, Checkers, Chess.
-5. **More puzzles:** Minesweeper, Nonograms, Mastermind, Memory Match,
+4. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,
+   Checkers, Chess.
+5. **More puzzles:** Minesweeper, Nonograms, Code Breaker, Memory Match,
    2048, Peg Solitaire.
-6. **Word and dice games:** Word Guess, Five Dice, Farkle; Trivia if a
+6. **Word and dice games:** CYD-dle, Yaht-CYD, Farkle; Trivia if a
    suitable question bank is found.
 7. Remaining candidates as Tom picks them.
 
-## 7. Open decisions (Tom)
+## 7. Decisions
 
-Decided: repo is `tomtombombadil/CYD-Classic-Games`.
+Decided (Tom, 2026-10-02):
+- Repo `tomtombombadil/CYD-Classic-Games`.
+- Picker: categories as a text list first (Puzzle, Strategy, Word, Dice,
+  Other Games), each opening a page of game icons.
+- Two-player games: vs computer, pass-and-play and wireless, all three.
+- Firmware files: `TTB-CYD-CG_<size>in_<DRIVER>_<touch>.bin`.
+- Names: FourConnect (Connect Four), CYD-dle (Wordle), Yaht-CYD (Yahtzee).
+- No OTA; the web flasher is the update path.
+- Portrait by default; landscape allowed for a game where it clearly fits.
+- Long-press: allowed, not preferred; ask Tom per use.
+- Sound with a Settings toggle for silent play; custom themes.
 
+Open:
+- Where long-press would help (proposals go to Tom).
+- Names for the other trademarked candidates: Lights Out, Mastermind,
+  Sokoban, KenKen, Battleship, Wheel of Fortune (provisional names in
+  section 4), and whether to call Othello by its public-domain name Reversi.
 - Final game lineup and order (section 6 is a proposal).
-- Pass-and-play on every two-player game, in addition to vs computer and
-  CYD vs CYD? (Proposed: yes.)
-- Firmware file names: same as CYD-Sudoku (proposed; the release page tells
-  them apart) or with a `CYD_Games_` prefix?
-- Names for trademarked games (Four in a Row, Word Guess, Five Dice).
-- OTA updates: proposed no (keeps 3 MB for code; web flasher is the update
-  path).
 
 ## 8. Distribution
 - Web flasher (ESP Web Tools on GitHub Pages), updated on every push to main

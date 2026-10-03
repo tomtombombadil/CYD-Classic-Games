@@ -12,9 +12,11 @@
 
 namespace games {
 
-enum class Category : uint8_t { Puzzles = 0, Strategy, Word, Dice };
-constexpr int kCategories = 4;
-const char* category_name(Category c);
+// The picker's first screen lists these, in this order (Tom's list).
+enum class Category : uint8_t { Puzzles = 0, Strategy, Word, Dice, Other };
+constexpr int kCategories = 5;
+const char* category_title(Category c);        // "Puzzle Games", ...
+const char* category_short(Category c);        // "Puzzles", ... (page titles)
 
 // Ways a game can be played (or-ed in games.def)
 enum Modes : uint8_t {

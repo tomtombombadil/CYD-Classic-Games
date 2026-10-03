@@ -24,6 +24,7 @@
 #define BOARD_PIN_LED_B       17
 #define BOARD_LED_ACTIVE_LOW  1
 #define BOARD_PIN_LDR         34
+#define BOARD_PIN_SPEAKER     26   // speaker connector (through the amp)
 #define BOARD_PIN_SD_CS       5
 // The SD slot (VSPI pins 18/19/23/5) can't be used yet: touch also runs on
 // the VSPI controller (pins 25/32/39/33) and LovyanGFX's XPT2046 driver has

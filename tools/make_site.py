@@ -41,6 +41,8 @@ def boards_from_ini():
     return boards
 
 
+CATEGORY_TITLES = {"Puzzles": "Puzzle Games", "Strategy": "Strategy Games", "Word": "Word Games",
+                   "Dice": "Dice Games", "Other": "Other Games"}
 GAME_RE = re.compile(r'^GAME\(\s*(\w+)\s*,\s*"([^"]*)"\s*,\s*(\w+)\s*,\s*([^,]+?)\s*,\s*"([^"]*)"\s*\)')
 
 
@@ -49,7 +51,8 @@ def games_from_def():
     for line in (ROOT / "src" / "games" / "games.def").read_text(encoding="utf-8").splitlines():
         m = GAME_RE.match(line.strip())
         if m:
-            games.append({"id": m[1], "title": m[2], "category": m[3], "blurb": m[5]})
+            cat = CATEGORY_TITLES.get(m[3], m[3])
+            games.append({"id": m[1], "title": m[2], "category": cat, "blurb": m[5]})
     if not games:
         raise SystemExit("no games found in src/games/games.def")
     return games

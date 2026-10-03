@@ -1,6 +1,7 @@
 #include "widgets.h"
 
 #include <cstdio>
+#include "sound.h"
 #include "theme.h"
 
 namespace ui {
@@ -16,6 +17,8 @@ lv_obj_t* overlay_obj = nullptr;
 void (*overlay_closer)() = nullptr;
 
 int pad() { return M.large ? 16 : 10; }
+
+void tap_sound_cb(lv_event_t*) { sound(Sound::Tap); }
 
 } // namespace
 
@@ -72,6 +75,8 @@ lv_obj_t* make_key(lv_obj_t* parent, int w, int h, lv_event_cb_t cb, intptr_t us
     lv_obj_set_size(b, w, h);
     lv_obj_set_clickable(b, true);
     lv_obj_set_scrollable(b, false);
+    // Tap click first, so a game's own sound for this tap replaces it
+    lv_obj_add_event_cb(b, tap_sound_cb, LV_EVENT_CLICKED, nullptr);
     if (cb) lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, reinterpret_cast<void*>(user));
     return b;
 }
@@ -115,6 +120,7 @@ lv_obj_t* make_hamburger(lv_obj_t* parent, int w, int h, lv_event_cb_t cb, intpt
     lv_obj_set_size(b, w, h);
     lv_obj_set_clickable(b, true);
     lv_obj_set_scrollable(b, false);
+    lv_obj_add_event_cb(b, tap_sound_cb, LV_EVENT_CLICKED, nullptr);
     lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, reinterpret_cast<void*>(user));
 
     const int bar_w = h * 3 / 4 < 26 ? h * 3 / 4 : 26;

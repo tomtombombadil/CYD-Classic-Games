@@ -7,6 +7,7 @@
 #include "sudoku_board_view.h"
 #include "sudoku_stock.h"
 #include "ui/shell.h"
+#include "ui/sound.h"
 #include "ui/theme.h"
 #include "ui/widgets.h"
 
@@ -108,6 +109,7 @@ void update()
         r.seconds = G->elapsed_s();
         r.hints = static_cast<uint8_t>(G->hints_used());
         sudoku_app::record_stat(r);
+        sound(Sound::Win);
         celebrate();
     }
 }
@@ -154,6 +156,14 @@ void stop_flash()
     if (shell().flash_invert) shell().flash_invert(false);
 }
 
+// A digit put down clicks; one that clashes buzzes. The win sound (from
+// update()) replaces either when that digit finishes the puzzle.
+void entry_sound(int cell)
+{
+    if (G->value(cell) && G->conflict(cell)) sound(Sound::Error);
+    else                                      sound(Sound::Place);
+}
+
 // ---- Input ------------------------------------------------------------------
 // Cell 1st:  tap a cell, then a digit. The same digit again clears it.
 // Digit 1st: tap a digit, then cells. Tapping a cell that already holds
@@ -175,6 +185,7 @@ void on_cell(int i)
     selected = i;
     if (digit_first() && brush_digit && G->enter(i, brush_digit, notes_mode)) {
         changed();
+        entry_sound(i);
         // That was the last one: nothing left to place, so put the digit
         // down (its button greys out straight away).
         if (G->placed_correct(brush_digit) >= 9) brush_digit = 0;
@@ -191,6 +202,7 @@ void on_digit(int d)
         selected = -1;
     } else if (selected >= 0 && G->enter(selected, d, notes_mode)) {
         changed();
+        entry_sound(selected);
     }
     update();
 }
@@ -201,7 +213,7 @@ void on_hint()
 {
     if (finished()) return;
     if (hint_cell >= 0 && hint_cell == selected && G->hint_target(selected) == hint_cell) {
-        if (G->apply_hint(hint_cell)) changed();
+        if (G->apply_hint(hint_cell)) { changed(); sound(Sound::Hint); }
         hint_cell = -1;
     } else {
         const int t = G->hint_target(selected);
@@ -538,7 +550,7 @@ void open_menu()
     }
     overlay_button(overlay(), "Restart this puzzle", menu_cb, kRestart);
     overlay_pair("Stats", menu_cb, kStats, "All games", menu_cb, kAllGames);
-    overlay_button(overlay(), "Display & touch", menu_cb, kSettings);
+    overlay_button(overlay(), "Settings", menu_cb, kSettings);
     overlay_button(overlay(), "Back to game", menu_cb, kBackToGame, true);
 }
 

@@ -24,6 +24,12 @@ The Arduino core is LGPL-2.1. Because this project's full source is public,
 anyone can rebuild the firmware against a modified core, which satisfies the
 LGPL for the binaries published in Releases.
 
+## Art
+
+| Item | Use | License |
+|---|---|---|
+| Splash screens (`assets/splash/`) | Title images shown at boot | Tom's own art for this project, MIT with the rest |
+
 ## On the web flasher page (loaded from CDNs, not copied into the repo)
 
 | Component | Use | License |

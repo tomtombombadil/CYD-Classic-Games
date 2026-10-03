@@ -23,9 +23,11 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 - Name boards by what a user can identify: **screen size, display driver,
   touch type**. Never by an information site (LCDwiki is a datasheet
   resource, not a maker or seller) and not by vendor model codes.
-- Firmware files: `CYD_<size>in_<DRIVER>_<Resistive|Capacitive>.bin`,
-  e.g. `CYD_3.2in_ST7789_Resistive.bin`. No version in the file name (the
-  release tag carries it), so links to the latest release stay stable.
+- Firmware files: `TTB-CYD-CG_<size>in_<DRIVER>_<Resistive|Capacitive>.bin`,
+  e.g. `TTB-CYD-CG_3.2in_ST7789_Resistive.bin` (Tom, 2026-10-02: the prefix
+  says which firmware it is; the rest says which board). No version in the
+  file name (the release tag carries it), so links to the latest release
+  stay stable.
 - PlatformIO env names can't contain dots, so envs are short
   (`cyd32_st7789_res`) and carry `custom_firmware_name`,
   `custom_board_title`, `custom_board_hint` and, for boards nobody has run
@@ -54,7 +56,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   `docs/screenshots/*.png`. Re-render when a shown screen changes.
 - Toolchain: pioarduino platform 55.03.312-1 (Arduino-ESP32 3.3.x),
   LovyanGFX 1.2.x, LVGL 9.6. Partition table `huge_app.csv` (3 MB app,
-  ~900 KB LittleFS, no OTA - the web flasher is the update path).
+  ~900 KB LittleFS, no OTA - the web flasher is the update path; Tom
+  confirmed no OTA on 2026-10-02).
 
 ## Architecture (new for the collection)
 - Each game lives in `src/games/<id>/`:
@@ -72,20 +75,41 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   modes, "blurb")` line each). `src/games/registry.*` builds the table from
   it and `tools/make_site.py` reads it for the web page; nothing else
   hard-codes the game list. Adding a game = folder + `games.def` line.
+- Shared game code in `src/games/common/`:
+  - `two_player.*`, `puzzle_stats.*` (plain C++, host-tested): stats CSV
+    formats for two-player games and solo puzzles.
+  - `match.*`: the two-player controller (turns, computer on the AI task,
+    pass-and-play, status line, sounds, win flash, menu, stats, saved
+    `match::State` after the board). A two-player game supplies rules
+    callbacks (`match::Game`) and draws its board. Reversi, Checkers and
+    Chess should use it too.
+  - `game_kit.*`: top bar, clock (2-minute idle pause), win flash, the
+    standard menus (`menu_two_player`, `menu_solo`) and stats screens,
+    drawing helpers for custom-drawn boards.
+  - `ai_task.*`: one background job on a core-0 FreeRTOS task with a stop
+    flag (device); the preview stub runs it at once.
+- Games so far: Sudoku, Light Switch (5x5, par via GF(2) solve, two-tap
+  hint), Sliding Tiles (3x3/4x4/5x5), FourConnect (bitboard negamax,
+  depth 1/3/8), Tic-Tac-Toe (negamax, depth 1/2/9 = perfect). Computer ties
+  between equal moves are broken by a random seed; no deliberate blunders.
 - Shared UI in `src/ui/`: `widgets.*` (keys, hamburger, overlays, tables,
   screen metrics), `app_shell.cpp` (picker, game switching),
-  `settings_screen.cpp` (Display & touch, touch test), `theme.*`.
-- Game picker (boot screen): "Classic Games" title bar with ☰ (Display &
-  touch), a "Continue <last game>" card (icon, title, the game's summary
-  line), then tiles 2 per row grouped by category. Extra games go on pages
-  switched with big < > keys (no scrolling); a category that runs onto the
-  next page repeats its heading. `preview_paging` renders a long fake list.
+  `settings_screen.cpp` (Settings, themes + palette editor, touch test), `sound.*`, `theme.*`.
+- Game picker (after the splash): "Classic Games" title bar with ☰
+  (Settings), a "Continue <last game>" card (icon, title, the game's
+  summary line), then the categories as a text list (Tom, 2026-10-02):
+  Puzzle Games, Strategy Games, Word Games, Dice Games, Other Games, each
+  with its game count. A category opens its own page of icon tiles, 2 per
+  row, with a back key in the top bar. Extra tiles go on pages switched
+  with big < > keys (no scrolling). `preview_paging` renders a long fake
+  list.
 - Only one game is alive at a time. Leaving a game saves it and frees its
   screen, AI tables and tasks (e.g. Sudoku's puzzle-stock task runs only
   while Sudoku is open).
-- Shared across games: theme, brightness, touch calibration, panel fixes
-  (`/ui_settings.bin` format UIS2 = CYD-Sudoku's UIS1 + last game id,
-  `/panel_prefs.bin`, `/touch_cal.bin`).
+- Shared across games: theme, sound, brightness, touch calibration, panel
+  fixes (`/ui_settings.bin` format UIS2 = CYD-Sudoku's UIS1 + last game
+  id; two former reserved bytes hold the next splash image and sound-off;
+  `/themes.bin` custom themes, `/panel_prefs.bin`, `/touch_cal.bin`).
 - Stats store (`src/app/stats_store.*`) is game-agnostic: it numbers lines
   ("seq,body"), the game formats/parses the body and owns the header.
 - `src/app/legacy_import.*`: flashing over CYD-Sudoku without erasing moves
@@ -106,15 +130,17 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   LovyanGFX applies it to touch too); a landscape game needs a runtime
   rotation switch in `src/hal/lvgl_port.*` first, and must lay out from the
   display size like every screen.
-- Resistive touch: big targets; tap, never drag, swipe or long-press.
-  Moving a piece = tap the piece, then tap the destination. Swipe games
-  (2048) slide by tapping the board edge in that direction.
+- Resistive touch: big targets; tap, never drag or swipe. Moving a piece =
+  tap the piece, then tap the destination. Swipe games (2048) slide by
+  tapping the board edge in that direction.
+- Long-press is not forbidden, just not preferred: never the only way to do
+  something. Propose each use to Tom and ask before adding it.
 - No "tap again" / "are you sure" confirmations, ever. Buttons act on the
   first tap.
 - Strong highlight tints with distinct hues (cheap TN panels wash out pale
   tints at an angle). No shrinking fonts to squeeze labels in.
 - Each game: top bar with a 3-line hamburger menu (new game, restart,
-  stats, Display & touch, "All games"). The picker is the boot screen and
+  stats, Settings, "All games"). The picker is the boot screen and
   reopens the last game in one tap. "All games" saves the game and frees it.
 - Colors come from `src/ui/theme.cpp` palettes (Light/Dark), never
   hard-coded elsewhere.
@@ -122,6 +148,20 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   in the last 2 minutes. Times feed the stats, so nothing may count
   unattended time.
 - Solve/win flash toggles the panel invert bit, no overlay animations.
+- Sound: the CYD speaker connector (GPIO26 via the board's amp) plays short
+  tones through `ui::sound()` (`src/ui/sound.h`, device driver
+  `src/hal/speaker.*`). Settings has Sound On/Off for silent play; games
+  use the named sounds (tap, place, error, win, lose...), never raw tones.
+- Settings (☰ → Settings, shared): Theme, Sound, brightness, panel color
+  fixes, touch calibration, touch test.
+- Themes: Light, Dark and 3 Custom slots. A custom theme starts from Light
+  or Dark and overrides 10 color roles, each picked from a 48-color palette
+  (`/themes.bin`). Games take every color from `ui::pal()`, so a custom
+  theme recolors every game.
+- Boot: a splash image (3 designs, alternating each boot, sized per board)
+  drawn straight to the panel with LovyanGFX's JPEG decoder, then wait for
+  a tap, then the picker. Source art in `assets/splash/`, headers made by
+  `tools/make_splash.py`.
 
 ## Sudoku (ported from CYD-Sudoku v1.0.0 - keep its behavior)
 - Files: `sudoku_core` (grid, solver, generator), `sudoku_grader`,
@@ -139,6 +179,11 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   second tap fills. Brightness slider floor `kMinBrightness`.
 - The PC preview stages the same screens as CYD-Sudoku's; game, notes,
   hint, stats and solved renders matched v1.0.0 pixel for pixel at the port.
+
+## Two-player games (Tom, 2026-10-02)
+- Every two-player game offers all three: vs computer (levels), pass-and-play
+  (one CYD, two people take turns), and wireless CYD to CYD (below). The
+  new-game menu lists them; wireless shows as "coming" until stage 4.
 
 ## Multiplayer (CYD to CYD)
 - ESP-NOW, peer to peer, no router or password. WiFi radio is OFF except
@@ -170,12 +215,18 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   VSPI by itself and works (`BOARD_SD_USABLE 1`).
 - Touch filter (fixed a first-tap offset on the 4.0"): a press starts only
   after two consecutive readings agree within 8 px and ends after two empty
-  readings; ESP32-32E touch clock 1 MHz. Keep both. Diagnostic: Display &
-  touch > Touch test; `-D CYD_TOUCH_DEBUG` logs raw touches to serial.
+  readings; ESP32-32E touch clock 1 MHz. Keep both. Diagnostic: Settings >
+  Touch test; `-D CYD_TOUCH_DEBUG` logs raw touches to serial.
 - Panel inversion / red-blue order differ between production runs. Fixed
   per unit on the device (`src/hal/panel_prefs.*`), not with build flags.
 - Before the screen comes up, quiet the RGB LED and audio amp
   (`quiet_peripherals()` in main.cpp).
+- Speaker: `BOARD_PIN_SPEAKER` 26 on both board families (2.8": straight
+  to its amp; ESP32-32E: DAC pin into the amp, enabled by
+  `BOARD_PIN_AUDIO_EN` 4, low = on; the driver turns the amp on only while
+  a sound plays). LEDC square wave, 50 % duty. Not yet heard on hardware.
+- `BOARD_PORTRAIT_W` (240/320) in board_select.h picks which splash images
+  are built in.
 - Check WiFi against the board pins when it's added: ADC2 pins can't be
   read while WiFi is on.
 
@@ -187,9 +238,10 @@ Backgammon, most chess engines) are reference only. Update
 - Game data counts too: word lists, trivia questions and puzzle levels need
   a license that sits with MIT (public domain, CC0, or permissive with
   attribution). Share-alike data (e.g. CC BY-SA) needs Tom's OK first.
-- No trademarked game names: "Word Guess", not Wordle; "Four in a Row"
-  unless Tom decides otherwise for Connect Four. Classic public-domain games
-  (chess, checkers, mancala, ...) are fine by name.
+- No trademarked game names. Tom's names: **FourConnect** (Connect Four),
+  **CYD-dle** (Wordle), **Yaht-CYD** (Yahtzee). Classic public-domain games
+  (chess, checkers, mancala, ...) are fine by name. Others still to decide
+  are listed in docs/SPEC.md section 7.
 
 ## Releases and web flasher
 - Every push to main: CI runs the host tests, builds every env that has
