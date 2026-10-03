@@ -10,9 +10,9 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Twenty games so far: **Sudoku** (from
+> under way. Twenty-one games so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
-> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FourConnect**, **Tic-Tac-Toe**,
+> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **FourConnect**, **Tic-Tac-Toe**,
 > **Reversi**, **Checkers**, **Chess**, **CYD-dle** and **Yaht-CYD**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
@@ -23,7 +23,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a long-press showing where a piece can
 go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
-Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
+Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
 <img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
@@ -49,6 +49,7 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire 
 <img src="docs/screenshots/small_spider.png" width="240" alt="Spider, two suits">
 <img src="docs/screenshots/small_pyramid.png" width="240" alt="Pyramid">
 <img src="docs/screenshots/small_golf.png" width="240" alt="Golf">
+<img src="docs/screenshots/small_freecell.png" width="240" alt="FreeCell">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -91,12 +92,13 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire 
 | Spider | Card Games | 1, 2 or 4 suits, Windows scoring, undo, hints |
 | Pyramid | Card Games | Pairs that make 13, three passes through the stock |
 | Golf | Card Games | Clear the columns one rank up or down |
+| FreeCell | Card Games | All cards face up, four free cells, nearly every deal winnable |
 | CYD-dle | Word Games | Solo, guess the five-letter word: Easy / Normal / Hard |
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
-greyed out, until it's built). Coming next: FreeCell, Blackjack, Video
-Poker and Texas Hold'em, then wireless play. The plan is in
+greyed out, until it's built). Coming next: Blackjack, Video Poker and
+Texas Hold'em, then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -263,7 +265,7 @@ carries over) or none, and the **Card Back** (12 designs, shared by every
 card game; Blue Lattice to start). The card games are quiet while you play
 and play a little tune when you win.
 
-## Spider, Pyramid and Golf
+## Spider, Pyramid, Golf and FreeCell
 
 - **Spider:** two decks in ten columns. Build King-to-Ace runs in one suit;
   a full run comes off by itself, take off all eight to win. Any card goes
@@ -274,8 +276,12 @@ and play a little tune when you win.
   three passes through the stock.
 - **Golf:** play a column's top card onto the waste if it's one rank higher
   or lower (no wrapping, nothing on a King); turn the stock when stuck.
+- **FreeCell:** every card face up; four free cells hold one card each.
+  Runs move together as far as the free spaces allow, and cards nothing
+  else needs go up by themselves. Tap the free-cell row or the foundation
+  row anywhere to drop a card there.
 
-All three have **Undo** and **Hint**, the bouncing-cards win show, and a
+All four have **Undo** and **Hint**, the bouncing-cards win show, and a
 **Card Back** key in their menu (the back is shared with every card game).
 
 ## Nonograms

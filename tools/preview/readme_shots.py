@@ -35,6 +35,7 @@ SHOTS = {
     "s_light_48_spider": "small_spider",
     "s_light_47_pyramid": "small_pyramid",
     "s_light_46_golf": "small_golf",
+    "s_light_49_freecell": "small_freecell",
     "s_light_40_help_twenty48_2": "small_help",
     "s_light_15_lightswitch": "small_lightswitch",
     "s_dark_0_settings": "small_settings_dark",

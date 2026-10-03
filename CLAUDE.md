@@ -164,7 +164,10 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   (1 / 2 / 4 suits; 10 columns of 21 px cards on 240 wide - card_font_10;
   Windows scoring 500 -1/move +100/run; no deal with an empty column),
   Pyramid (pairs to 13, Kings alone, waste top pairs too, 3 passes),
-  Golf (no wrap, nothing on a King; Hint; cards left = score). Card
+  Golf (no wrap, nothing on a King; Hint; cards left = score), FreeCell
+  (supermoves (cells+1) x 2^empty, safe cards go up by themselves with
+  exact undo, foundations S H C D, free-cell row / foundation row are
+  whole-row drop targets; random deals - nearly all winnable). Card
   games keep their undo history only while open (not in the save). A
   stuck deal is recorded as Lost only when the next deal starts (Undo can
   still save it). Golf/Pyramid/Spider menus: "Card Back" key -> the

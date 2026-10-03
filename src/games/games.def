@@ -27,6 +27,7 @@ GAME(checkers, "Checkers", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Ame
 GAME(chess, "Chess", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Full rules; tap a piece, then its square; long-press any piece to see its moves")
 GAME(solitaire, "Solitaire", Cards, kSolo, "Klondike: build the four suits up from Ace to King; draw 1 or 3, Standard or Vegas scoring")
 GAME(spider, "Spider", Cards, kSolo, "Two decks, ten columns: build King-to-Ace runs in one suit; 1, 2 or 4 suits")
+GAME(freecell, "FreeCell", Cards, kSolo, "Every card face up, four free cells: nearly every deal can be won")
 GAME(pyramid, "Pyramid", Cards, kSolo, "Pair up cards that add to 13 and take the pyramid apart; Kings go alone")
 GAME(golf, "Golf", Cards, kSolo, "Clear seven columns onto the waste, one rank up or down at a time")
 GAME(cyddle, "CYD-dle", Word, kSolo, "Guess the five-letter word in six tries; green, gold and grey hints")

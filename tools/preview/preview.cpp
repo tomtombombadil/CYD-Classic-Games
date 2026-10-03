@@ -31,6 +31,7 @@
 #include "games/golf/golf_core.h"
 #include "games/pyramid/pyramid_core.h"
 #include "games/spider/spider_core.h"
+#include "games/freecell/freecell_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -958,6 +959,27 @@ int main(int argc, char** argv)
         delete g;
     }
 
+    {   // FreeCell part-way (light, then dark)
+        using namespace freecell;
+        Game* g = new Game();
+        g->deal(1941);
+        for (int k = 0; k < 12; ++k) { int f, i, to; if (!g->hint(&f, &i, &to)) break; g->move(f, i, to); }
+        for (int c = 0; c < 8 && g->free_cells() > 2; ++c) g->move(Col0 + c, g->n[c] - 1, Cell0 + (4 - g->free_cells()));
+        std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+        g->serialize(buf.data(), buf.size());
+        buf[Game::kSaveBytes + 1] = 180;
+        save_game("freecell", buf.data(), buf.size());
+        ui::app_open_game_now(games::find("freecell"));
+        shot(out + "_light_49_freecell.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("freecell"));
+        shot(out + "_dark_49_freecell.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        delete g;
+    }
+
     {   // Card games: mockups of the shared card graphics (not games yet)
         static const char* const names[5][2] = {{"Cards", "Faces and backs"}, {"0:42", "Klondike"},
                                                 {"1:10", "FreeCell"}, {"Bet 10", "Blackjack"},
@@ -971,6 +993,9 @@ int main(int argc, char** argv)
             }
         }
         ui::app_set_theme(ui::Theme::Light);
+        card_mockup(5, "Undo  Hint", "Score 45");
+        run(20);
+        shot(out + "_light_50_cards_5.ppm");
         ui::app_go_home_now();
     }
 

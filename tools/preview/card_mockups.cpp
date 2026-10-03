@@ -161,6 +161,38 @@ void poker(lv_layer_t* l)
     }
 }
 
+// ---- 5: Solitaire laid out for landscape (Undo/Hint up in the bar) ----------------
+void klondike_landscape(lv_layer_t* l)
+{
+    const int pitch = W / 7, cw = pitch - 4, ch = cw * 7 / 5;
+    auto col_x = [&](int i) { return 2 + i * pitch + 2; };
+    int y = top + 3;
+    back(l, col_x(0), y, cw, ch, BackLattice);
+    const int fan = (col_x(3) - col_x(1) - cw - 2) / 2;
+    face(l, col_x(1), y, cw, ch, C(4, 3));
+    face(l, col_x(1) + fan, y, cw, ch, C(9, 1));
+    face(l, col_x(1) + 2 * fan, y, cw, ch, C(12, 0), true);
+    face(l, col_x(3), y, cw, ch, C(3, 0));
+    face(l, col_x(4), y, cw, ch, C(1, 1));
+    draw_slot(l, col_x(5), y, cw, ch, Clubs);
+    draw_slot(l, col_x(6), y, cw, ch, Diamonds);
+    y += ch + 4;
+    const int room = H - y - 2;
+    static const uint8_t ups[7][7] = {
+        {C(13, 3), C(12, 1), C(11, 0), C(10, 2), C(9, 3), C(8, 1), 0xFF},
+        {C(6, 0), 0xFF}, {C(9, 3), C(8, 2), C(7, 3), 0xFF}, {C(11, 1), 0xFF},
+        {C(5, 2), C(4, 0), 0xFF}, {C(2, 0), 0xFF}, {C(8, 0), C(7, 1), C(6, 3), C(5, 1), 0xFF}};
+    static const int downs[7] = {0, 1, 2, 3, 4, 5, 6};
+    for (int i = 0; i < 7; ++i) {
+        int nu = 0; while (ups[i][nu] != 0xFF) ++nu;
+        int down = ch / 7, up = index_h(cw, ch) + 2;
+        if (downs[i] * down + (nu - 1) * up + ch > room && nu > 1) up = (room - ch - downs[i] * down) / (nu - 1);
+        int yy = y;
+        for (int d = 0; d < downs[i]; ++d, yy += down) back(l, col_x(i), yy, cw, ch, BackLattice);
+        for (int k = 0; k < nu; ++k, yy += up) face(l, col_x(i), yy, cw, ch, ups[i][k]);
+    }
+}
+
 void draw_cb(lv_event_t* e)
 {
     lv_layer_t* l = lv_event_get_layer(e);
@@ -171,6 +203,7 @@ void draw_cb(lv_event_t* e)
         case 2: freecell(l); break;
         case 3: blackjack(l); break;
         case 4: poker(l); break;
+        case 5: klondike_landscape(l); break;
     }
 }
 

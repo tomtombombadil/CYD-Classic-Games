@@ -7,6 +7,7 @@
 #include "../../src/games/chess/chess_core.h"
 #include "../../src/games/cyddle/cyddle_core.h"
 #include "../../src/games/fourconnect/fourconnect_core.h"
+#include "../../src/games/freecell/freecell_core.h"
 #include "../../src/games/golf/golf_core.h"
 #include "../../src/games/lightswitch/lightswitch_core.h"
 #include "../../src/games/mastercyd/mastercyd_core.h"
@@ -1198,6 +1199,81 @@ static void test_spider()
     delete gp;
 }
 
+static int fc_count(const freecell::Game& g)
+{
+    int t = g.found[0] + g.found[1] + g.found[2] + g.found[3];
+    for (uint8_t c : g.cell) t += c != 0xFF;
+    for (int c = 0; c < 8; ++c) t += g.n[c];
+    return t;
+}
+
+static void test_freecell()
+{
+    using namespace freecell;
+    Game* gp = new Game();
+    Game& g = *gp;
+    g.deal(11982);
+    CHECK(fc_count(g) == 52 && g.n[0] == 7 && g.n[7] == 6 && g.free_cells() == 4);
+    CHECK(g.max_run(false) == 5 && g.max_run(true) == 5);
+    // Hand-built: run sizes with free cells and empty columns
+    for (int c = 0; c < 8; ++c) g.n[c] = 0;
+    memset(g.found, 0, 4);
+    auto C = [](int r, int s) { return uint8_t(s * 13 + r - 1); };
+    g.col[0][0] = C(9, 3); g.col[0][1] = C(8, 1); g.col[0][2] = C(7, 0); g.col[0][3] = C(6, 2); g.n[0] = 4;   // 9C 8H 7S 6D
+    g.col[1][0] = C(10, 1); g.n[1] = 1;                                                                   // 10H
+    for (int c = 2; c < 8; ++c) { g.col[c][0] = C(13, c % 4); g.n[c] = 1; }
+    g.cell[0] = C(5, 0); g.cell[1] = C(5, 3); g.cell[2] = 0xFF; g.cell[3] = 0xFF;                      // 2 free cells
+    CHECK(g.run_start(0) == 0 && g.max_run(false) == 3);
+    CHECK(!g.can_move(Col0, 0, Col0 + 1));                // 4 cards, room for 3
+    g.cell[1] = 0xFF;                                     // 3 free cells -> 4
+    CHECK(g.can_move(Col0, 0, Col0 + 1) && g.move(Col0, 0, Col0 + 1));
+    CHECK(g.n[0] == 0 && g.n[1] == 5);
+    CHECK(g.undo() && g.n[0] == 4 && g.n[1] == 1);
+    // Automatic foundation moves, and undo puts them back
+    g.deal(7);
+    for (int c = 0; c < 8; ++c) g.n[c] = 0;
+    memset(g.found, 0, 4);
+    for (uint8_t& c : g.cell) c = 0xFF;
+    g.col[0][0] = C(2, 0); g.col[0][1] = C(1, 0); g.n[0] = 2;      // 2S over AS? no: AS on top
+    g.col[1][0] = C(13, 1); g.col[1][1] = C(3, 1); g.n[1] = 2;
+    CHECK(g.can_move(Col0 + 1, 1, Cell0) && g.move(Col0 + 1, 1, Cell0));
+    CHECK(g.found[0] == 2 && g.n[0] == 0);                // the AS and 2S went up by themselves
+    CHECK(g.undo() && g.found[0] == 0 && g.n[0] == 2 && g.col[0][1] == C(1, 0) && g.n[1] == 2);
+    // Hint player on real deals: nothing lost, undo back to the deal
+    int won = 0;
+    for (uint32_t s = 1; s <= 40; ++s) {
+        g.deal(s * 2654435761u);
+        for (int k = 0; k < 300 && !g.won(); ++k) {
+            int f, i, to;
+            if (!g.hint(&f, &i, &to)) {
+                // nothing obvious: put a column's top card into a free cell
+                bool moved = false;
+                for (int c = 0; c < 8 && !moved; ++c)
+                    if (g.n[c] && g.free_cells()) for (int cl = 0; cl < 4 && !moved; ++cl) moved = g.move(Col0 + c, g.n[c] - 1, cl);
+                if (!moved) break;
+            } else CHECK(g.move(f, i, to));
+            CHECK(fc_count(g) == 52);
+        }
+        won += g.won();
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+        Game* r = new Game();
+        CHECK(r->deserialize(buf, sizeof buf) && fc_count(*r) == 52 && r->found[0] == g.found[0]);
+        delete r;
+        if (g.log_n < kLog) {
+            while (g.undo()) {}
+            Game* f = new Game();
+            f->deal(g.seed);
+            bool same = memcmp(f->n, g.n, 8) == 0 && g.free_cells() == 4 && fc_count(g) == 52;
+            for (int c = 0; c < 8; ++c) same &= memcmp(f->col[c], g.col[c], g.n[c]) == 0;
+            CHECK(same);
+            delete f;
+        }
+    }
+    printf("freecell: hint player won %d of 40\n", won);
+    delete gp;
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -1259,6 +1335,7 @@ int main()
     test_golf();
     test_pyramid();
     test_spider();
+    test_freecell();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;
