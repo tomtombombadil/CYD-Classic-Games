@@ -405,14 +405,18 @@ bool summary(char* buf, size_t cap)
 
 void save_now() { save(); }
 
+// Icon: four big tiles, 2 4 / 8 16, on the board color
 void icon_draw_cb(lv_event_t* e)
 {
     lv_area_t a;
     lv_obj_get_coords(lv_event_get_target_obj(e), &a);
-    Game art;
-    const uint8_t cells[kCells] = {1, 2, 0, 1, 0, 3, 4, 0, 5, 6, 7, 2, 11, 10, 8, 3};
-    for (int i = 0; i < kCells; ++i) art.cell[i] = cells[i];
-    draw_board(lv_event_get_layer(e), art, a.x1, a.y1, lv_area_get_width(&a), false);
+    lv_layer_t* layer = lv_event_get_layer(e);
+    const int size = lv_area_get_width(&a), gap = size / 16 > 2 ? size / 16 : 2;
+    const int s = (size - 3 * gap) / 2;
+    kit::fill_rect(layer, a.x1, a.y1, a.x1 + size - 1, a.y1 + size - 1, pal().key_border, size / 12);
+    const uint8_t e4[4] = {1, 2, 3, 4};
+    for (int i = 0; i < 4; ++i)
+        draw_tile(layer, a.x1 + gap + (i % 2) * (s + gap), a.y1 + gap + (i / 2) * (s + gap), s, e4[i], false);
 }
 
 void icon(lv_obj_t* parent, int size)

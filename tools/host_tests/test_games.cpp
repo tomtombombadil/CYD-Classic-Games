@@ -8,6 +8,7 @@
 #include "../../src/games/cyddle/cyddle_core.h"
 #include "../../src/games/fourconnect/fourconnect_core.h"
 #include "../../src/games/lightswitch/lightswitch_core.h"
+#include "../../src/games/mastercyd/mastercyd_core.h"
 #include "../../src/games/minesweeper/minesweeper_core.h"
 #include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
@@ -706,6 +707,75 @@ static void test_twenty48()
     printf("2048: best random-play score %lu\n", (unsigned long)best);
 }
 
+static void test_mastercyd()
+{
+    using namespace mastercyd;
+    {   // scoring: exact first, then color matches without double counting
+        const uint8_t code[4] = {0, 1, 2, 3};
+        const uint8_t g1[4] = {0, 1, 2, 3}, g2[4] = {3, 2, 1, 0}, g3[4] = {0, 0, 0, 0}, g4[4] = {4, 4, 5, 5};
+        Feedback f = score(code, g1, 4); CHECK(f.exact == 4 && f.near == 0);
+        f = score(code, g2, 4); CHECK(f.exact == 0 && f.near == 4);
+        f = score(code, g3, 4); CHECK(f.exact == 1 && f.near == 0);
+        f = score(code, g4, 4); CHECK(f.exact == 0 && f.near == 0);
+        const uint8_t c2[4] = {1, 1, 2, 2}, g5[4] = {2, 1, 1, 3};
+        f = score(c2, g5, 4); CHECK(f.exact == 1 && f.near == 2);
+        const uint8_t c3[5] = {5, 5, 5, 0, 1}, g6[5] = {0, 5, 1, 5, 5};
+        f = score(c3, g6, 5); CHECK(f.exact == 1 && f.near == 4);
+    }
+    {   // Easy: no repeats in the code or the guess row
+        for (int s = 1; s < 200; ++s) {
+            Rng rng(s); Game g; g.start(0, rng);
+            bool seen[kColors] = {};
+            for (int i = 0; i < 4; ++i) { CHECK(!seen[g.secret[i]]); seen[g.secret[i]] = true; }
+        }
+        Rng rng(3); Game g; g.start(0, rng);
+        CHECK(g.place(2) && !g.place(2) && g.place(3));
+        g.clear(0);
+        CHECK(g.cur[0] == kEmpty && g.place(2) && g.cur[0] == 2);
+        CHECK(!g.full() && !g.submit());
+    }
+    {   // Play to the end: a solver using consistent guesses always wins in 10
+        for (int lv = 0; lv < kLevels; ++lv)
+            for (int s = 1; s <= 30; ++s) {
+                Rng rng(s * 7 + lv); Game g; g.start(lv, rng);
+                const int n = g.pegs();
+                int total = 1; for (int i = 0; i < n; ++i) total *= kColors;
+                int cand = 0;
+                while (!g.over()) {
+                    // next code (in counting order) consistent with every answer so far
+                    uint8_t c[kMaxPegs] = {};
+                    bool found = false;
+                    for (; cand < total && !found; ++cand) {
+                        int v = cand;
+                        for (int i = 0; i < n; ++i) { c[i] = uint8_t(v % kColors); v /= kColors; }
+                        if (!g.repeats()) {
+                            bool dup = false;
+                            for (int i = 0; i < n; ++i) for (int j = i + 1; j < n; ++j) dup |= c[i] == c[j];
+                            if (dup) continue;
+                        }
+                        bool ok = true;
+                        for (int r = 0; r < g.rows && ok; ++r) {
+                            const Feedback f = score(c, g.guess[r], n);
+                            ok = f.exact == g.fb[r].exact && f.near == g.fb[r].near;
+                        }
+                        found = ok;
+                    }
+                    CHECK(found);
+                    if (!found) break;
+                    --cand;                                  // retry it if it's not the answer
+                    for (int i = 0; i < n; ++i) CHECK(g.place(c[i]));
+                    CHECK(g.submit());
+                    ++cand;
+                }
+                CHECK(g.solved());
+                uint8_t buf[Game::kSaveBytes];
+                CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+                Game h;
+                CHECK(h.deserialize(buf, sizeof buf) && h.rows == g.rows && h.solved() && h.level == g.level);
+            }
+    }
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -759,6 +829,7 @@ int main()
     test_yahtcyd();
     test_minesweeper();
     test_twenty48();
+    test_mastercyd();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

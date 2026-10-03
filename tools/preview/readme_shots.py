@@ -25,6 +25,7 @@ SHOTS = {
     "s_light_30_yahtcyd": "small_yahtcyd",
     "s_light_13_sliding": "small_sliding",
     "s_light_32_minesweeper": "small_minesweeper",
+    "s_light_36_mastercyd": "small_mastercyd",
     "s_light_35_twenty48": "small_2048",
     "s_light_40_help_twenty48_2": "small_help",
     "s_light_15_lightswitch": "small_lightswitch",

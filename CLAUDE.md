@@ -111,7 +111,10 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   9x11/15, 10x11/20; mines placed on the first tap; generator retries until
   a logic solver clears the board - never a guess; long-press flags; no
   Restart; stats Won/Lost via `stats_solo(..., win_loss)`; puzzle CSV
-  result "Lost" added), 2048 (id `twenty48` - C names can't start
+  result "Lost" added), MasterCYD (4 pegs no repeats / 4 / 5 pegs,
+  6 colors from the palette (red, yellow, green, blue, white, black, each
+  with a rim), 10 guesses; answers are shapes - filled dot = exact, ring =
+  near - in one line), 2048 (id `twenty48` - C names can't start
   with a digit; 4x4, 2 or 4 (10 %) after each slide, play on after 2048;
   one custom-drawn object below the top bar = board + 4 diagonal tap
   zones; preview checks each zone against the rules engine; stats only

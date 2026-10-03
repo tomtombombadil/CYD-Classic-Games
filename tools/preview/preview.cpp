@@ -23,6 +23,7 @@
 #include "games/cyddle/cyddle_core.h"
 #include "games/yahtcyd/yahtcyd_core.h"
 #include "games/twenty48/twenty48_core.h"
+#include "games/mastercyd/mastercyd_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -294,6 +295,8 @@ int main(int argc, char** argv)
         shot(out + (t ? "_dark" : "_light") + "_0_picker.ppm");
         ui::picker_open_category(0);
         shot(out + (t ? "_dark" : "_light") + "_0_category.ppm");
+        ui::picker_next_page();
+        shot(out + (t ? "_dark" : "_light") + "_0_category2.ppm");
     }
     ui::app_begin(sh, played, themes);
     ui::picker_open_menu();
@@ -679,6 +682,35 @@ int main(int argc, char** argv)
         done.score = 27460; done.moves = 1290; done.won = true;
         stage(done, 2210);
         shot(out + "_dark_35_twenty48_over.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // MasterCYD: Normal in progress (light), Hard solved (dark)
+        using namespace mastercyd;
+        auto stage = [&](const Game& g, uint32_t secs) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+            g.serialize(buf.data(), buf.size());
+            buf[Game::kSaveBytes] = g.over() ? 1 : 0;
+            for (int k = 0; k < 4; ++k) buf[Game::kSaveBytes + 1 + k] = uint8_t(secs >> (8 * k));
+            save_game("mastercyd", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("mastercyd"));
+        };
+        Game g; Rng rng(11); g.start(1, rng);
+        const uint8_t tries[4][4] = {{0, 0, 1, 1}, {2, 2, 3, 3}, {0, 2, 4, 4}, {5, 0, 2, 1}};
+        for (auto& tr : tries) { for (int i = 0; i < 4; ++i) g.place(tr[i]); g.submit(); }
+        g.place(g.secret[0]); g.place(3);
+        stage(g, 154);
+        shot(out + "_light_36_mastercyd.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        Game h; Rng r2(29); h.start(2, r2);
+        const uint8_t t5[3][5] = {{0, 1, 2, 3, 4}, {1, 1, 5, 5, 0}, {2, 3, 0, 4, 1}};
+        for (auto& tr : t5) { for (int i = 0; i < 5; ++i) h.place(tr[i]); h.submit(); }
+        for (int i = 0; i < 5; ++i) h.place(h.secret[i]);
+        h.submit();
+        stage(h, 402);
+        shot(out + "_dark_36_mastercyd_solved.ppm");
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
     }
