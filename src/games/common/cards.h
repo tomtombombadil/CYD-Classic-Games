@@ -10,9 +10,9 @@
 // Red suits use the theme's red, black suits its dark ink. Faces stay
 // cream in every theme (cards are paper); the table is the theme's felt.
 //
-// Backs: 4 patterns x 3 colors (Tom, 2026-10-03), chosen per player.
 // Rank and suit glyphs: DejaVu Sans Condensed Bold / DejaVu Sans via
-// lv_font_conv, card_font_{12,16,20,26,34,46}.c (THIRD_PARTY_NOTICES.md).
+// lv_font_conv, card_font_{12,16,20,26,34,46}.c; the back's "B" is DejaVu
+// Serif Bold, card_b_font_*.c (THIRD_PARTY_NOTICES.md).
 #pragma once
 
 #include <cstdint>
@@ -29,21 +29,48 @@ inline bool is_red(uint8_t c)  { return suit_of(c) == Hearts || suit_of(c) == Di
 const char* rank_text(int rank);               // "A", "2" .. "10", "J", "Q", "K"
 const char* suit_text(int suit);               // UTF-8 symbol
 
-enum class Back : uint8_t { Lattice = 0, Stripes, Dots, Night };
-constexpr int kBackPatterns = 4, kBackColors = 3;  // colors: blue, red, green
-struct Look {
-    uint8_t back = 0;                          // Back
-    uint8_t color = 0;                         // 0 blue, 1 red, 2 green
+// Backs (Tom, 2026-10-03): three pictures and three patterns in three
+// colors. The player's choice is shared by every card game
+// (ui::UiSettings::card_back); `back` below is an index into this list.
+enum Back : uint8_t {
+    BackBombadil = 0,          // a gold serif "B" on blue (the default)
+    BackMoon,                  // a crescent moon and one star on blue
+    BackTree,                  // a green tree with a brown trunk
+    BackLattice,               // + color: Lattice Blue, Red, Green
+    BackStripes = BackLattice + 3,
+    BackDots = BackStripes + 3,
+    kBacks = BackDots + 3,     // 12
 };
-const char* back_name(int pattern);            // "Lattice", ...
-const char* back_color_name(int color);        // "Blue", ...
+const char* back_name(int back);               // "Bombadil", "Moon", "Lattice Red", ...
+uint8_t     current_back();                    // the player's choice, from the settings
 
 // Height of the index strip for a w x h card: in a cascade, show at least
 // this much of each face-up card.
 int index_h(int w, int h);
 
 void draw_face(lv_layer_t* layer, int x, int y, int w, int h, uint8_t card, bool selected = false);
-void draw_back(lv_layer_t* layer, int x, int y, int w, int h, Look look);
+void draw_back(lv_layer_t* layer, int x, int y, int w, int h, int back);
+// The player's back
+inline void draw_back(lv_layer_t* layer, int x, int y, int w, int h) { draw_back(layer, x, y, w, h, current_back()); }
+// All the backs in a 6 x 2 grid for an Options screen, the current one
+// ringed; a tap picks a back and saves it for every card game.
+lv_obj_t* back_picker(lv_obj_t* parent, int w);
+// A whole screen for it (title, picker, the back's name, Back key)
+void back_screen(void (*back)());
+
+// The win show (Windows tradition): cards leave their piles one at a time
+// and bounce down and off the screen, leaving trails. Only the flying
+// card's new spot is redrawn each frame, so the trails cost no memory - the
+// panel simply keeps the old pixels. A tap ends it and calls `done`.
+struct Launch {
+    int16_t x, y;              // where the card starts (its pile)
+    uint8_t card;              // the card that flies
+    uint8_t under;             // what that pile shows once it has left (0xFF = empty)
+};
+void celebrate(const Launch* list, int n, int cw, int ch, void (*done)());
+void celebrate_stop();         // end it without calling `done` (game closing)
+bool celebrating();
+
 // An empty pile: a rounded outline, with a faint suit (foundations) or none
 void draw_slot(lv_layer_t* layer, int x, int y, int w, int h, int suit = -1);
 // The table under the cards

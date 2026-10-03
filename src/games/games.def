@@ -6,7 +6,7 @@
 //   id        folder src/games/<id>/, save /games/<id>.bin, stats <id>.csv;
 //             the game defines `extern const games::GameOps <id>_ops`
 //             and its How To Play pages `games::Help <id>_help`
-//   Category  Puzzles, Strategy, Word, Dice or Other
+//   Category  Puzzles, Strategy, Cards, Word, Dice or Other
 //   modes     kSolo, kVsComputer, kPassAndPlay, kNetwork (or-ed)
 //
 // Keep each entry on one line (make_site.py reads it with a regex).
@@ -25,5 +25,6 @@ GAME(tictactoe, "Tic-Tac-Toe", Strategy, kVsComputer | kPassAndPlay | kNetwork, 
 GAME(reversi, "Reversi", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Outflank and flip; legal moves shown as dots; Hard plays the endgame perfectly")
 GAME(checkers, "Checkers", Strategy, kVsComputer | kPassAndPlay | kNetwork, "American checkers: compulsory jumps, multi-jumps tapped step by step, kings")
 GAME(chess, "Chess", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Full rules; tap a piece, then its square; long-press any piece to see its moves")
+GAME(solitaire, "Solitaire", Cards, kSolo, "Klondike: build the four suits up from Ace to King; draw 1 or 3, Standard or Vegas scoring")
 GAME(cyddle, "CYD-dle", Word, kSolo, "Guess the five-letter word in six tries; green, gold and grey hints")
 GAME(yahtcyd, "Yaht-CYD", Dice, kSolo, "Five dice, three rolls, thirteen boxes; chase the upper bonus and Yaht-CYDs")

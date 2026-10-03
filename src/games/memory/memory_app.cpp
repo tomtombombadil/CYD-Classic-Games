@@ -1,7 +1,8 @@
 // Memory Match: registry entry, save file and screen. Rules in memory_core.*.
 //
 // Screen: top bar (clock, pairs found, ☰) and the tiles, one custom-drawn
-// object. Face down a tile shows the shared Starry Night card back; face up
+// object. Face down a tile shows the player's card back (shared by the
+// card games); face up
 // a picture (an LVGL symbol, each in its own color as a second cue). A
 // missed pair stays up, outlined, until the next tap.
 //
@@ -126,7 +127,7 @@ void draw_tile(lv_layer_t* layer, int x, int y, int w, int h, const Game& g, int
 {
     const Palette& P = pal();
     if (!g.face_up(i)) {
-        cards::draw_back(layer, x, y, w, h, cards::Look{uint8_t(cards::Back::Night), 0});
+        cards::draw_back(layer, x, y, w, h);              // the player's card back
         return;
     }
     const bool miss = g.up_b >= 0 && (i == g.up_a || i == g.up_b);
@@ -276,7 +277,7 @@ void icon_draw_cb(lv_event_t* e)
     lv_layer_t* layer = lv_event_get_layer(e);
     const Palette& P = pal();
     const int size = lv_area_get_width(&a), w = size * 45 / 100, h = size * 45 / 100, g = size - 2 * w;
-    cards::draw_back(layer, a.x1, a.y1, w, h, cards::Look{uint8_t(cards::Back::Night), 0});
+    cards::draw_back(layer, a.x1, a.y1, w, h);
     for (int k = 0; k < 2; ++k) {
         const int x = a.x1 + (k ? w + g : w / 2 + g / 2), y = a.y1 + (k ? 0 : h + g);
         kit::fill_rect(layer, x, y, x + w - 1, y + h - 1, P.win, w / 8);

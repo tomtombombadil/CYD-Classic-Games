@@ -10,9 +10,9 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Sixteen games so far: **Sudoku** (from
+> under way. Seventeen games so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
-> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **FourConnect**, **Tic-Tac-Toe**,
+> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **FourConnect**, **Tic-Tac-Toe**,
 > **Reversi**, **Checkers**, **Chess**, **CYD-dle** and **Yaht-CYD**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
@@ -23,7 +23,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a long-press showing where a piece can
 go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
-Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
+Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
 <img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
@@ -44,6 +44,8 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, a How To P
 <img src="docs/screenshots/small_pegs.png" width="240" alt="Peg Solitaire, English board">
 <img src="docs/screenshots/small_memory.png" width="240" alt="Memory Match with a missed pair showing">
 <img src="docs/screenshots/small_nonogram.png" width="240" alt="Nonograms 10x10 part-way">
+<img src="docs/screenshots/small_solitaire.png" width="240" alt="Solitaire">
+<img src="docs/screenshots/small_solitaire_win.png" width="240" alt="Solitaire win: cards bouncing off the table">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -82,6 +84,7 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, a How To P
 | Reversi | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | FourConnect | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Tic-Tac-Toe | Strategy Games | vs computer (Hard never loses) or pass-and-play |
+| Solitaire | Card Games | Klondike: Draw 1 or 3, Standard / Vegas / no scoring, undo, hints |
 | CYD-dle | Word Games | Solo, guess the five-letter word: Easy / Normal / Hard |
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 
@@ -97,8 +100,8 @@ starts). Tap anywhere to go on to the game picker.
 
 - **Continue** (the yellow card) reopens the last game you played, where you
   left off, in one tap. It shows how far along that game is.
-- Below it, the categories: **Puzzle Games, Strategy Games, Word Games, Dice
-  Games, Other Games**, each with how many games it has. Tap one to see its
+- Below it, the categories: **Puzzle Games, Strategy Games, Card Games,
+  Word Games, Dice Games, Other Games**, each with how many games it has. Tap one to see its
   games as icons, and tap a game to play. The **<** key in the top bar goes
   back. Categories without games yet say "soon".
 - **☰ menu:** Settings, shared by every game.
@@ -232,6 +235,22 @@ turns as you can. A pair stays up (green edge); a miss stays up with a red
 edge until your next tap, which turns it back over and turns the tile you
 tapped, so there's no waiting. 4x4, 4x5 or 5x6 tiles. Stats keep your best
 time and fewest turns.
+
+## Solitaire
+
+Classic Klondike. Build the four foundations up by suit from Ace to King;
+on the seven columns cards go down in alternating colors and only a King
+goes into an empty column. Tap a face-up card (and the cards on it) to pick
+it up, then tap where it goes; tap the picked card again to send it to a
+foundation (or the first column that takes it). Tap the stock to turn
+cards. **Undo** and **Hint** sit under the table. When every card is face
+up the rest go up by themselves, and then the cards bounce off the table
+like the old Windows Solitaire (tap to stop).
+
+**☰ → Options:** Draw 1 or Draw 3 (default), Standard scoring, Vegas
+scoring (a deal costs $52, each foundation card pays $5, the balance
+carries over) or none, and the **Card Back** (12 designs, shared by every
+card game).
 
 ## Nonograms
 

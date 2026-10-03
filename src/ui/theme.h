@@ -37,6 +37,7 @@ struct UiSettings {
     char      last_game[16] = "";              // registry id for "Continue" on the picker
     uint8_t   volume = kDefaultVolume;         // 0..100 %, 0 = silent play
     uint8_t   splash_next = 0;                 // which splash image the next boot shows
+    uint8_t   card_back = 0;                   // card games: cards::Back design (shared)
 };
 constexpr uint8_t kMinBrightness = 20;         // never let the screen go fully dark
 

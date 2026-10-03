@@ -99,8 +99,18 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
     index strip at the top (rank, suit right after it, sized for "10" so all
     match; this is what shows in cascades and fans) and one big suit below.
     Faces cream in every theme, red = `piece_a`, black = `stone_dark`,
-    table = `felt`, selected = amber border. Backs: 4 patterns (Lattice,
-    Stripes, Dots, Starry Night) x 3 colors (blue, red, green). Fonts from
+    table = `cards::felt()` (the theme's felt 15 % darker - Tom), selected
+    = amber border. 12 backs (Tom, 2026-10-03): Bombadil (a soft gold
+    DejaVu Serif Bold "B" with a dark outline on blue, like the splash title
+    - the default), Moon (a crescent and one star on blue), Tree (green
+    crown, brown trunk), then Lattice / Stripes / Dots in blue, red, green.
+    Keep pictures simple: small cards. The player's back is shared by every
+    card game (`UiSettings::card_back`, UIS2 byte 9 = back + 1);
+    `cards::back_screen()` is the picker (Options -> Card Back). Memory
+    Match uses it too. `cards::celebrate()` = the win show: cards leave the
+    foundations and bounce off the screen leaving trails, Windows-style;
+    only the flying card's rect is invalidated each frame, so trails cost
+    no RAM (the preview's `shot(..., keep=true)` keeps them). Fonts from
     DejaVu via lv_font_conv (ranks Condensed Bold, suits Sans).
     `tools/preview/card_mockups.cpp` renders table mockups (Klondike,
     FreeCell, Blackjack, video poker).
@@ -134,7 +144,11 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   stays up until the next tap - no timers), Nonograms (id `nonogram`; 5x5 / 8x8 / 10x10;
   random left-right mirrored pictures kept only when a line solver solves
   them - unique, no guessing; Fill | Mark modes, no long-press; clue turns
-  grey when its line matches; fill/mark taps silent), 2048 (id `twenty48` - C names can't start
+  grey when its line matches; fill/mark taps silent), Solitaire (Klondike, called Solitaire - Tom; Options
+  menu key -> Draw 1 / Draw 3 (default 3), Standard / Vegas (balance
+  carries over) / None scoring, Card Back; tap card then destination, tap
+  the picked card again = best target; auto-finish; Undo + Hint keys;
+  stats per draw mode, an unfinished deal = Lost; the win show), 2048 (id `twenty48` - C names can't start
   with a digit; 4x4, 2 or 4 (10 %) after each slide, play on after 2048;
   one custom-drawn object below the top bar = board + 4 diagonal tap
   zones; preview checks each zone against the rules engine; stats only
@@ -150,7 +164,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 - Game picker (after the splash): "Classic Games" title bar with ☰
   (Settings), a "Continue <last game>" card (icon, title, the game's
   summary line), then the categories as a text list (Tom, 2026-10-02):
-  Puzzle Games, Strategy Games, Word Games, Dice Games, Other Games, each
+  Puzzle Games, Strategy Games, Card Games (added 2026-10-03 for the card
+  games), Word Games, Dice Games, Other Games, each
   with its game count. A category opens its own page of icon tiles, 2 per
   row, with a back key in the top bar. Extra tiles go on pages switched
   with big < > keys (no scrolling). `preview_paging` renders a long fake

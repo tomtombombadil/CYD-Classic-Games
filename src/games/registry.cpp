@@ -32,6 +32,7 @@ const char* category_title(Category c)
     switch (c) {
         case Category::Puzzles:  return "Puzzle Games";
         case Category::Strategy: return "Strategy Games";
+        case Category::Cards:    return "Card Games";
         case Category::Word:     return "Word Games";
         case Category::Dice:     return "Dice Games";
         case Category::Other:    return "Other Games";
@@ -44,6 +45,7 @@ const char* category_short(Category c)
     switch (c) {
         case Category::Puzzles:  return "Puzzles";
         case Category::Strategy: return "Strategy";
+        case Category::Cards:    return "Cards";
         case Category::Word:     return "Word";
         case Category::Dice:     return "Dice";
         case Category::Other:    return "Other";

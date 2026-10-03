@@ -16,7 +16,7 @@ int W = 0, H = 0, top = 0;
 uint8_t C(int rank, int suit) { return make(rank, suit); }
 
 void face(lv_layer_t* l, int x, int y, int w, int h, uint8_t c, bool sel = false) { draw_face(l, x, y, w, h, c, sel); }
-void back(lv_layer_t* l, int x, int y, int w, int h, int pat = 0, int col = 0) { draw_back(l, x, y, w, h, Look{uint8_t(pat), uint8_t(col)}); }
+void back(lv_layer_t* l, int x, int y, int w, int h, int b = BackBombadil) { draw_back(l, x, y, w, h, b); }
 
 void label(lv_layer_t* l, const char* s, int x, int y, int w, int h, lv_color_t c)
 {
@@ -36,13 +36,12 @@ void sheet(lv_layer_t* l)
     y += ch + gap;
     for (int i = 0; i < 7; ++i) face(l, x + i * (cw + gap), y, cw, ch, row2[i], i == 2);
     y += ch + 8;
-    // Backs: 4 patterns (rows) x 3 colors
-    const int bw = cw, bh = ch;
-    for (int p = 0; p < kBackPatterns; ++p) {
-        for (int c = 0; c < kBackColors; ++c) back(l, x + c * (bw + gap), y, bw, bh, p, c);
-        label(l, back_name(p), x + 3 * (bw + gap), y, W - x - 3 * (bw + gap), bh, ui::pal().stone_light);
-        y += bh + gap;
-        if (y + bh > H) break;
+    // All 12 backs, 4 per row: pictures first, then the patterns
+    const int bw = W >= 320 ? 56 : 42, bh = bw * 7 / 5, bg = (W - 8 - 4 * bw) / 3;
+    for (int k = 0; k < kBacks; ++k) {
+        const int bx = 4 + (k % 4) * (bw + bg), byy = y + (k / 4) * (bh + 4);
+        if (byy + bh > H) break;
+        back(l, bx, byy, bw, bh, k);
     }
 }
 
@@ -55,7 +54,7 @@ void klondike(lv_layer_t* l)
     int y = top + 4;
     auto col_x = [&](int i) { return x0 + i * pitch; };
     // Stock, waste (3 fanned), gap, foundations
-    back(l, col_x(0), y, cw, ch, 3, 0);
+    back(l, col_x(0), y, cw, ch, BackBombadil);
     const int fan = (col_x(3) - col_x(1) - cw - 2) / 2;    // three waste cards, each index showing
     face(l, col_x(1), y, cw, ch, C(4, 3));
     face(l, col_x(1) + fan, y, cw, ch, C(9, 1));
@@ -74,7 +73,7 @@ void klondike(lv_layer_t* l)
     static const int downs[7] = {0, 1, 2, 3, 3, 5, 4};
     for (int i = 0; i < 7; ++i) {
         int yy = y;
-        for (int d = 0; d < downs[i]; ++d, yy += down) back(l, col_x(i), yy, cw, ch, 3, 0);
+        for (int d = 0; d < downs[i]; ++d, yy += down) back(l, col_x(i), yy, cw, ch, BackBombadil);
         for (int k = 0; ups[i][k] != 0xFF; ++k, yy += up) face(l, col_x(i), yy, cw, ch, ups[i][k]);
     }
 }
@@ -126,7 +125,7 @@ void blackjack(lv_layer_t* l)
     y += large ? 26 : 20;
     int x = (W - (cw + fan)) / 2;
     face(l, x, y, cw, ch, C(10, 3));
-    back(l, x + fan, y, cw, ch, 3, 1);
+    back(l, x + fan, y, cw, ch, BackMoon);
     y += ch + (large ? 30 : 16);
     label(l, "You: 17", 0, y - (large ? 26 : 16), W, 16, ink);
     x = (W - (cw + 2 * fan)) / 2;

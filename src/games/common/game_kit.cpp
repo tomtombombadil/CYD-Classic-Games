@@ -85,6 +85,7 @@ void (*stats_reopen)() = nullptr;
 twoplayer::Sides stats_sides{};
 const char* const* stats_levels = nullptr;
 bool stats_win_loss = false;
+int  stats_levels_n = 3;
 
 void stats_back_cb(lv_event_t*) { if (stats_back) stats_back(); }
 
@@ -135,7 +136,7 @@ void pz_line(const char* line, void* ctx)
 }
 
 void reopen_two_player() { stats_two_player(stats_id, stats_sides, stats_back); }
-void reopen_solo()       { stats_solo(stats_id, stats_levels, stats_back, stats_win_loss); }
+void reopen_solo()       { stats_solo(stats_id, stats_levels, stats_back, stats_win_loss, stats_levels_n); }
 
 } // namespace
 
@@ -232,7 +233,7 @@ void menu_two_player(const char* title, const MenuHandlers& h)
     menu_tail();
 }
 
-void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h, bool restart)
+void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h, bool restart, bool options)
 {
     handlers = h;
     overlay_begin(title);
@@ -244,6 +245,7 @@ void menu_solo(const char* title, const char* const levels[3], const MenuHandler
         overlay_button(overlay(), "New Game", menu_cb, kLevel0);
     }
     if (restart) overlay_button(overlay(), "Restart This Game", menu_cb, kRestart);
+    if (options) overlay_button(overlay(), "Options", menu_cb, kOptions);
     menu_tail();
 }
 
@@ -390,8 +392,9 @@ void stats_two_player(const char* game_id, const twoplayer::Sides& sides, void (
     stats_bottom(ok && sum.total > 0);
 }
 
-void stats_solo(const char* game_id, const char* const levels[3], void (*back)(), bool win_loss)
+void stats_solo(const char* game_id, const char* const levels[3], void (*back)(), bool win_loss, int n_levels)
 {
+    stats_levels_n = n_levels < 1 ? 1 : n_levels > puzzle::kLevels ? puzzle::kLevels : n_levels;
     stats_id = game_id;
     stats_win_loss = win_loss;
     stats_levels = levels;
@@ -413,7 +416,7 @@ void stats_solo(const char* game_id, const char* const levels[3], void (*back)()
     } else {
         Table& t = scratch_table(0);
         table_clear(t);
-        for (int l = 0; l < puzzle::kLevels; ++l) {
+        for (int l = 0; l < stats_levels_n; ++l) {
             char n[12], bt[16] = "-", bm[12] = "-";
             snprintf(n, sizeof n, "%lu", (unsigned long)sum.solved[l]);
             if (sum.best_s[l]) twoplayer::format_time(bt, sizeof bt, sum.best_s[l]);
@@ -439,7 +442,7 @@ void stats_solo(const char* game_id, const char* const levels[3], void (*back)()
             char tm[16], mv[12];
             twoplayer::format_time(tm, sizeof tm, r.seconds);
             snprintf(mv, sizeof mv, "%u", (unsigned)r.moves);
-            table_add(rt, levels[r.level < 3 ? r.level : 0], tm, mv, r.solved ? (win_loss ? "Won" : "Solved") : r.lost ? "Lost" : "Gave Up");
+            table_add(rt, levels[r.level < stats_levels_n ? r.level : 0], tm, mv, r.solved ? (win_loss ? "Won" : "Solved") : r.lost ? "Lost" : "Gave Up");
         }
         const char* const head2[4] = {"Recent", "Time", "Moves", ""};
         table_show(rt, head2, pct_recent, hf, hf);

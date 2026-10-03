@@ -15,6 +15,7 @@
 #include "../../src/games/pegs/pegs_core.h"
 #include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
+#include "../../src/games/solitaire/solitaire_core.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
 #include "../../src/games/twenty48/twenty48_core.h"
 #include "../../src/games/yahtcyd/yahtcyd_core.h"
@@ -942,6 +943,98 @@ static void test_nonogram()
     printf("nonogram: worst generate %.1f ms\n", worst_tries_us / 1000.0);
 }
 
+static int sol_count(const solitaire::Game& g)
+{
+    int n = 0;
+    for (const auto& s : g.pile) n += s.n;
+    return n;
+}
+
+static void test_solitaire()
+{
+    using namespace solitaire;
+    Game* gp = new Game();
+    Game& g = *gp;
+    g.deal(12345, 3, Scoring::Standard);
+    CHECK(g.pile[Stock].n == 24 && sol_count(g) == 52);
+    for (int c = 0; c < 7; ++c) {
+        CHECK(g.pile[Tab0 + c].n == c + 1 && g.first_up(Tab0 + c) == c);
+    }
+    // Draw 3 turns three cards, face up; undo puts them back
+    CHECK(g.draw_stock() && g.pile[Waste].n == 3 && g.pile[Stock].n == 21 && Game::face_up(g.pile[Waste].top()));
+    CHECK(g.undo() && g.pile[Waste].n == 0 && g.pile[Stock].n == 24 && !Game::face_up(g.pile[Stock].top()));
+    // Recycling the waste: Standard draw 3 costs 20 (never below 0)
+    for (int i = 0; i < 8; ++i) CHECK(g.draw_stock());
+    CHECK(g.pile[Stock].n == 0 && g.pile[Waste].n == 24);
+    g.score = 50;
+    CHECK(g.draw_stock() && g.pile[Stock].n == 24 && g.score == 30 && g.passes == 1);
+    CHECK(g.undo() && g.score == 50 && g.passes == 0 && g.pile[Waste].n == 24);
+
+    // Rules on a hand-built position
+    Game h; h.deal(1, 1, Scoring::Standard);
+    for (auto& s : h.pile) s = Stack{};
+    auto C = [](int rk, int st) { return uint8_t(st * 13 + rk - 1); };   // suits: 0 S, 1 H, 2 D, 3 C
+    h.pile[Tab0].c[0] = uint8_t(C(9, 0) | kDown); h.pile[Tab0].c[1] = C(8, 1); h.pile[Tab0].n = 2;   // 8H on a hidden 9S
+    h.pile[Tab0 + 1].c[0] = C(9, 3); h.pile[Tab0 + 1].n = 1;                                      // 9C
+    h.pile[Waste].c[0] = C(1, 2); h.pile[Waste].n = 1;                                            // AD
+    h.pile[Tab0 + 2].c[0] = C(13, 1); h.pile[Tab0 + 2].c[1] = C(12, 0); h.pile[Tab0 + 2].n = 2;    // KH QS
+    CHECK(h.can_move(Tab0, 1, Tab0 + 1));            // red 8 on black 9
+    CHECK(!h.can_move(Tab0 + 1, 0, Tab0));           // 9 on 8: no
+    CHECK(h.can_move(Waste, 0, Found0) && !h.can_move(Tab0, 1, Found0));
+    CHECK(!h.can_move(Tab0 + 2, 1, Tab0 + 3));       // queen into an empty column: no
+    CHECK(h.can_move(Tab0 + 2, 0, Tab0 + 3));        // the K with its run: yes
+    CHECK(h.best_target(Waste, 0) == Found0);
+    CHECK(h.move(Tab0, 1, Tab0 + 1) && h.score == 5 && Game::face_up(h.pile[Tab0].top()));   // turned up +5
+    CHECK(h.move(Waste, 0, Found0) && h.score == 15);
+    CHECK(h.undo() && h.undo() && h.score == 0 && !Game::face_up(h.pile[Tab0].c[0]) && h.pile[Tab0].n == 2);
+
+    // Vegas: -52 a deal, +5 a foundation card; Draw 1 never recycles
+    Game v; v.deal(7, 1, Scoring::Vegas);
+    CHECK(v.score == -52);
+    while (v.pile[Stock].n) CHECK(v.draw_stock());
+    CHECK(!v.can_draw());
+
+    // Play many deals with the hint player: cards never get lost, undo goes
+    // all the way back, a few deals get won
+    int wins = 0;
+    for (uint32_t s = 1; s <= 60; ++s) {
+        g.deal(s * 2654435761u, s % 2 ? 1 : 3, Scoring::Standard);
+        int steps = 0, recycles = 0;
+        while (!g.won() && steps < 600) {
+            if (g.can_finish()) { while (g.finish_step()) {} break; }
+            int f, i, to;
+            if (!g.hint(&f, &i, &to)) break;
+            if (f == Stock) {
+                if (!g.pile[Stock].n && ++recycles > 3) break;
+                CHECK(g.draw_stock());
+            } else {
+                CHECK(g.move(f, i, to));
+            }
+            ++steps;
+            CHECK(sol_count(g) == 52);
+        }
+        wins += g.won();
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+        Game* r = new Game();
+        CHECK(r->deserialize(buf, sizeof buf) && r->score == g.score && r->pile[Found0].n == g.pile[Found0].n);
+        delete r;
+        if (g.undo_n < kUndo) {                      // whole history kept: undo back to the deal
+            while (g.undo()) {}
+            Game* fresh = new Game();
+            fresh->deal(g.seed, g.draw, g.scoring);
+            bool same = true;
+            for (int p = 0; p < kPiles; ++p)
+                same &= fresh->pile[p].n == g.pile[p].n && memcmp(fresh->pile[p].c, g.pile[p].c, g.pile[p].n) == 0;
+            CHECK(same && g.score == 0);
+            delete fresh;
+        }
+    }
+    printf("solitaire: hint player won %d of 60 deals\n", wins);
+    CHECK(wins > 0);
+    delete gp;
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -999,6 +1092,7 @@ int main()
     test_pegs();
     test_memory();
     test_nonogram();
+    test_solitaire();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

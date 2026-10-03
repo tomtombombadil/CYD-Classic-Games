@@ -137,7 +137,10 @@ Chinese checkers, Dots and Boxes (thin tap targets).
 4. **More puzzles:** Minesweeper, 2048, MasterCYD, Peg Solitaire, Memory
    Match, Nonograms (*built 2026-10-03*). Then the card games (Klondike,
    FreeCell, Blackjack, Poker) on the shared card graphics (mocked up
-   2026-10-03). (Tom, 2026-10-02: more games before wireless.)
+   2026-10-03). Tom, 2026-10-03: Klondike is called **Solitaire** (built:
+   draw 1/3 option default 3, scoring options, Windows-style win show);
+   also Spider, Pyramid, Golf; Poker = two games, Video Poker (Jacks or
+   Better) and Texas Hold'em vs computer players; Blackjack; FreeCell. (Tom, 2026-10-02: more games before wireless.)
 5. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,
    Checkers, Chess.
 6. **Word and dice games:** (CYD-dle, Yaht-CYD done in stage 3) Farkle; Trivia if a

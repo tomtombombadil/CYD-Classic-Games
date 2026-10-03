@@ -27,6 +27,7 @@
 #include "games/pegs/pegs_core.h"
 #include "games/memory/memory_core.h"
 #include "games/nonogram/nonogram_core.h"
+#include "games/solitaire/solitaire_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -61,17 +62,20 @@ static void run(int ms)
     for (int t = 0; t < ms; t += 10) { fake_ms += 10; lv_timer_handler(); ui::app_tick(fake_ms); }
 }
 
-static void shot(const std::string& path)
+// keep = save what's on the panel as it is (the card win show's trails)
+static void shot(const std::string& path, bool keep = false)
 {
-    run(50);
+    if (!keep) run(50);
     lv_mem_monitor_t mon;
     lv_mem_monitor(&mon);
     const unsigned used = mon.total_size - mon.free_size;
     if (used > peak_used) peak_used = used;
     fprintf(stderr, "%-34s LVGL heap used %3u%% (%6u B), biggest free %6u B\n", path.c_str(),
             (unsigned)mon.used_pct, used, (unsigned)mon.free_biggest_size);
-    lv_obj_invalidate(lv_screen_active());
-    lv_obj_invalidate(lv_layer_top());
+    if (!keep) {
+        lv_obj_invalidate(lv_screen_active());
+        lv_obj_invalidate(lv_layer_top());
+    }
     lv_refr_now(nullptr);
     FILE* f = fopen(path.c_str(), "wb");
     fprintf(f, "P6\n%d %d\n255\n", W, H);
@@ -190,6 +194,23 @@ static void preview_tap_square(int sq, int hold_ms = 80)
     if (board8::square_center(sq, &x, &y)) preview_press(x, y, hold_ms);
 }
 static const char* const kSlideLevels[3] = {"3x3", "4x4", "5x5"};
+// Press the overlay key whose label reads `text` (menus, Options)
+static bool press_key_labelled(lv_obj_t* o, const char* text)
+{
+    for (uint32_t i = 0; i < lv_obj_get_child_count(o); ++i) {
+        lv_obj_t* c = lv_obj_get_child(o, (int32_t)i);
+        if (lv_obj_check_type(c, &lv_label_class) && strcmp(lv_label_get_text(c), text) == 0) {
+            lv_obj_send_event(o, LV_EVENT_CLICKED, nullptr);
+            return true;
+        }
+        if (press_key_labelled(c, text)) return true;
+    }
+    return false;
+}
+[[maybe_unused]] static bool press_overlay_key(const char* text)
+{
+    return ui::overlay() && press_key_labelled(ui::overlay(), text);
+}
 // The solo menu of whatever game is open: its ☰ key is on the screen; tap it
 [[maybe_unused]] static void kit_preview_menu()
 {
@@ -820,6 +841,66 @@ int main(int argc, char** argv)
         stage(s, 48, false);
         shot(out + "_light_39_nonogram_solved.ppm");
         ui::app_go_home_now();
+    }
+
+    {   // Solitaire: a deal part-way with a card picked (light), Options, the win show (dark)
+        using namespace solitaire;
+        auto stage = [&](const Game& g, uint32_t secs, uint8_t scoring_opt) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 11, 0);
+            g.serialize(buf.data(), buf.size());
+            uint8_t* q = buf.data() + Game::kSaveBytes;
+            for (int k = 0; k < 4; ++k) q[1 + k] = uint8_t(secs >> (8 * k));
+            q[5] = g.draw; q[6] = scoring_opt;
+            save_game("solitaire", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("solitaire"));
+        };
+        Game* g = new Game();
+        g->deal(20261003, 3, Scoring::Standard);
+        for (int step = 0; step < 40; ++step) {
+            int f, i, to;
+            if (!g->hint(&f, &i, &to)) break;
+            if (f == Stock) g->draw_stock(); else g->move(f, i, to);
+        }
+        stage(*g, 223, 0);
+        run(30);
+        shot(out + "_light_45_solitaire.ppm");
+        kit_preview_menu();
+        shot(out + "_light_45_solitaire_menu.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        // Options screen
+        stage(*g, 223, 0);
+        kit_preview_menu();
+        press_overlay_key("Options");
+        run(30);
+        shot(out + "_light_45_solitaire_options.ppm");
+        press_overlay_key("Card Back");
+        run(30);
+        shot(out + "_light_45_card_back.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        // A deal one step from done: foundations to Queen, the Kings on columns
+        ui::app_set_theme(ui::Theme::Dark);
+        Game* w = new Game();
+        w->deal(1, 3, Scoring::Standard);
+        for (auto& s : w->pile) s = Stack{};
+        for (int f = 0; f < 4; ++f) {
+            for (int r = 1; r <= 12; ++r) w->pile[Found0 + f].c[w->pile[Found0 + f].n++] = uint8_t(f * 13 + r - 1);
+            w->pile[Tab0 + f].c[0] = uint8_t(f * 13 + 12);
+            w->pile[Tab0 + f].n = 1;
+        }
+        w->score = 640; w->moves = 151;
+        stage(*w, 412, 0);
+        run(800);                           // the last cards go up, then the show starts
+        shot(out + "_dark_45_solitaire_win.ppm", true);
+        run(2500);
+        shot(out + "_dark_45_solitaire_win2.ppm", true);
+        preview_press(W / 2, H / 2, 60);    // a tap ends it
+        run(100);
+        shot(out + "_dark_45_solitaire_won.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        delete g; delete w;
     }
 
     {   // Card games: mockups of the shared card graphics (not games yet)

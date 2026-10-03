@@ -19,7 +19,8 @@ struct SettingsFile {
     uint8_t  splash;        // UIS2: next splash image (was reserved)
     uint8_t  volume;        // UIS2: volume + 1 (0 = not set: 50 %). Was sound
                             // off, 1 = silent, which still reads as volume 0
-    uint8_t  reserved[3];   // room for later settings without a format change
+    uint8_t  card_back;     // UIS2: card back + 1 (0 = not set: the default)
+    uint8_t  reserved[2];   // room for later settings without a format change
     char     last_game[16]; // UIS2: registry id of the last game opened
 };
 constexpr size_t kSize1 = offsetof(SettingsFile, last_game);   // UIS1 file size
@@ -42,6 +43,7 @@ ui::UiSettings settings_store_load()
     if (v2) {
         s.splash_next = d.splash;
         if (d.volume) s.volume = d.volume > 101 ? 100 : d.volume - 1;
+        if (d.card_back) s.card_back = d.card_back - 1;
         d.last_game[sizeof d.last_game - 1] = 0;
         memcpy(s.last_game, d.last_game, sizeof s.last_game);
     } else {
@@ -61,6 +63,7 @@ void settings_store_save(const ui::UiSettings& s)
     d.brightness = s.brightness;
     d.splash = s.splash_next;
     d.volume = (s.volume > 100 ? 100 : s.volume) + 1;
+    d.card_back = static_cast<uint8_t>(s.card_back + 1);
     memcpy(d.last_game, s.last_game, sizeof d.last_game);
     d.last_game[sizeof d.last_game - 1] = 0;
     File f = LittleFS.open(kPath, "w");

@@ -1,12 +1,16 @@
 #include "cards.h"
 
+#include <cstdio>
 #include <cstring>
+#include <new>
 #include "game_kit.h"
 #include "ui/theme.h"
+#include "ui/shell.h"
 #include "ui/widgets.h"
 
 extern "C" {
 extern const lv_font_t card_font_12, card_font_16, card_font_20, card_font_26, card_font_34, card_font_46;
+extern const lv_font_t card_b_font_16, card_b_font_22, card_b_font_30, card_b_font_40, card_b_font_54, card_b_font_70;
 }
 
 namespace cards {
@@ -85,6 +89,7 @@ void clipped_line(lv_layer_t* layer, int x1, int y1, int x2, int y2, int w, lv_c
     if (clip_line(x1, y1, x2, y2, bx1, by1, bx2, by2)) kit::line(layer, x1, y1, x2, y2, w, c);
 }
 
+// Pattern backs: blue, red, green, each deep enough for cream lines
 lv_color_t back_color(int c)
 {
     const ui::Palette& P = ui::pal();
@@ -95,24 +100,70 @@ lv_color_t back_color(int c)
     }
 }
 
+const lv_font_t* const kBFonts[] = {&card_b_font_16, &card_b_font_22, &card_b_font_30,
+                                    &card_b_font_40, &card_b_font_54, &card_b_font_70};
+
+void circle(lv_layer_t* layer, int cx, int cy, int r, lv_color_t c)
+{
+    kit::fill_rect(layer, cx - r, cy - r, cx + r, cy + r, c, r);
+}
+
+// A small four-point star: two thin crossed diamonds as rectangles + a dot
+void star(lv_layer_t* layer, int cx, int cy, int r, lv_color_t c)
+{
+    const int t = r >= 4 ? 1 : 0;
+    kit::fill_rect(layer, cx - t, cy - r, cx + t, cy + r, c, 0);
+    kit::fill_rect(layer, cx - r, cy - t, cx + r, cy + t, c, 0);
+    circle(layer, cx, cy, r / 2 > 1 ? r / 2 : 1, c);
+}
+
+// The serif "B": dark outline (the glyph drawn around in 8 directions),
+// then the soft gold letter on top, like the splash title
+void bombadil_b(lv_layer_t* layer, int x1, int y1, int x2, int y2, lv_color_t base)
+{
+    const ui::Palette& P = ui::pal();
+    const int pw = x2 - x1, ph = y2 - y1;
+    const lv_font_t* f = kBFonts[0];
+    for (const lv_font_t* c : kBFonts) {
+        const Box b = glyph_box(c, 'B');
+        if (b.h <= ph * 62 / 100 && b.w <= pw * 75 / 100) f = c;
+    }
+    const Box b = glyph_box(f, 'B');
+    const int gx = x1 + (pw - b.w) / 2, gy = y1 + (ph - b.h) / 2;
+    const int o = b.h >= 30 ? 2 : 1;
+    const lv_color_t edge = lv_color_mix(P.stone_dark, base, 200);
+    for (int dy = -o; dy <= o; ++dy)
+        for (int dx = -o; dx <= o; ++dx)
+            if (dx || dy) draw_at(layer, "B", f, edge, gx + dx, gy + dy, 'B');
+    draw_at(layer, "B", f, lv_color_mix(P.lit, P.stone_light, 200), gx, gy, 'B');   // mild gold
+}
+
 } // namespace
 
 const char* rank_text(int r) { return r >= 1 && r <= 13 ? kRanks[r] : ""; }
 const char* suit_text(int s) { return kSuits[s & 3]; }
 
-const char* back_name(int p)
+const char* back_name(int back)
 {
-    static const char* const n[kBackPatterns] = {"Lattice", "Stripes", "Dots", "Starry Night"};
-    return n[p % kBackPatterns];
+    static const char* const pictures[3] = {"Bombadil", "Moon", "Tree"};
+    static const char* const patterns[3] = {"Lattice", "Stripes", "Dots"};
+    static const char* const colors[3] = {"Blue", "Red", "Green"};
+    static char buf[24];
+    back = back < 0 || back >= kBacks ? 0 : back;
+    if (back < BackLattice) return pictures[back];
+    const int k = back - BackLattice;
+    snprintf(buf, sizeof buf, "%s %s", patterns[k / 3], colors[k % 3]);
+    return buf;
 }
 
-const char* back_color_name(int c)
+uint8_t current_back()
 {
-    static const char* const n[kBackColors] = {"Blue", "Red", "Green"};
-    return n[c % kBackColors];
+    const uint8_t b = ui::settings().card_back;
+    return b < kBacks ? b : uint8_t(BackBombadil);
 }
 
-lv_color_t felt() { return ui::pal().felt; }
+// The card table: the theme's felt, about 15 % darker (Tom, 2026-10-03)
+lv_color_t felt() { return lv_color_darken(ui::pal().felt, 38); }
 
 int index_h(int w, int h)
 {
@@ -159,12 +210,16 @@ void draw_face(lv_layer_t* layer, int x, int y, int w, int h, uint8_t card, bool
     draw_at(layer, kSuits[suit], bf, ink, x + (w - bb.w) / 2, by + (bh - bb.h) / 2, sc);
 }
 
-void draw_back(lv_layer_t* layer, int x, int y, int w, int h, Look look)
+void draw_back(lv_layer_t* layer, int x, int y, int w, int h, int back)
 {
     const ui::Palette& P = ui::pal();
+    back = back < 0 || back >= kBacks ? 0 : back;
     const int rad = w / 8;
-    const lv_color_t base = back_color(look.color);
     const lv_color_t cream = P.stone_light;
+    const lv_color_t blue = back_color(0);
+    lv_color_t base = blue;
+    if (back == BackTree) base = lv_color_mix(P.felt, P.stone_dark, 150);
+    if (back >= BackLattice) base = back_color((back - BackLattice) % 3);
     const lv_color_t fine = lv_color_mix(cream, base, 90);    // pattern lines: cream, a third strength
     kit::fill_rect(layer, x, y, x + w - 1, y + h - 1, P.key_border, rad);
     kit::fill_rect(layer, x + 1, y + 1, x + w - 2, y + h - 2, cream, rad > 1 ? rad - 1 : 0);
@@ -172,47 +227,246 @@ void draw_back(lv_layer_t* layer, int x, int y, int w, int h, Look look)
     const int m = w >= 40 ? 4 : 3;
     const int x1 = x + m, y1 = y + m, x2 = x + w - 1 - m, y2 = y + h - 1 - m;
     kit::fill_rect(layer, x1, y1, x2, y2, base, rad / 2);
-
-    // pattern stays inside the panel, off its rounded corners
+    // patterns stay inside the panel, off its rounded corners
     const int cx1 = x1 + 2, cy1 = y1 + 2, cx2 = x2 - 2, cy2 = y2 - 2;
     const int pw = x2 - x1, ph = y2 - y1;
     const int step = w >= 40 ? 8 : 6;
-    switch (static_cast<Back>(look.back % kBackPatterns)) {
-        case Back::Lattice:          // diamond lattice: both diagonals
+    const int pattern = back >= BackLattice ? (back - BackLattice) / 3 : -1;
+    switch (back >= BackLattice ? -1 : back) {
+        case BackBombadil:
+            bombadil_b(layer, x1, y1, x2, y2, base);
+            return;
+        case BackMoon: {                                   // a crescent and one star, nothing else
+            const lv_color_t moon = lv_color_mix(P.lit, cream, 190);
+            const int r = (pw < ph ? pw : ph) * 30 / 100;
+            const int mx = x1 + pw / 2 + r / 4, my = y1 + ph / 2 + r / 6;
+            circle(layer, mx, my, r, moon);
+            circle(layer, mx + r * 45 / 100, my - r * 30 / 100, r * 85 / 100, base);   // the bite
+            const int sr = w >= 40 ? 4 : 2;
+            star(layer, x1 + pw * 24 / 100, y1 + ph * 18 / 100, sr, moon);
+            return;
+        }
+        case BackTree: {                                   // round crown on a short trunk
+            const lv_color_t leaf = lv_color_mix(P.win, P.felt, 140), leaf2 = lv_color_mix(leaf, cream, 215);
+            const lv_color_t bark = P.sq_dark;
+            const int cx = x1 + pw / 2, r = pw * 30 / 100;
+            const int ground = y2 - ph * 14 / 100;
+            const int tw = pw / 7 > 2 ? pw / 7 : 2;
+            kit::fill_rect(layer, cx - tw / 2, ground - ph * 34 / 100, cx + tw / 2, ground, bark, 0);
+            kit::fill_rect(layer, x1 + pw / 6, ground, x2 - pw / 6, ground + (w >= 40 ? 2 : 1), bark, 1);
+            const int cy = ground - ph * 34 / 100 - r / 3;
+            circle(layer, cx - r * 6 / 10, cy + r / 4, r * 7 / 10, leaf);
+            circle(layer, cx + r * 6 / 10, cy + r / 4, r * 7 / 10, leaf);
+            circle(layer, cx, cy - r / 3, r * 8 / 10, leaf);
+            circle(layer, cx - r / 4, cy - r / 2, r / 4 > 1 ? r / 4 : 1, leaf2);    // a touch of light
+            return;
+        }
+        default: break;
+    }
+    switch (pattern) {
+        case 0:                      // diamond lattice: both diagonals
             for (int k = -ph; k < pw + ph; k += step) {
                 clipped_line(layer, x1 + k, y1, x1 + k + ph, y2, 1, fine, cx1, cy1, cx2, cy2);
                 clipped_line(layer, x1 + k, y2, x1 + k + ph, y1, 1, fine, cx1, cy1, cx2, cy2);
             }
             break;
-        case Back::Stripes:          // one diagonal, wider bands
+        case 1:                      // one diagonal, wider bands
             for (int k = -ph; k < pw + ph; k += step)
                 clipped_line(layer, x1 + k, y1, x1 + k + ph, y2, step / 3 > 1 ? step / 3 : 2, fine,
                              cx1 + 1, cy1 + 1, cx2 - 1, cy2 - 1);
             break;
-        case Back::Dots: {           // offset dot grid
+        default: {                   // offset dot grid
             const int r = w >= 40 ? 2 : 1;
             for (int j = 0, yy = y1 + step / 2; yy + r < y2 - 1; yy += step, ++j)
                 for (int xx = x1 + step / 2 + (j % 2) * step / 2; xx + r < x2 - 1; xx += step)
                     kit::fill_rect(layer, xx - r, yy - r, xx + r, yy + r, fine, r);
             break;
         }
-        case Back::Night: {          // the splash art's night sky: gold stars and a moon
-            const lv_color_t gold = P.lit;
-            static const uint8_t stars[][2] = {{15, 12}, {38, 18}, {40, 35}, {85, 50}, {20, 60},
-                                               {60, 72}, {35, 88}, {80, 92}, {12, 40}, {52, 55}};
-            for (auto& s : stars) {
-                const int sx = x1 + pw * s[0] / 100, sy = y1 + ph * s[1] / 100;
-                const int r = (s[0] + s[1]) % 3 == 0 && w >= 40 ? 2 : 1;
-                kit::fill_rect(layer, sx - r, sy - r, sx + r, sy + r, gold, r);
-            }
-            const int mr = (pw < ph ? pw : ph) / 5;                     // crescent, inside the panel
-            const int mx = x1 + pw * 62 / 100, my = y1 + mr + mr / 4 + 3;
-            kit::fill_rect(layer, mx - mr, my - mr, mx + mr, my + mr, gold, mr);
-            kit::fill_rect(layer, mx - mr + mr / 2, my - mr - mr / 4, mx + mr + mr / 2, my + mr - mr / 4, base, mr);
-            break;
-        }
     }
 }
+
+namespace {
+int picker_tile = 0, picker_gap = 0;
+
+void picker_draw_cb(lv_event_t* e)
+{
+    lv_obj_t* o = lv_event_get_target_obj(e);
+    lv_area_t a;
+    lv_obj_get_coords(o, &a);
+    lv_layer_t* layer = lv_event_get_layer(e);
+    const int tw = picker_tile, th = tw * 7 / 5, cur = current_back();
+    for (int k = 0; k < kBacks; ++k) {
+        const int x = a.x1 + (k % 6) * (tw + picker_gap) + 3, y = a.y1 + (k / 6) * (th + picker_gap) + 3;
+        if (k == cur) kit::fill_rect(layer, x - 3, y - 3, x + tw + 2, y + th + 2, ui::pal().selected, tw / 6);
+        draw_back(layer, x, y, tw, th, k);
+    }
+}
+
+void picker_press_cb(lv_event_t* e)
+{
+    lv_obj_t* o = lv_event_get_target_obj(e);
+    lv_point_t p;
+    lv_indev_get_point(lv_indev_active(), &p);
+    lv_area_t a;
+    lv_obj_get_coords(o, &a);
+    const int tw = picker_tile, th = tw * 7 / 5;
+    const int c = (p.x - a.x1) / (tw + picker_gap), r = (p.y - a.y1) / (th + picker_gap);
+    if (c < 0 || c >= 6 || r < 0 || r >= 2) return;
+    ui::settings().card_back = uint8_t(r * 6 + c);
+    ui::save_settings();
+    lv_obj_invalidate(o);
+}
+} // namespace
+
+namespace {
+void (*back_screen_return)() = nullptr;
+lv_obj_t* back_name_label = nullptr;
+void back_screen_cb(lv_event_t*) { if (back_screen_return) back_screen_return(); }
+void back_name_cb(lv_event_t*) { if (back_name_label) lv_label_set_text(back_name_label, back_name(current_back())); }
+}
+
+void back_screen(void (*back)())
+{
+    back_screen_return = back;
+    ui::overlay_begin("Card Back");
+    const ui::Metrics& m = ui::metrics();
+    lv_obj_t* pk = back_picker(ui::overlay(), m.w - 2 * (m.large ? 16 : 10));
+    back_name_label = ui::overlay_text(back_name(current_back()), false);
+    lv_obj_add_event_cb(pk, back_name_cb, LV_EVENT_PRESSED, nullptr);
+    ui::overlay_text("Used by every card game.", true);
+    ui::overlay_bottom_button("Back", back_screen_cb, 0);
+}
+
+lv_obj_t* back_picker(lv_obj_t* parent, int w)
+{
+    picker_gap = w >= 300 ? 8 : 6;
+    picker_tile = (w - 6 - 5 * picker_gap) / 6;
+    const int th = picker_tile * 7 / 5;
+    lv_obj_t* o = lv_obj_create(parent);
+    lv_obj_remove_style_all(o);
+    lv_obj_set_size(o, w, 2 * th + picker_gap + 6);
+    lv_obj_set_clickable(o, true);
+    lv_obj_add_event_cb(o, picker_draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
+    lv_obj_add_event_cb(o, picker_press_cb, LV_EVENT_PRESSED, nullptr);
+    return o;
+}
+
+// ---- The win show ------------------------------------------------------------------
+namespace {
+
+struct Show {
+    Launch*     list = nullptr;
+    int         n = 0, i = 0, cw = 0, ch = 0, W = 0, H = 0;
+    bool        flying = false;
+    float       x = 0, y = 0, vx = 0, vy = 0, g = 0;
+    uint32_t    rnd = 1;
+    lv_timer_t* timer = nullptr;
+    lv_obj_t*   obj = nullptr;
+    void      (*done)() = nullptr;
+    // piles already emptied: their position and what they show now
+    int16_t     px[8] = {}, py[8] = {};
+    uint8_t     shown[8] = {};
+    int         piles = 0;
+};
+Show* show = nullptr;
+
+uint32_t show_rand() { show->rnd = show->rnd * 1103515245u + 12345u; return show->rnd >> 8; }
+
+void invalidate(int x, int y, int w, int h)
+{
+    lv_area_t a{x, y, x + w - 1, y + h - 1};
+    lv_obj_invalidate_area(show->obj, &a);
+}
+
+void show_draw_cb(lv_event_t* e)
+{
+    if (!show) return;
+    lv_layer_t* layer = lv_event_get_layer(e);
+    for (int k = 0; k < show->piles; ++k) {
+        if (show->shown[k] == 0xFF) draw_slot(layer, show->px[k], show->py[k], show->cw, show->ch);
+        else draw_face(layer, show->px[k], show->py[k], show->cw, show->ch, show->shown[k]);
+    }
+    if (show->flying) draw_face(layer, int(show->x), int(show->y), show->cw, show->ch, show->list[show->i].card);
+}
+
+void show_timer_cb(lv_timer_t*)
+{
+    Show& s = *show;
+    if (!s.flying) {
+        if (s.i >= s.n) return;                       // all gone: wait for the tap
+        const Launch& L = s.list[s.i];
+        s.x = L.x; s.y = L.y;
+        const float speed = s.W * (0.006f + 0.012f * float(show_rand() % 100) / 100.0f);
+        s.vx = (show_rand() & 1) ? speed : -speed;
+        s.vy = -float(show_rand() % 100) / 100.0f * s.H * 0.012f;
+        s.flying = true;
+        // the pile now shows the card under it
+        int k = 0;
+        while (k < s.piles && (s.px[k] != L.x || s.py[k] != L.y)) ++k;
+        if (k == s.piles && k < 8) { s.px[k] = L.x; s.py[k] = L.y; ++s.piles; }
+        if (k < 8) s.shown[k] = L.under;
+        invalidate(L.x, L.y, s.cw, s.ch);
+        return;
+    }
+    s.vy += s.g;
+    s.x += s.vx;
+    s.y += s.vy;
+    if (s.y + s.ch > s.H) {                           // bounce off the bottom
+        s.y = float(s.H - s.ch);
+        s.vy = -s.vy * 0.78f;
+    }
+    if (s.x + s.cw < 0 || s.x > s.W) { s.flying = false; ++s.i; return; }
+    invalidate(int(s.x), int(s.y), s.cw, s.ch);
+}
+
+void show_press_cb(lv_event_t*)
+{
+    void (*done)() = show ? show->done : nullptr;
+    celebrate_stop();
+    if (done) done();
+}
+
+} // namespace
+
+void celebrate(const Launch* list, int n, int cw, int ch, void (*done)())
+{
+    celebrate_stop();
+    show = new (std::nothrow) Show();
+    if (!show) { if (done) done(); return; }
+    show->list = new (std::nothrow) Launch[n > 0 ? n : 1];
+    if (!show->list) { delete show; show = nullptr; if (done) done(); return; }
+    for (int i = 0; i < n; ++i) show->list[i] = list[i];
+    show->n = n;
+    show->cw = cw;
+    show->ch = ch;
+    show->W = lv_display_get_horizontal_resolution(nullptr);
+    show->H = lv_display_get_vertical_resolution(nullptr);
+    show->g = show->H * 0.0012f;
+    show->rnd = lv_tick_get() | 1;
+    show->done = done;
+    show->obj = lv_obj_create(lv_layer_top());
+    lv_obj_remove_style_all(show->obj);
+    lv_obj_set_size(show->obj, show->W, show->H);
+    lv_obj_set_clickable(show->obj, true);
+    lv_obj_add_event_cb(show->obj, show_draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
+    lv_obj_add_event_cb(show->obj, show_press_cb, LV_EVENT_PRESSED, nullptr);
+    show->timer = lv_timer_create(show_timer_cb, 25, nullptr);
+}
+
+void celebrate_stop()
+{
+    if (!show) return;
+    if (show->timer) lv_timer_delete(show->timer);
+    if (show->obj) {
+        lv_obj_delete_async(show->obj);
+        lv_obj_invalidate(lv_screen_active());        // wipe the trails
+    }
+    delete[] show->list;
+    delete show;
+    show = nullptr;
+}
+
+bool celebrating() { return show != nullptr; }
 
 void draw_slot(lv_layer_t* layer, int x, int y, int w, int h, int suit)
 {

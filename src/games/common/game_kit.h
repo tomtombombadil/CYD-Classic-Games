@@ -45,7 +45,7 @@ enum MenuId : intptr_t {
     kLevel0 = 0, kLevel1 = 1, kLevel2 = 2,   // new game: vs computer level / puzzle level
     kPassAndPlay = 3, kWireless = 4,
     kStats = 5, kExitGame = 6, kSettings = 7, kExitMenu = 8, kRestart = 9,
-    kHowToPlay = 10,
+    kHowToPlay = 10, kOptions = 11,
 };
 struct MenuHandlers {
     void (*pick)(int id);          // a level, pass-and-play or restart was tapped
@@ -61,8 +61,9 @@ void menu_two_player(const char* title, const MenuHandlers& h);
 // the bottom Exit Menu | Exit Game.
 // levels == nullptr: one "New Game" key (id kLevel0). restart = false hides
 // "Restart This Game".
+// options = true adds an "Options" key (id kOptions) below Restart.
 void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h,
-               bool restart = true);
+               bool restart = true, bool options = false);
 
 // ---- How To Play ----------------------------------------------------------------------
 // The open game's help pages (games.def / <id>_help.cpp), one per screen:
@@ -77,8 +78,9 @@ void how_to_play_key(lv_event_cb_t cb, intptr_t id);
 void stats_two_player(const char* game_id, const twoplayer::Sides& sides, void (*back)());
 // win_loss: columns Level | Won | Lost | Best time (games you can lose, like
 // Minesweeper) instead of Level | Solved | Best | Moves.
+// n_levels: rows in the levels table (1..3; Solitaire has Draw 1 / Draw 3).
 void stats_solo(const char* game_id, const char* const levels[3], void (*back)(),
-                bool win_loss = false);
+                bool win_loss = false, int n_levels = 3);
 
 // Record a finished game through the shell's stats store
 void record_two_player(const char* game_id, const twoplayer::Record& r, const twoplayer::Sides& s);
