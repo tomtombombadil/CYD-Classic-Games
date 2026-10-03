@@ -159,7 +159,7 @@ const char* back_name(int back)
 uint8_t current_back()
 {
     const uint8_t b = ui::settings().card_back;
-    return b < kBacks ? b : uint8_t(BackBombadil);
+    return b < kBacks ? b : uint8_t(BackLattice);
 }
 
 // The card table: the theme's felt, about 15 % darker (Tom, 2026-10-03)
@@ -177,9 +177,12 @@ void draw_face(lv_layer_t* layer, int x, int y, int w, int h, uint8_t card, bool
 {
     const ui::Palette& P = ui::pal();
     const int rad = w / 8;
+    // Picked cards (Tom: must be obvious): a thick amber edge and the whole
+    // face tinted gold, strong enough to read on a TN panel at an angle
     kit::fill_rect(layer, x, y, x + w - 1, y + h - 1, selected ? P.selected : P.key_border, rad);
     const int bw = selected ? (w >= 40 ? 3 : 2) : 1;
-    kit::fill_rect(layer, x + bw, y + bw, x + w - 1 - bw, y + h - 1 - bw, P.stone_light, rad > bw ? rad - bw : 0);
+    const lv_color_t face = selected ? lv_color_mix(P.same, P.stone_light, 150) : P.stone_light;
+    kit::fill_rect(layer, x + bw, y + bw, x + w - 1 - bw, y + h - 1 - bw, face, rad > bw ? rad - bw : 0);
 
     const int rank = rank_of(card), suit = suit_of(card);
     const lv_color_t ink = is_red(card) ? P.piece_a : P.stone_dark;
@@ -219,6 +222,7 @@ void draw_back(lv_layer_t* layer, int x, int y, int w, int h, int back)
     const lv_color_t blue = back_color(0);
     lv_color_t base = blue;
     if (back == BackTree) base = lv_color_mix(P.felt, P.stone_dark, 150);
+    if (back == BackMoon) base = P.stone_dark;                       // a black night (Tom)
     if (back >= BackLattice) base = back_color((back - BackLattice) % 3);
     const lv_color_t fine = lv_color_mix(cream, base, 90);    // pattern lines: cream, a third strength
     kit::fill_rect(layer, x, y, x + w - 1, y + h - 1, P.key_border, rad);
@@ -239,11 +243,11 @@ void draw_back(lv_layer_t* layer, int x, int y, int w, int h, int back)
         case BackMoon: {                                   // a crescent and one star, nothing else
             const lv_color_t moon = lv_color_mix(P.lit, cream, 190);
             const int r = (pw < ph ? pw : ph) * 30 / 100;
-            const int mx = x1 + pw / 2 + r / 4, my = y1 + ph / 2 + r / 6;
+            const int mx = x1 + pw * 44 / 100, my = y1 + ph * 56 / 100;
             circle(layer, mx, my, r, moon);
             circle(layer, mx + r * 45 / 100, my - r * 30 / 100, r * 85 / 100, base);   // the bite
             const int sr = w >= 40 ? 4 : 2;
-            star(layer, x1 + pw * 24 / 100, y1 + ph * 18 / 100, sr, moon);
+            star(layer, x1 + pw * 78 / 100, y1 + ph * 17 / 100, sr, moon);              // top right corner
             return;
         }
         case BackTree: {                                   // round crown on a short trunk

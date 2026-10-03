@@ -5,8 +5,11 @@
 // Screen: top bar (clock, score, ☰); the table, one custom-drawn object:
 // stock, waste, the four foundations, the seven columns; Undo | Hint keys.
 // Moving: tap a face-up card (it and the cards on it are picked, amber
-// edge), then tap where it goes. Tapping the picked card again sends it to
-// a foundation if it can go, else to the first column that takes it. Tap
+// edge), then tap where it goes. Tapping the picked card again (a double
+// tap) sends it to its foundation if it can go, else to the first column
+// that takes it. The foundations always go Spades, Hearts, Clubs, Diamonds
+// (empty ones show their suit), and the whole foundation row is one target:
+// a card tapped up there lands on its own suit (Tom). Tap
 // the stock to turn cards. When every card is face up and the stock is
 // empty the rest go up by themselves, then the cards bounce off the
 // table (tap to stop).
@@ -14,15 +17,22 @@
 // Options (☰ → Options): Draw 1 / Draw 3 (default 3), Standard / Vegas /
 // No scoring, the card back. Draw and scoring take effect on the next deal.
 //
-// Sounds: a card moved, a move that isn't allowed, a hint, the win.
-// Turning the stock and picking a card are silent.
+// Deals: only winnable ones (Tom). The next deal is searched for in the
+// background (solitaire_solve.*, on the AI core) while the current one is
+// played, so New Game is usually instant; if it isn't ready, the table says
+// "Shuffling..." until it is.
+//
+// Sounds: none while playing (Tom: card games are quiet); a playful
+// tune (Fanfare) when won.
 #include <cstdio>
 #include <new>
+#include "games/common/ai_task.h"
 #include "games/common/cards.h"
 #include "games/common/game_kit.h"
 #include "games/common/puzzle_stats.h"
 #include "games/registry.h"
 #include "solitaire_core.h"
+#include "solitaire_solve.h"
 #include "ui/shell.h"
 #include "ui/sound.h"
 #include "ui/theme.h"
@@ -43,9 +53,12 @@ struct State {
     uint8_t  opt_draw = 3;                 // for the next deal
     uint8_t  opt_scoring = 0;
     int32_t  bank = 0;                     // Vegas: dollars from earlier deals
+    uint32_t next_seed = 0;                // a winnable deal found in the background
+    uint8_t  next_draw = 0, next_scoring = 0, next_ok = 0;
 };
 State* S = nullptr;
-constexpr size_t kExtra = 1 + 4 + 1 + 1 + 4;
+constexpr size_t kExtraOld = 1 + 4 + 1 + 1 + 4;          // saves from before the deal check
+constexpr size_t kExtra = kExtraOld + 4 + 1 + 1 + 1;
 constexpr size_t kSaveBytes = Game::kSaveBytes + kExtra;
 
 kit::TopBar bar;
@@ -62,6 +75,8 @@ int down_step = 0, up_step = 0;
 
 int sel_pile = -1, sel_idx = -1;           // picked cards
 int hint_to = -1;                          // Hint: where the picked card can go
+bool searching = false;                    // a background deal search is running
+bool shuffling = false;                    // the player is waiting for it
 uint32_t last_save_ms = 0;
 bool     dirty = false;
 
@@ -84,6 +99,10 @@ void save()
     buf[n++] = S->opt_draw;
     buf[n++] = S->opt_scoring;
     put32(buf + n, uint32_t(S->bank)); n += 4;
+    put32(buf + n, S->next_seed); n += 4;
+    buf[n++] = S->next_draw;
+    buf[n++] = S->next_scoring;
+    buf[n++] = S->next_ok;
     shell().save_game(kId, buf, n);
     delete[] buf;
     dirty = false;
@@ -94,7 +113,7 @@ bool load(State& st)
     uint8_t* buf = new (std::nothrow) uint8_t[kSaveBytes];
     if (!buf) return false;
     const size_t n = shell().load_game ? shell().load_game(kId, buf, kSaveBytes) : 0;
-    bool ok = n == kSaveBytes && st.g.deserialize(buf, n);
+    bool ok = (n == kSaveBytes || n == Game::kSaveBytes + kExtraOld) && st.g.deserialize(buf, n);
     if (ok) {
         const uint8_t* q = buf + Game::kSaveBytes;
         st.recorded = q[0];
@@ -102,6 +121,12 @@ bool load(State& st)
         st.opt_draw = q[5] == 1 ? 1 : 3;
         st.opt_scoring = q[6] <= 2 ? q[6] : 0;
         st.bank = int32_t(get32(q + 7));
+        if (n == kSaveBytes) {
+            st.next_seed = get32(q + 11);
+            st.next_draw = q[15];
+            st.next_scoring = q[16];
+            st.next_ok = q[17];
+        }
     }
     delete[] buf;
     return ok;
@@ -159,8 +184,13 @@ bool hit(int px, int py, int* pile, int* idx)
         if (px >= col_x(1) && px < waste_top_x() + cw && px < col_x(3) - 2) {
             *pile = Waste; *idx = g.pile[Waste].n - 1; return true;
         }
-        for (int f = 0; f < 4; ++f)
-            if (px >= col_x(3 + f) && px < col_x(3 + f) + cw) { *pile = Found0 + f; *idx = g.pile[Found0 + f].n - 1; return true; }
+        // the foundation row: one wide target from the first pile to the right edge
+        if (px >= col_x(3) - pitch / 3) {
+            int f = (px - col_x(3) + (pitch - cw) / 2) / pitch;
+            f = f < 0 ? 0 : f > 3 ? 3 : f;
+            *pile = Found0 + f; *idx = g.pile[Found0 + f].n - 1;
+            return true;
+        }
         return false;
     }
     if (py < tab_y - 3) return false;
@@ -211,7 +241,7 @@ void draw_cb(lv_event_t* e)
         const Stack& s = g.pile[Found0 + f];
         const int x = ox + col_x(3 + f), y = oy + row_y;
         if (s.n) cards::draw_face(layer, x, y, cw, ch, Game::card(s.top()), sel_pile == Found0 + f);
-        else     cards::draw_slot(layer, x, y, cw, ch);
+        else     cards::draw_slot(layer, x, y, cw, ch, kFoundSuit[f]);    // the suit it takes
         if (hint_to == Found0 + f) kit::fill_rect(layer, x, y + ch - 4, x + cw - 1, y + ch - 1, pal().target, 2);
     }
     // Columns
@@ -245,7 +275,8 @@ void update_status()
     char t[16], s[40];
     twoplayer::format_time(t, sizeof t, S->seconds);
     lv_label_set_text(bar.left, t);
-    if (clock_.paused && !g.won()) snprintf(s, sizeof s, "Paused");
+    if (shuffling) snprintf(s, sizeof s, "Shuffling...");
+    else if (clock_.paused && !g.won()) snprintf(s, sizeof s, "Paused");
     else if (g.scoring == Scoring::Standard) snprintf(s, sizeof s, g.won() ? "Won! Score %ld" : "Score %ld", long(g.score));
     else if (g.scoring == Scoring::Vegas) {
         const long v = long(shown_score());
@@ -273,9 +304,71 @@ void record(bool won)
 
 void clear_pick() { sel_pile = sel_idx = hint_to = -1; }
 
+// ---- Winnable deals, found in the background ----------------------------------------
+constexpr uint32_t kNodeLimit = 20000;     // per candidate deal (PC: ~7 ms; board: ~0.2 s)
+struct Search {
+    uint32_t seed;
+    uint8_t  draw, scoring;
+    uint32_t result;
+    volatile bool done;
+};
+Search search{};
+
+void search_job(void* ctx, volatile bool* stop)
+{
+    Search* s = static_cast<Search*>(ctx);
+    int tries = 0;
+    s->result = find_winnable(s->seed, s->draw, Scoring(s->scoring), kNodeLimit, stop, &tries);
+    s->done = tries > 0;
+}
+
+void start_search()
+{
+    if (searching || !S) return;
+    search.seed = shell().random_seed ? shell().random_seed() : lv_tick_get();
+    search.draw = S->opt_draw;
+    search.scoring = S->opt_scoring;
+    search.done = false;
+    searching = ai_start(search_job, &search, 48 * 1024);
+}
+
+void deal_seed(uint32_t seed);
+
+// Called from tick(): a finished search becomes the next deal
+void poll_search()
+{
+    if (!searching || !search.done) return;
+    searching = false;
+    S->next_seed = search.result;
+    S->next_draw = search.draw;
+    S->next_scoring = search.scoring;
+    S->next_ok = 1;
+    if (shuffling) {
+        if (S->next_draw == S->opt_draw && S->next_scoring == S->opt_scoring) {
+            shuffling = false;
+            S->next_ok = 0;
+            deal_seed(S->next_seed);
+        }
+        start_search();                       // options changed meanwhile: look again
+        return;
+    }
+    dirty = true;
+}
+
 void stop_finish()
 {
     if (finish_timer) { lv_timer_delete(finish_timer); finish_timer = nullptr; }
+}
+
+void deal_seed(uint32_t seed)
+{
+    S->g.deal(seed, S->opt_draw, Scoring(S->opt_scoring));
+    S->recorded = 0;
+    S->seconds = 0;
+    clear_pick();
+    save();
+    build();
+    start_search();                           // get the one after ready
 }
 
 void deal(bool same)
@@ -284,16 +377,31 @@ void deal(bool same)
     cards::celebrate_stop();
     kit::flash_stop();
     Game& g = S->g;
-    if (!S->recorded && g.moves > 0 && !g.won()) record(false);
-    if (g.scoring == Scoring::Vegas) S->bank += g.score;         // this deal's dollars stay
-    const uint32_t seed = same ? g.seed
-                               : (shell().random_seed ? shell().random_seed() : lv_tick_get());
-    g.deal(seed, S->opt_draw, Scoring(S->opt_scoring));
-    S->recorded = 0;
-    S->seconds = 0;
+    if (!shuffling) {
+        if (!S->recorded && g.moves > 0 && !g.won()) record(false);
+        if (g.scoring == Scoring::Vegas) S->bank += g.score;     // this deal's dollars stay
+    }
+    if (same) {                                // Restart: the same (winnable) deal again
+        g.deal(g.seed, g.draw, g.scoring);
+        S->recorded = 0;
+        S->seconds = 0;
+        clear_pick();
+        save();
+        build();
+        return;
+    }
+    if (S->next_ok && S->next_draw == S->opt_draw && S->next_scoring == S->opt_scoring) {
+        S->next_ok = 0;
+        deal_seed(S->next_seed);
+        return;
+    }
+    // Not ready yet: wait for the search ("Shuffling...")
+    shuffling = true;
+    S->recorded = 1;                           // nothing to record until the deal arrives
     clear_pick();
-    save();
-    build();
+    start_search();
+    poll_search();                             // the PC preview finishes at once
+    if (shuffling) update_status();
 }
 
 void play_show();
@@ -306,7 +414,7 @@ void won_now()
     Game& g = S->g;
     if (g.scoring == Scoring::Standard && S->seconds >= 30) g.score += int32_t(700000 / S->seconds);
     record(true);
-    sound(Sound::Win);
+    sound(Sound::Fanfare);
     save();
     update_status();
     play_show();
@@ -362,7 +470,7 @@ bool pickable(int p, int i)
 
 void table_cb(lv_event_t*)
 {
-    if (!S || overlay_open() || finish_timer || S->g.won()) return;
+    if (!S || overlay_open() || finish_timer || S->g.won() || shuffling) return;
     lv_point_t pt;
     lv_indev_get_point(lv_indev_active(), &pt);
     lv_area_t a;
@@ -373,7 +481,6 @@ void table_cb(lv_event_t*)
     if (p == Stock) {
         clear_pick();
         if (g.draw_stock()) dirty = true;
-        else sound(Sound::Error);
         update_status();
         return;
     }
@@ -381,16 +488,18 @@ void table_cb(lv_event_t*)
         const int sp = sel_pile, si = sel_idx;
         if (p == sp && (i == si || p < Tab0)) {               // the picked card again: send it
             const int to = g.best_target(sp, si);
-            if (to >= 0 && g.move(sp, si, to)) { sound(Sound::Place); after_move(); return; }
+            if (to >= 0 && g.move(sp, si, to)) {after_move(); return; }
             clear_pick();
-            sound(Sound::Error);
+
             update_status();
             return;
         }
-        if (g.move(sp, si, p)) { sound(Sound::Place); after_move(); return; }
+        // The whole foundation row is one target: the card goes to its suit's pile
+        const int dest = (p >= Found0 && p < Tab0 && si == g.pile[sp].n - 1) ? found_for(g.pile[sp].c[si]) : p;
+        if (g.move(sp, si, dest)) {after_move(); return; }
         if (pickable(p, i)) { sel_pile = p; sel_idx = i; hint_to = -1; update_status(); return; }
         clear_pick();
-        sound(Sound::Error);
+
         update_status();
         return;
     }
@@ -400,22 +509,22 @@ void table_cb(lv_event_t*)
 
 void undo_cb(lv_event_t*)
 {
-    if (!S || finish_timer || !S->g.undo()) return;
+    if (!S || finish_timer || shuffling || !S->g.undo()) return;
     clear_pick();
-    sound(Sound::Move);
+
     dirty = true;
     update_status();
 }
 
 void hint_cb(lv_event_t*)
 {
-    if (!S || finish_timer) return;
+    if (!S || finish_timer || shuffling) return;
     int f, i, to;
     clear_pick();
-    if (!S->g.hint(&f, &i, &to)) { sound(Sound::Error); update_status(); return; }
+    if (!S->g.hint(&f, &i, &to)) {update_status(); return; }
     if (f == Stock) { hint_to = Stock; sel_pile = -1; }
     else { sel_pile = f; sel_idx = i; hint_to = to; }
-    sound(Sound::Hint);
+
     update_status();
 }
 
@@ -472,6 +581,7 @@ void opt_cb(lv_event_t* e)
     const int id = int(reinterpret_cast<intptr_t>(lv_event_get_user_data(e)));
     if (id == 1 || id == 3) S->opt_draw = uint8_t(id);
     else if (id >= 10 && id <= 12) S->opt_scoring = uint8_t(id - 10);
+    if ((id == 1 || id == 3 || (id >= 10 && id <= 12)) && !searching) start_search();
     else if (id == 99) { open_menu(); return; }
     else if (id == 98) { cards::back_screen(options_open); return; }
     dirty = true;
@@ -533,19 +643,22 @@ void open()
 {
     S = new (std::nothrow) State();
     if (!S) { app_go_home(); return; }
-    if (!load(*S)) {
-        *S = State{};
-        S->g.deal(shell().random_seed ? shell().random_seed() : lv_tick_get(), 3, Scoring::Standard);
-    }
+    searching = shuffling = false;
+    const bool loaded = load(*S);
+    if (!loaded) *S = State{};
     clear_pick();
     dirty = false;
     build();
+    if (!loaded) { deal(false); return; }      // the first deal: a winnable one
     if (S->g.can_finish()) finish_timer = lv_timer_create(finish_cb, 90, nullptr);
+    if (!S->next_ok) start_search();
 }
 
 void close()
 {
     if (!S) return;
+    ai_stop();
+    searching = shuffling = false;
     stop_finish();
     cards::celebrate_stop();
     kit::flash_stop();
@@ -559,6 +672,7 @@ void close()
 void tick(uint32_t now)
 {
     if (!S) return;
+    poll_search();
     if (clock_.tick(now, !S->g.won() && S->g.moves > 0, S->seconds) && !cards::celebrating()) update_status();
     if ((dirty || now - last_save_ms > 30000) && !cards::celebrating()) { last_save_ms = now; save(); }
 }

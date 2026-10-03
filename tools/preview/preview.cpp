@@ -888,8 +888,8 @@ int main(int argc, char** argv)
         w->deal(1, 3, Scoring::Standard);
         for (auto& s : w->pile) s = Stack{};
         for (int f = 0; f < 4; ++f) {
-            for (int r = 1; r <= 12; ++r) w->pile[Found0 + f].c[w->pile[Found0 + f].n++] = uint8_t(f * 13 + r - 1);
-            w->pile[Tab0 + f].c[0] = uint8_t(f * 13 + 12);
+            for (int r = 1; r <= 12; ++r) w->pile[Found0 + f].c[w->pile[Found0 + f].n++] = uint8_t(kFoundSuit[f] * 13 + r - 1);
+            w->pile[Tab0 + f].c[0] = uint8_t(kFoundSuit[f] * 13 + 12);
             w->pile[Tab0 + f].n = 1;
         }
         w->score = 640; w->moves = 151;

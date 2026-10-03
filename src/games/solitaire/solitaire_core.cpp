@@ -8,6 +8,12 @@ int  rank(uint8_t c) { return (c & 0x3F) % 13 + 1; }
 int  suit(uint8_t c) { return (c & 0x3F) / 13; }
 bool red(uint8_t c)  { const int s = suit(c); return s == 1 || s == 2; }   // same order as cards::Suit
 
+int found_for(uint8_t c)
+{
+    for (int f = 0; f < 4; ++f) if (kFoundSuit[f] == suit(c)) return Found0 + f;
+    return Found0;
+}
+
 namespace {
 bool is_found(int p) { return p >= Found0 && p < Tab0; }
 bool is_tab(int p)   { return p >= Tab0 && p < kPiles; }
@@ -99,7 +105,7 @@ bool Game::can_move(int from, int idx, int to) const
     const uint8_t c = f.c[idx];
     const Stack& t = pile[to];
     if (is_found(to)) {
-        if (count != 1) return false;
+        if (count != 1 || suit(c) != kFoundSuit[to - Found0]) return false;
         if (!t.n) return rank(c) == 1;
         return suit(t.top()) == suit(c) && rank(c) == rank(t.top()) + 1;
     }
@@ -199,8 +205,7 @@ bool Game::finish_step()
 
 int Game::best_target(int from, int idx) const
 {
-    if (idx == pile[from].n - 1)
-        for (int f = 0; f < 4; ++f) if (can_move(from, idx, Found0 + f)) return Found0 + f;
+    if (idx == pile[from].n - 1 && can_move(from, idx, found_for(pile[from].c[idx]))) return found_for(pile[from].c[idx]);
     for (int t = 0; t < 7; ++t) {
         const int to = Tab0 + t;
         // A King already at the bottom of its column doesn't move to an empty one
@@ -270,6 +275,16 @@ bool Game::deserialize(const uint8_t* buf, size_t len)
         }
     }
     if (total != 52) return false;
+    // Foundations in suit order (saves from before the fixed order)
+    Stack found[4];
+    for (int f = 0; f < 4; ++f) {
+        const Stack& s = tmp[Found0 + f];
+        if (!s.n) continue;
+        const int slot = found_for(s.c[0]) - Found0;
+        if (found[slot].n) return false;
+        found[slot] = s;
+    }
+    for (int f = 0; f < 4; ++f) tmp[Found0 + f] = found[f];
     for (int i = 0; i < kPiles; ++i) pile[i] = tmp[i];
     draw = buf[n++] == 1 ? 1 : 3;
     const uint8_t sc = buf[n++];

@@ -33,10 +33,10 @@ const char* suit_text(int suit);               // UTF-8 symbol
 // colors. The player's choice is shared by every card game
 // (ui::UiSettings::card_back); `back` below is an index into this list.
 enum Back : uint8_t {
-    BackBombadil = 0,          // a gold serif "B" on blue (the default)
-    BackMoon,                  // a crescent moon and one star on blue
+    BackBombadil = 0,          // a gold serif "B" on blue
+    BackMoon,                  // a crescent moon and one star (top right) on black
     BackTree,                  // a green tree with a brown trunk
-    BackLattice,               // + color: Lattice Blue, Red, Green
+    BackLattice,               // + color: Lattice Blue (the default - Tom), Red, Green
     BackStripes = BackLattice + 3,
     BackDots = BackStripes + 3,
     kBacks = BackDots + 3,     // 12

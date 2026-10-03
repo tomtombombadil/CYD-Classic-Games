@@ -89,6 +89,11 @@ struct Game {
     static constexpr size_t kSaveBytes = 4 + kPiles * (1 + kMaxPile) + 1 + 1 + 4 + 4 + 1 + 2;
 };
 
+// The foundations always go Spades, Hearts, Clubs, Diamonds, left to right
+// (Tom); a card can only go on its own suit's foundation.
+constexpr uint8_t kFoundSuit[4] = {0, 1, 3, 2};     // cards::Suit values
+int found_for(uint8_t card);                // Found0..Found0+3
+
 int rank(uint8_t c);                        // 1..13
 int suit(uint8_t c);                        // 0..3
 bool red(uint8_t c);

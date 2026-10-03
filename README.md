@@ -244,11 +244,15 @@ time and fewest turns.
 
 ## Solitaire
 
-Classic Klondike. Build the four foundations up by suit from Ace to King;
+Classic Klondike, and every deal can be won: each new deal is checked by a
+built-in solver before you see it (the next one is found in the background
+while you play). Build the four foundations up by suit from Ace to King
+(they always go Spades, Hearts, Clubs, Diamonds, and you can drop a card
+anywhere on that row);
 on the seven columns cards go down in alternating colors and only a King
 goes into an empty column. Tap a face-up card (and the cards on it) to pick
-it up, then tap where it goes; tap the picked card again to send it to a
-foundation (or the first column that takes it). Tap the stock to turn
+it up (it turns gold), then tap where it goes; double-tap a card to send it
+to its foundation (or the first column that takes it). Tap the stock to turn
 cards. **Undo** and **Hint** sit under the table. When every card is face
 up the rest go up by themselves, and then the cards bounce off the table
 like the old Windows Solitaire (tap to stop).
@@ -256,7 +260,8 @@ like the old Windows Solitaire (tap to stop).
 **☰ → Options:** Draw 1 or Draw 3 (default), Standard scoring, Vegas
 scoring (a deal costs $52, each foundation card pays $5, the balance
 carries over) or none, and the **Card Back** (12 designs, shared by every
-card game).
+card game; Blue Lattice to start). The card games are quiet while you play
+and play a little tune when you win.
 
 ## Spider, Pyramid and Golf
 

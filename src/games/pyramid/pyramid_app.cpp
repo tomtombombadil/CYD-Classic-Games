@@ -6,7 +6,7 @@
 // uncovered card to pick it (amber), then its partner that makes 13; a
 // King goes as soon as you tap it. Tap the stock to turn a card.
 //
-// Sounds: a pair removed, a pair that doesn't make 13, a hint, the end.
+// Sounds: none while playing (card games are quiet); Fanfare when won.
 #include <cstdio>
 #include <new>
 #include "games/common/cards.h"
@@ -196,7 +196,7 @@ void after_change()
     if (g.won() && !S->recorded) {
         S->recorded = 1;
         record(true);
-        sound(Sound::Win);
+        sound(Sound::Fanfare);
         save();
         update_status();
         // the show: the cards still on the stock and waste, then the pyramid's
@@ -213,7 +213,6 @@ void after_change()
         cards::celebrate(list, n, cw, ch, show_done);
         return;
     }
-    if (g.stuck()) sound(Sound::Lose);
     save();
     update_status();
 }
@@ -230,15 +229,14 @@ void table_cb(lv_event_t*)
     hint_a = hint_b = -1;
     if (s == -2) {
         sel = -1;
-        if (g.draw()) { sound(Sound::Move); after_change(); }
-        else sound(Sound::Error);
+        if (g.draw()) {after_change(); }
         return;
     }
     if (s < 0 || !g.free(s)) { sel = -1; update_status(); return; }
-    if (g.can_pair(s, -1)) { g.pair(s, -1); sound(Sound::Place); after_change(); return; }   // a King
+    if (g.can_pair(s, -1)) { g.pair(s, -1);after_change(); return; }   // a King
     if (sel >= 0 && sel != s) {
-        if (g.pair(sel, s)) { sound(Sound::Place); after_change(); return; }
-        sound(Sound::Error);
+        if (g.pair(sel, s)) {after_change(); return; }
+
         sel = s;
         update_status();
         return;
@@ -251,7 +249,7 @@ void undo_cb(lv_event_t*)
 {
     if (!S || S->g.won() || !S->g.undo()) return;
     clear_marks();
-    sound(Sound::Move);
+
     save();
     update_status();
 }
@@ -260,8 +258,7 @@ void hint_cb(lv_event_t*)
 {
     if (!S) return;
     sel = -1;
-    if (!S->g.hint(&hint_a, &hint_b)) { hint_a = hint_b = -1; sound(Sound::Error); }
-    else sound(Sound::Hint);
+    if (!S->g.hint(&hint_a, &hint_b)) { hint_a = hint_b = -1;}
     update_status();
 }
 

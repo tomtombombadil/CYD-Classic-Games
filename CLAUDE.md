@@ -100,10 +100,14 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
     match; this is what shows in cascades and fans) and one big suit below.
     Faces cream in every theme, red = `piece_a`, black = `stone_dark`,
     table = `cards::felt()` (the theme's felt 15 % darker - Tom), selected
-    = amber border. 12 backs (Tom, 2026-10-03): Bombadil (a soft gold
-    DejaVu Serif Bold "B" with a dark outline on blue, like the splash title
-    - the default), Moon (a crescent and one star on blue), Tree (green
+    = amber edge + gold-tinted face (Tom: the pick must be obvious). 12
+    backs (Tom, 2026-10-03): Bombadil (a soft gold DejaVu Serif Bold "B"
+    with a dark outline on blue, like the splash title), Moon (a crescent
+    on black, one star in the top right corner), Tree (green
     crown, brown trunk), then Lattice / Stripes / Dots in blue, red, green.
+    Default back: Blue Lattice (Tom). Card games make no sound while
+    playing (no tap/move/error/hint sounds - Tom); a won solitaire-type
+    game plays `Sound::Fanfare`, a playful tune.
     Keep pictures simple: small cards. The player's back is shared by every
     card game (`UiSettings::card_back`, UIS2 byte 9 = back + 1);
     `cards::back_screen()` is the picker (Options -> Card Back). Memory
@@ -148,7 +152,15 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   menu key -> Draw 1 / Draw 3 (default 3), Standard / Vegas (balance
   carries over) / None scoring, Card Back; tap card then destination, tap
   the picked card again = best target; auto-finish; Undo + Hint keys;
-  stats per draw mode, an unfinished deal = Lost; the win show), Spider
+  stats per draw mode, an unfinished deal = Lost; the win show; only
+  winnable deals (Tom: fun for kids on a car ride): `solitaire_solve.*`
+  searches each candidate deal seeing every card (20k positions, safe
+  foundation moves forced, a 32 KB lossy position table) and only proven
+  wins are dealt; the next deal is found in the background on the AI task
+  (48 KB stack) while one is played, else "Shuffling..."; foundations
+  fixed Spades, Hearts, Clubs, Diamonds left to right with their suit on
+  empty piles, and the whole foundation row is one drop target; a second
+  tap (double tap) on the picked card sends it to its foundation), Spider
   (1 / 2 / 4 suits; 10 columns of 21 px cards on 240 wide - card_font_10;
   Windows scoring 500 -1/move +100/run; no deal with an empty column),
   Pyramid (pairs to 13, Kings alone, waste top pairs too, 3 passes),

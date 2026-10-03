@@ -19,6 +19,7 @@
 #include "../../src/games/sliding/sliding_core.h"
 #include "../../src/games/spider/spider_core.h"
 #include "../../src/games/solitaire/solitaire_core.h"
+#include "../../src/games/solitaire/solitaire_solve.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
 #include "../../src/games/twenty48/twenty48_core.h"
 #include "../../src/games/yahtcyd/yahtcyd_core.h"
@@ -983,12 +984,13 @@ static void test_solitaire()
     h.pile[Tab0 + 2].c[0] = C(13, 1); h.pile[Tab0 + 2].c[1] = C(12, 0); h.pile[Tab0 + 2].n = 2;    // KH QS
     CHECK(h.can_move(Tab0, 1, Tab0 + 1));            // red 8 on black 9
     CHECK(!h.can_move(Tab0 + 1, 0, Tab0));           // 9 on 8: no
-    CHECK(h.can_move(Waste, 0, Found0) && !h.can_move(Tab0, 1, Found0));
+    CHECK(h.can_move(Waste, 0, Found0 + 3) && !h.can_move(Waste, 0, Found0) && !h.can_move(Tab0, 1, Found0 + 1));
+    CHECK(found_for(C(1, 0)) == Found0 && found_for(C(1, 1)) == Found0 + 1 && found_for(C(1, 3)) == Found0 + 2 && found_for(C(1, 2)) == Found0 + 3);
     CHECK(!h.can_move(Tab0 + 2, 1, Tab0 + 3));       // queen into an empty column: no
     CHECK(h.can_move(Tab0 + 2, 0, Tab0 + 3));        // the K with its run: yes
-    CHECK(h.best_target(Waste, 0) == Found0);
+    CHECK(h.best_target(Waste, 0) == Found0 + 3);       // diamonds: the fourth foundation
     CHECK(h.move(Tab0, 1, Tab0 + 1) && h.score == 5 && Game::face_up(h.pile[Tab0].top()));   // turned up +5
-    CHECK(h.move(Waste, 0, Found0) && h.score == 15);
+    CHECK(h.move(Waste, 0, Found0 + 3) && h.score == 15);
     CHECK(h.undo() && h.undo() && h.score == 0 && !Game::face_up(h.pile[Tab0].c[0]) && h.pile[Tab0].n == 2);
 
     // Vegas: -52 a deal, +5 a foundation card; Draw 1 never recycles
@@ -1034,6 +1036,26 @@ static void test_solitaire()
         }
     }
     printf("solitaire: hint player won %d of 60 deals\n", wins);
+    // Winnable deals only: the checker's wins are real, and a deal it calls
+    // winnable is found within a few tries for every option
+    {
+        Game* w = new Game();
+        uint32_t nodes = 0;
+        int proven = 0;
+        for (uint32_t s = 1; s <= 20; ++s)
+            proven += check_deal(*w, s * 40503u, 1, Scoring::Standard, 20000, nullptr, &nodes) == Verdict::Win;
+        CHECK(proven >= 5);
+        for (int draw : {1, 3})
+            for (int sc = 0; sc < 3; ++sc) {
+                int tries = 0;
+                const auto t0 = std::chrono::steady_clock::now();
+                const uint32_t seed = find_winnable(12345u + draw * 7 + sc, draw, Scoring(sc), 20000, nullptr, &tries);
+                const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+                CHECK(tries > 0 && check_deal(*w, seed, draw, Scoring(sc), 20000) == Verdict::Win);
+                printf("solitaire: winnable deal, draw %d scoring %d: %d tries, %.0f ms\n", draw, sc, tries, ms);
+            }
+        delete w;
+    }
     CHECK(wins > 0);
     delete gp;
 }

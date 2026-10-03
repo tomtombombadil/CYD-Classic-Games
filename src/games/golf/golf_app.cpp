@@ -5,7 +5,7 @@
 // cards, then the stock and the waste (bigger cards); Undo | Hint. Tap a
 // column to play its top card onto the waste, tap the stock to turn a card.
 //
-// Sounds: a card played, a column that can't play, a hint, the end.
+// Sounds: none while playing (card games are quiet); Fanfare when won.
 #include <cstdio>
 #include <new>
 #include "games/common/cards.h"
@@ -169,12 +169,11 @@ void after_change()
     Game& g = S->g;
     // A stuck deal is recorded (as lost) only when the next one starts:
     // Undo can still get it going again
-    if (g.stuck()) sound(Sound::Lose);
     if (g.won() && !S->recorded) {
         S->recorded = 1;
         record(true);
         {
-            sound(Sound::Win);
+            sound(Sound::Fanfare);
             update_status();
             lv_area_t a;
             lv_obj_get_coords(table, &a);
@@ -202,15 +201,13 @@ void table_cb(lv_event_t*)
     const int x = p.x - a.x1, y = p.y - a.y1;
     Game& g = S->g;
     if (y >= low_y && x >= stock_x && x < stock_x + bw) {
-        if (g.draw()) { sound(Sound::Move); after_change(); }
-        else sound(Sound::Error);
+        if (g.draw()) {after_change(); }
         return;
     }
     if (y < low_y - 4) {
         for (int c = 0; c < kCols; ++c)
             if (x >= col_x(c) - 1 && x < col_x(c) + cw + 1) {
-                if (g.play(c)) { sound(Sound::Place); after_change(); }
-                else if (g.col_n[c]) sound(Sound::Error);
+                if (g.play(c)) {after_change(); }
                 return;
             }
     }
@@ -220,7 +217,7 @@ void undo_cb(lv_event_t*)
 {
     if (!S || S->g.won() || !S->g.undo()) return;
     hint_col = -1;
-    sound(Sound::Move);
+
     save();
     update_status();
 }
@@ -229,7 +226,6 @@ void hint_cb(lv_event_t*)
 {
     if (!S) return;
     hint_col = S->g.hint();
-    sound(hint_col >= 0 ? Sound::Hint : Sound::Error);
     update_status();
 }
 

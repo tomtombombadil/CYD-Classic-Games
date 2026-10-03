@@ -8,8 +8,7 @@
 // again to send it to the best column (its own suit first). Tap the stock
 // to deal a row.
 //
-// Sounds: a move, a move that isn't allowed, a run coming off, a hint,
-// the win.
+// Sounds: none while playing (card games are quiet); Fanfare when won.
 #include <cstdio>
 #include <new>
 #include "games/common/cards.h"
@@ -205,7 +204,7 @@ void after_change(uint8_t done_before)
     if (g.won() && !S->recorded) {
         S->recorded = 1;
         record(true);
-        sound(Sound::Win);
+        sound(Sound::Fanfare);
         save();
         update_status();
         lv_area_t a;
@@ -222,7 +221,6 @@ void after_change(uint8_t done_before)
         delete[] list;
         return;
     }
-    sound(g.done > done_before ? Sound::Hint : Sound::Place);   // a run coming off rings brighter
     save();
     update_status();
 }
@@ -239,8 +237,8 @@ void table_cb(lv_event_t*)
     const uint8_t done_before = g.done;
     if (y >= row_y && y < row_y + ch && x >= stock_x() && deals_left()) {
         clear_marks();
-        if (g.deal_row()) { sound(Sound::Move); after_change(done_before); }
-        else { note_empty = true; sound(Sound::Error); update_status(); }
+        if (g.deal_row()) {after_change(done_before); }
+        else { note_empty = true;update_status(); }
         return;
     }
     if (y < tab_y - 2) { clear_marks(); update_status(); return; }
@@ -255,11 +253,11 @@ void table_cb(lv_event_t*)
         if (c == sc && i == si) {
             const int to = g.best_target(sc, si);
             if (to >= 0 && g.move(sc, si, to)) { after_change(done_before); return; }
-            clear_marks(); sound(Sound::Error); update_status(); return;
+            clear_marks();update_status(); return;
         }
         if (g.move(sc, si, c)) { after_change(done_before); return; }
         if (i >= 0 && i >= g.run_start(c)) { sel_col = c; sel_idx = i; hint_to = -1; update_status(); return; }
-        clear_marks(); sound(Sound::Error); update_status(); return;
+        clear_marks();update_status(); return;
     }
     clear_marks();
     if (i >= 0 && i >= g.run_start(c) && up(g.col[c][i])) { sel_col = c; sel_idx = i; }
@@ -270,7 +268,7 @@ void undo_cb(lv_event_t*)
 {
     if (!S || S->g.won() || !S->g.undo()) return;
     clear_marks();
-    sound(Sound::Move);
+
     save();
     update_status();
 }
@@ -280,10 +278,10 @@ void hint_cb(lv_event_t*)
     if (!S) return;
     clear_marks();
     int f, i, t;
-    if (!S->g.hint(&f, &i, &t)) { sound(Sound::Error); update_status(); return; }
+    if (!S->g.hint(&f, &i, &t)) {update_status(); return; }
     if (f < 0) hint_deal = true;
     else { sel_col = f; sel_idx = i; hint_to = t; }
-    sound(Sound::Hint);
+
     update_status();
 }
 

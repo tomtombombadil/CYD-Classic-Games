@@ -16,12 +16,15 @@ constexpr Tone kWin[]    = {{523, 110}, {659, 110}, {784, 110}, {1047, 280}};
 constexpr Tone kLose[]   = {{392, 170}, {330, 170}, {262, 340}};
 constexpr Tone kDraw[]   = {{587, 140}, {0, 40}, {587, 200}};
 constexpr Tone kTurn[]   = {{990, 26}};
+// G C E G, a bounce back to E, and a held G: bright and a little silly
+constexpr Tone kFanfare[] = {{784, 90}, {0, 25}, {1047, 90}, {0, 25}, {1319, 90}, {0, 25},
+                             {1568, 150}, {0, 50}, {1319, 90}, {1568, 340}};
 
 template <int N> constexpr Seq seq(const Tone (&t)[N]) { return {t, N}; }
 
 const Seq kSounds[] = {
     seq(kPlace), seq(kMove), seq(kError),
-    seq(kHint), seq(kWin), seq(kLose), seq(kDraw), seq(kTurn),
+    seq(kHint), seq(kWin), seq(kLose), seq(kDraw), seq(kTurn), seq(kFanfare),
 };
 
 } // namespace

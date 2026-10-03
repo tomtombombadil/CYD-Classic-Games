@@ -6,7 +6,9 @@
 // Tom's rule: sounds add to the game, they don't narrate every tap. Plain
 // key presses (picker, menus, Settings, keyboards), picking up a piece and
 // holding a die are silent. Sounds are for moves, the other side's reply,
-// mistakes, hints and the end of a game.
+// mistakes, hints and the end of a game. Card games (Tom, 2026-10-03) are
+// silent while playing - no tap, move or error sounds - and play Fanfare
+// when won.
 #pragma once
 
 #include <cstdint>
@@ -22,6 +24,7 @@ enum class Sound : uint8_t {
     Lose,       // the computer won
     Draw,       // a tie
     Turn,       // the other side moved (computer or the other player)
+    Fanfare,    // a playful tune: a solitaire-type card game won
 };
 
 void sound(Sound s);
