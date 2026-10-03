@@ -203,7 +203,18 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   hand frequencies match published figures); 500 credits, New Credits
   +500; pay table in two columns with the held/final hand lit; stats CSV
   "#,Bet,Hand,Win,Credits"; win = Trill, Four of a Kind and up = Fanfare +
-  flash, a losing hand is silent - most hands lose). Landscape (decided 2026-10-03): Solitaire
+  flash, a losing hand is silent - most hands lose), Texas Hold'em (id
+  `holdem`; no limit, you + Ada, Max, Zoe; 1000 chips, blinds 5/10,
+  button moves; side pots by contribution level, odd chips left of the
+  button; computer = Monte Carlo equity (60 / 200 / 500 deals by level,
+  never sees your cards) discounted when facing a bet, vs pot odds, with
+  per-seat styles (steady / tight / pushy) - tuned so ~54 % of hands see
+  a flop, ~40 % a showdown, pots ~12 big blinds; it thinks on the AI task
+  (12 KB) and acts every ~0.65 s; keys Fold, Check/Call, Bet-Raise (min),
+  Pot, All In / Next Hand, New Chips +1000; computer players buy back in;
+  your best hand so far shows by your cards; stats CSV
+  "#,Result,Net,Chips" (Won/Lost/Folded/Split); win = Trill, a lost
+  showdown = "aww", folds silent). Landscape (decided 2026-10-03): Solitaire
   stays portrait (Tom agreed: too short for late-game columns, mockup
   `card_mockups` case 5); Tom OK'd landscape for card games where it is
   truly better - none is on these 3:4 screens (Golf/Pyramid would gain

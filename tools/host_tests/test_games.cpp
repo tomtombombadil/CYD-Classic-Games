@@ -28,6 +28,7 @@
 #include "../../src/ui/log_pack.h"
 #include "../../src/games/rpgdice/rpgdice_core.h"
 #include "../../src/games/vpoker/vpoker_core.h"
+#include "../../src/games/holdem/holdem_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -1581,6 +1582,93 @@ static void test_vpoker()
     CHECK(pairs_up * 100 > hands * 43 && pairs_up * 100 < hands * 48);   // ~45.4 %
 }
 
+// ---- Texas Hold'em ------------------------------------------------------------------------------
+static void test_holdem()
+{
+    using namespace holdem;
+    auto C = [](int rank, int suit) { return uint8_t(suit * 13 + rank - 1); };
+    // Hand values: categories and order
+    const uint8_t royal[7] = {C(10, 1), C(11, 1), C(12, 1), C(13, 1), C(1, 1), C(2, 0), C(3, 2)};
+    const uint8_t wheel[7] = {C(1, 0), C(2, 1), C(3, 2), C(4, 3), C(5, 0), C(9, 1), C(13, 2)};
+    const uint8_t boat[7]  = {C(7, 0), C(7, 1), C(7, 2), C(9, 3), C(9, 0), C(9, 1), C(2, 2)};
+    const uint8_t flush[7] = {C(2, 3), C(6, 3), C(9, 3), C(11, 3), C(13, 3), C(13, 0), C(13, 1)};
+    CHECK(category(score(royal, 7)) == StraightFlush);
+    CHECK(category(score(wheel, 7)) == Straight && ((score(wheel, 7) >> 16) & 15) == 5);
+    CHECK(category(score(boat, 7)) == FullHouse && ((score(boat, 7) >> 16) & 15) == 9);   // 999 over 77
+    CHECK(category(score(flush, 7)) == Flush);
+    const uint8_t pairA[5] = {C(1, 0), C(1, 1), C(5, 2), C(8, 3), C(10, 0)};
+    const uint8_t pairK[5] = {C(13, 0), C(13, 1), C(12, 2), C(11, 3), C(9, 0)};
+    CHECK(score(pairA, 5) > score(pairK, 5));
+    // 7 cards = the best five of them
+    Rng rng(5);
+    for (int t = 0; t < 3000; ++t) {
+        uint8_t d[52];
+        for (int i = 0; i < 52; ++i) d[i] = uint8_t(i);
+        for (int i = 51; i > 0; --i) { const int j = rng.below(i + 1); const uint8_t x = d[i]; d[i] = d[j]; d[j] = x; }
+        uint32_t best = 0;
+        for (int a = 0; a < 7; ++a) for (int b = a + 1; b < 7; ++b) {
+            uint8_t f[5]; int k = 0;
+            for (int i = 0; i < 7; ++i) if (i != a && i != b) f[k++] = d[i];
+            const uint32_t v = score(f, 5);
+            if (v > best) best = v;
+        }
+        CHECK(score(d, 7) == best);
+    }
+    // Side pots: A all in for 100 with the best hand, B and C in for 300, D folded 50
+    {
+        Game g;
+        g.street = Street::River;
+        const uint8_t board[5] = {C(2, 0), C(7, 1), C(9, 2), C(12, 3), C(4, 0)};
+        memcpy(g.board, board, 5);
+        g.board_n = 5;
+        int32_t totals[4] = {100, 300, 300, 50};
+        const uint8_t cards[4][2] = {{C(12, 0), C(12, 1)}, {C(9, 0), C(9, 1)}, {C(3, 0), C(5, 1)}, {C(13, 0), C(13, 1)}};
+        for (int s = 0; s < 4; ++s) {
+            g.seat[s].total = totals[s];
+            g.seat[s].stack = 0;
+            g.seat[s].cards[0] = cards[s][0];
+            g.seat[s].cards[1] = cards[s][1];
+        }
+        g.seat[3].folded = true;
+        g.finish();
+        CHECK(g.showdown && g.seat[0].won == 350 && g.seat[1].won == 400 && g.seat[2].won == 0 && g.seat[3].won == 0);
+    }
+    // Whole hands between computer players: chips stay put, every hand ends
+    for (int lv = 0; lv < 3; ++lv) {
+        Game g;
+        g.level = uint8_t(lv);
+        long refills = 0, steps = 0;
+        for (int h = 0; h < 60; ++h) {
+            if (g.seat[0].stack <= 0) { g.seat[0].stack = kStartStack; ++refills; }
+            g.new_hand(rng.next());
+            while (!g.hand_over() && steps < 200000) { g.act(g.decide(rng)); ++steps; }
+            CHECK(g.hand_over());
+            long chips = 0, rebuys = 0;
+            for (const Seat& s : g.seat) { chips += s.stack; rebuys += s.rebuys; CHECK(s.stack >= 0); }
+            CHECK(chips == kStartStack * (kSeats + rebuys + refills));
+        }
+        uint8_t buf[Game::kSaveBytes];
+        Game b;
+        CHECK(g.serialize(buf, sizeof buf) == sizeof buf && b.deserialize(buf, sizeof buf));
+        CHECK(b.seat[2].stack == g.seat[2].stack && b.hand_no == g.hand_no && b.dealer == g.dealer);
+    }
+    // Your actions: fold never happens for free; a raise below the minimum is raised to it
+    {
+        Game g;
+        g.new_hand(77);
+        while (g.to_act != 0 && !g.hand_over()) g.act(g.decide(rng));
+        if (!g.hand_over()) {
+            const int32_t before = g.current_bet;
+            g.act({Act::Raise, before + 1});
+            CHECK(g.current_bet >= before + kBigBlind || g.seat[0].all_in);
+        }
+    }
+    Record r{Result::Won, 140, 1250}, back;
+    char line[64] = "12,";
+    format_body(line + 3, sizeof line - 3, r);
+    CHECK(parse_line(line, back) && back.result == Result::Won && back.net == 140 && back.chips == 1250);
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -1647,6 +1735,7 @@ int main()
     test_log_pack();
     test_rpgdice();
     test_vpoker();
+    test_holdem();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

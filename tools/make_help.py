@@ -184,3 +184,10 @@ write("vpoker", [
  ("Paying Hands", "• Jacks or Better: a pair of Jacks, Queens, Kings or Aces\n• Two Pair, Three of a Kind\n• Straight: five in a row (A-2-3-4-5 and 10-J-Q-K-A count)\n• Flush: five of one suit\n• Full House, Four of a Kind, Straight Flush\n• Royal Flush: 10 to Ace of one suit, 4000 at a 5 credit bet"),
  ("Keys", "Bet One adds a credit to the bet (1 to 5, then back to 1). Bet Max bets 5 and deals at once.\nHint holds the cards the standard Jacks or Better strategy keeps: about the best play there is.\nYou start with 500 credits; run out and New Credits gives you 500 more."),
 ])
+
+write("holdem", [
+ ("The Idea", "No-limit Texas Hold'em: you against three computer players, Ada, Max and Zoe. Everyone starts with 1000 chips; blinds are 5 and 10.\nYou get two cards. Five shared cards come face up in the middle: three (the flop), one (the turn), one (the river). Your best five of those seven cards wins the pot."),
+ ("Betting", "A betting round comes before the flop and after each new card. On your turn:\n• Fold: give up the hand\n• Check or Call: match the bet\n• Bet / Raise: the smallest raise; Pot: the size of the pot\n• All In: all your chips\nAll-ins make side pots: you win only what you matched."),
+ ("Hands", "From best: Straight Flush, Four of a Kind, Full House, Flush, Straight, Three of a Kind, Two Pair, Pair, High Card.\nYour best hand so far shows next to your cards. At a showdown everyone still in shows their cards."),
+ ("The Table", "The player to act has a gold edge; D is the dealer button, which moves each hand.\nA computer player who runs out buys back in. Run out yourself and New Chips gives you 1000 more.\nLevels: the computer weighs its chances more carefully on Medium and Hard, and plays its position."),
+])

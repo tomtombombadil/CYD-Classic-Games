@@ -24,6 +24,14 @@
 #include "games/yahtcyd/yahtcyd_core.h"
 #include "games/rpgdice/rpgdice_core.h"
 #include "games/vpoker/vpoker_core.h"
+#include "games/holdem/holdem_core.h"
+namespace holdem_preview {
+void run_to_you();
+void deal(uint32_t seed);
+void you(holdem::Act a);
+holdem::Game* game();
+void refresh();
+}
 namespace rpgdice_preview {
 void set_pool(const int* counts, int mod);
 void roll_pool(uint32_t seed);
@@ -727,6 +735,40 @@ int main(int argc, char** argv)
         shot(out + "_dark_54_vpoker_win.ppm");
         kit_preview_menu();
         shot(out + "_dark_55_vpoker_menu.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Texas Hold'em: a new table, your turn on the flop, a showdown
+        ui::app_open_game_now(games::find("holdem"));
+        shot(out + "_light_56_holdem_new.ppm");
+        // A deal where you see the flop
+        uint32_t seed = 3;
+        for (;; ++seed) {
+            holdem_preview::deal(seed);
+            holdem_preview::run_to_you();
+            holdem::Game* g = holdem_preview::game();
+            if (!g->hand_over() && g->to_act == 0 && g->street == holdem::Street::Preflop) {
+                holdem_preview::you(holdem::Act::Call);
+                holdem_preview::run_to_you();
+                if (!g->hand_over() && g->street >= holdem::Street::Flop) break;
+            }
+            if (seed > 400) break;
+        }
+        shot(out + "_light_56_holdem_flop.ppm");
+        // Play it out to a showdown (call everything)
+        for (int guard = 0; guard < 50 && !holdem_preview::game()->hand_over(); ++guard) {
+            holdem_preview::you(holdem::Act::Call);
+            holdem_preview::run_to_you();
+        }
+        shot(out + "_light_56_holdem_end.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("holdem"));
+        shot(out + "_dark_56_holdem.ppm");
+        kit_preview_menu();
+        shot(out + "_dark_57_holdem_menu.ppm");
         ui::close_overlays();
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
