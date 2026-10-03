@@ -148,7 +148,7 @@ Chinese checkers, Dots and Boxes (thin tap targets).
    Better, *built 2026-10-03*) and Texas Hold'em vs computer players (*built 2026-10-03*); Blackjack; FreeCell. (Tom, 2026-10-02: more games before wireless.)
 5. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,
    Checkers, Chess.
-6. **Word and dice games:** (CYD-dle, Yaht-CYD done in stage 3) Farkle; Trivia if a
+6. **Word and dice games:** (CYD-dle, Yaht-CYD done in stage 3) Farkle (*built 2026-10-03*), RPG Dice roller (*built 2026-10-03*); Trivia if a
    suitable question bank is found.
 7. Remaining candidates as Tom picks them.
 

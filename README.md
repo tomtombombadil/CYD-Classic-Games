@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Twenty-four games and an RPG dice roller so far: **Sudoku** (from
+> under way. Twenty-five games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **CYD-dle**, **Yaht-CYD** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **CYD-dle**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a long-press showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -55,6 +55,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_blackjack.png" width="240" alt="Blackjack">
 <img src="docs/screenshots/small_vpoker.png" width="240" alt="Video Poker: a pair held">
 <img src="docs/screenshots/small_holdem.png" width="240" alt="Texas Hold'em: your turn after the flop">
+<img src="docs/screenshots/small_farkle.png" width="240" alt="Farkle: three dice set aside, Bank 1000">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -103,11 +104,12 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Texas Hold'em | Card Games | No-limit, you against three computer players: Easy / Medium / Hard |
 | CYD-dle | Word Games | Solo, guess the five-letter word: Easy / Normal / Hard |
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
+| Farkle | Dice Games | Push-your-luck dice to 10,000, vs computer (Easy / Medium / Hard) or pass-and-play |
 | RPG Dice | Dice Games | Every role-playing die, each shown as rolled; presets and history |
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
 greyed out, until it's built). Coming next: more games from the plan
-(Farkle, Hangman, Mancala...), then wireless play. The plan is in
+(Hangman, Mancala, Nine Men's Morris...), then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -309,6 +311,17 @@ The classic **Jacks or Better** machine. **Bet One** sets 1 to 5 credits
 shows what each hand pays at your bet and lights up the one you hold. A pair
 of Jacks or better pays; a Royal Flush pays 4000 at a 5-credit bet.
 **Hint** holds what the standard strategy keeps. 500 credits to start.
+
+## Farkle
+
+Push your luck with six dice, against the computer or pass-and-play. Tap
+the scoring dice to set them aside (they turn gold), then **Roll** the rest
+or **Bank** the turn's points. A roll that scores nothing is a **Farkle**:
+the turn's points are lost. Set all six aside and you roll all six again.
+Scoring: a 1 = 100, a 5 = 50, three of a kind = 100 x the number (three 1s
+= 1000), four / five / six of a kind 1000 / 2000 / 3000, a 1-6 straight or
+three pairs 1500, four of a kind with a pair 1500, two triples 2500. First
+to 10,000 wins; the other player gets one last turn to beat it.
 
 ## Texas Hold'em
 

@@ -230,7 +230,15 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   for finished games or games that reached 2048; tile colors are a ramp
   over palette roles so custom themes recolor them), Yaht-CYD (official joker rules; boxes "Run of 4"/"Run of 5" so
   the card fits; used boxes filled solid `frame` blue - Tom: tell them
-  from open ones at a glance), RPG Dice (id `rpgdice`, Dice category -
+  from open ones at a glance), Farkle (id `farkle`; you vs computer or
+  pass-and-play (+ wireless later), to 10,000 with a last turn for the
+  other player; scoring 1=100, 5=50, triples 100x (1s 1000), 4/5/6 of a
+  kind 1000/2000/3000, straight / three pairs / 4+pair 1500, two triples
+  2500; dice count only in their own roll; hot dice; tap dice to set aside
+  (gold), Roll N Dice / Bank N keys; a Farkle tints the dice red and
+  "Pass the Dice"; computer Easy banks at 300, Medium by dice left, Hard
+  weighs Farkle odds and the scores (Hard beats Easy ~60 %); picks silent,
+  a roll = Move, a bank = Place, Farkle = "aww", game end Win / Lose), RPG Dice (id `rpgdice`, Dice category -
   Tom, 2026-10-03: "not a game but fits"; Coin d4 d6 d8 d10 d12 d20 d100;
   tap die keys to build a pool + one modifier (-1/+1), Roll repeats it,
   the next die tap after a roll starts a new pool; the tray (felt) draws

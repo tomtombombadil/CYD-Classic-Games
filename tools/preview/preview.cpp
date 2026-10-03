@@ -25,6 +25,12 @@
 #include "games/rpgdice/rpgdice_core.h"
 #include "games/vpoker/vpoker_core.h"
 #include "games/holdem/holdem_core.h"
+#include "games/farkle/farkle_core.h"
+namespace farkle_preview {
+farkle::Game* game();
+void refresh();
+void step(uint32_t ms);
+}
 namespace holdem_preview {
 void run_to_you();
 void deal(uint32_t seed);
@@ -769,6 +775,44 @@ int main(int argc, char** argv)
         shot(out + "_dark_56_holdem.ppm");
         kit_preview_menu();
         shot(out + "_dark_57_holdem_menu.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Farkle: the start, a roll with scoring dice picked, a Farkle, the menu
+        ui::app_open_game_now(games::find("farkle"));
+        shot(out + "_light_58_farkle_new.ppm");
+        farkle::Game* g = farkle_preview::game();
+        if (g) {
+            farkle::Rng rng(11);
+            for (int t = 0; t < 40; ++t) {                    // a roll with a set to pick
+                *g = farkle::Game{};
+                g->roll(rng);
+                uint8_t m;
+                if (g->phase == farkle::Phase::Rolled && farkle::best_set(g->dice, 6, &m) >= 300 && m != 0x3F) {
+                    for (int i = 0; i < 6; ++i) if ((m >> i) & 1) g->toggle(i);
+                    break;
+                }
+            }
+            g->score[0] = 2350; g->score[1] = 3100; g->turn_score = 0;
+            farkle_preview::refresh();
+            shot(out + "_light_58_farkle_pick.ppm");
+            for (int t = 0; t < 200; ++t) {                   // a Farkle
+                *g = farkle::Game{};
+                g->score[0] = 2350; g->score[1] = 3100;
+                g->roll(rng);
+                if (g->phase == farkle::Phase::Farkle) break;
+            }
+            farkle_preview::refresh();
+            shot(out + "_light_58_farkle_farkle.ppm");
+        }
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("farkle"));
+        shot(out + "_dark_58_farkle.ppm");
+        kit_preview_menu();
+        shot(out + "_dark_59_farkle_menu.ppm");
         ui::close_overlays();
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);

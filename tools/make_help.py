@@ -84,12 +84,12 @@ write("reversi", [
 write("checkers", [
  ("The Idea", "Pieces move diagonally on the dark squares; Black goes first.\nA man moves one step forward. Jump an enemy piece by hopping over it to the empty square beyond; it's removed.\nTake all the other side's pieces, or leave them no move, to win."),
  ("Jumps And Kings", "Jumping is compulsory: if you can jump, you must. After a jump, the same piece keeps jumping while it can.\nA man reaching the far row is crowned king and moves both ways. Crowning ends the move.\n40 moves each with no jump and no man moving is a draw."),
- ("Playing", "Tap one of your pieces (its landing squares show as dots), then tap where it goes. When a jump is possible, only pieces that can jump respond.\nA double jump is tapped one landing at a time.\nLong-press any piece to see where it could move; the next tap clears that."),
+ ("Playing", "Tap one of your pieces (its landing squares show as dots), then tap where it goes. When a jump is possible, only pieces that can jump respond.\nA double jump is tapped one landing at a time.\nHold a piece for a moment to see where it could move; letting go puts things back."),
  TP,
 ], True)
 
 write("chess", [
- ("Playing", "Tap one of your pieces: dots show where it can go. Then tap the square.\nA pawn reaching the far side asks what it becomes (Queen, Rook, Bishop, Knight).\nLong-press any piece, either side's, to see its moves; the next tap clears that."),
+ ("Playing", "Tap one of your pieces: dots show where it can go. Then tap the square.\nA pawn reaching the far side asks what it becomes (Queen, Rook, Bishop, Knight).\nHold any piece, either side's, for a moment to see its moves; letting go puts things back."),
  ("The Rules", "White moves first. Castling, en passant and promotion all work. A king in check has its square tinted red; you must get it out of check.\nCheckmate wins. Stalemate, threefold repetition, 50 moves with no capture or pawn move, and too little material to mate are draws."),
  ("The Computer", "Easy looks 2 moves ahead. Medium looks 3, thinking up to 2 seconds. Hard looks up to 6, thinking up to 6 seconds a move.\nThe screen stays usable while it thinks. Against the computer you and it take turns playing White."),
  TP,
@@ -178,6 +178,13 @@ write("rpgdice", [
  ("Presets", "A preset rolls up to four lines at once, each a label (Hit, Damage...), dice and a modifier: a fighter's two attacks are Hit d20+7, Damage d8+5, Hit d20+4, Damage d6+5.\nPresets: tap one to roll it. Edit Presets: change a name, lines, dice and modifiers. + New makes one."),
  ("History", "History lists every roll, newest first: the dice, each one's number and the total. < > turn the pages.\nClear History empties it. Rolls, presets and history are saved on the board."),
 ])
+
+write("farkle", [
+ ("The Idea", "A push-your-luck dice game for two: you against the computer, or pass-and-play. First to 10,000 wins; the other player then gets one last turn to beat it.\nRoll six dice, set aside the ones that score, then roll the rest again or bank the points."),
+ ("A Turn", "Tap scoring dice to set them aside (they turn gold); the Bank key shows what you'd bank.\nRoll throws the dice left. Each roll must score something, or it's a Farkle: the turn's points are lost.\nSet all six aside and you roll all six again (hot dice)."),
+ ("Scoring", "• A 1 = 100, a 5 = 50\n• Three of a kind = 100 x the number (three 1s = 1000)\n• Four of a kind 1000, five 2000, six 3000\n• 1-2-3-4-5-6 = 1500, three pairs = 1500\n• Four of a kind and a pair = 1500, two triples = 2500\nDice count only in the roll they came up in."),
+ TP,
+], two_player=True)
 
 write("vpoker", [
  ("The Idea", "The classic Jacks or Better machine. Bet 1 to 5 credits and get five cards. Tap the cards you want to keep: they say HELD. Then Draw replaces the rest, once.\nYour final hand pays by the table at the top, times your bet. The hand you hold lights up."),

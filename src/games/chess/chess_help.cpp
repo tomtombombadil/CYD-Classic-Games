@@ -11,7 +11,7 @@ const HelpPage kPages[] = {
     {"Playing",
         "Tap one of your pieces: dots show where it can go. Then tap the square.\n"
         "A pawn reaching the far side asks what it becomes (Queen, Rook, Bishop, Knight).\n"
-        "Long-press any piece, either side's, to see its moves; the next tap clears that."},
+        "Hold any piece, either side's, for a moment to see its moves; letting go puts things back."},
     {"The Rules",
         "White moves first. Castling, en passant and promotion all work. A king in check has its square tinted red; you must get it out of check.\n"
         "Checkmate wins. Stalemate, threefold repetition, 50 moves with no capture or pawn move, and too little material to mate are draws."},

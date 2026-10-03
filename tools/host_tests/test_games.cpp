@@ -29,6 +29,7 @@
 #include "../../src/games/rpgdice/rpgdice_core.h"
 #include "../../src/games/vpoker/vpoker_core.h"
 #include "../../src/games/holdem/holdem_core.h"
+#include "../../src/games/farkle/farkle_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -1669,6 +1670,73 @@ static void test_holdem()
     CHECK(parse_line(line, back) && back.result == Result::Won && back.net == 140 && back.chips == 1250);
 }
 
+// ---- Farkle ----------------------------------------------------------------------------------
+static void test_farkle()
+{
+    using namespace farkle;
+    struct Case { const char* dice; int score; };
+    const Case cases[] = {
+        {"1", 100}, {"5", 50}, {"15", 150}, {"2", -1}, {"12", -1}, {"222", 200}, {"111", 1000},
+        {"666", 600}, {"2222", 1000}, {"22222", 2000}, {"222222", 3000}, {"123456", 1500},
+        {"223344", 1500}, {"222333", 2500}, {"222255", 1500}, {"1115", 1050}, {"55555", 2000},
+        {"111111", 3000}, {"115", 250}, {"", 0},
+    };
+    for (const Case& c : cases) {
+        uint8_t v[6]; int n = 0;
+        for (const char* d = c.dice; *d; ++d) v[n++] = uint8_t(*d - '0');
+        const int sc = score_exact(v, n);
+        if (sc != c.score) printf("farkle %s: %d, expected %d\n", c.dice, sc, c.score);
+        CHECK(sc == c.score);
+    }
+    const uint8_t farkle_roll[6] = {2, 3, 4, 6, 6, 2};
+    CHECK(best_set(farkle_roll, 6) == 0);
+    uint8_t m;
+    const uint8_t mixed[6] = {1, 5, 3, 3, 3, 2};
+    CHECK(best_set(mixed, 6, &m) == 450 && m == 0x1F);
+    // A turn by hand: roll, pick, bank
+    Rng rng(4);
+    Game g;
+    CHECK(g.can_roll() && !g.can_bank());
+    CHECK(g.roll(rng));
+    if (g.phase == Phase::Rolled) {
+        uint8_t mask;
+        best_set(g.dice, 6, &mask);
+        for (int i = 0; i < 6; ++i) if ((mask >> i) & 1) g.toggle(i);
+        const int s = g.picked_score();
+        CHECK(s > 0 && g.can_bank());
+        CHECK(g.bank() && g.score[0] == s && g.turn == 1 && g.phase == Phase::Start);
+    }
+    // Computer against computer: games end, the scores add up, Hard beats Easy
+    int hard_wins = 0;
+    const int games = 300;
+    for (int k = 0; k < games; ++k) {
+        Game x;
+        const int hard_side = k & 1;
+        int steps = 0;
+        while (!x.over() && steps < 20000) {
+            ++steps;
+            if (x.phase == Phase::Start) { x.roll(rng); continue; }
+            if (x.phase == Phase::Farkle) { x.next_turn(); continue; }
+            const Plan p = plan(x, x.turn == hard_side ? 2 : 0);
+            CHECK(p.pick != 0);
+            x.picked = p.pick;
+            CHECK(x.picked_score() > 0);
+            if (p.roll_on) x.roll(rng); else x.bank();
+        }
+        CHECK(x.over());
+        CHECK(x.score[x.winner] >= x.score[x.winner ^ 1]);
+        hard_wins += x.winner == hard_side;
+        if (k == 0) {
+            uint8_t buf[Game::kSaveBytes];
+            Game b;
+            CHECK(x.serialize(buf, sizeof buf) == sizeof buf && b.deserialize(buf, sizeof buf));
+            CHECK(b.score[0] == x.score[0] && b.score[1] == x.score[1] && b.phase == x.phase);
+        }
+    }
+    printf("farkle: Hard beat Easy in %d of %d games\n", hard_wins, games);
+    CHECK(hard_wins > games * 55 / 100);
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -1736,6 +1804,7 @@ int main()
     test_rpgdice();
     test_vpoker();
     test_holdem();
+    test_farkle();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;
