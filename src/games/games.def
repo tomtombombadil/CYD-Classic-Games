@@ -5,6 +5,7 @@
 // GAME(id, "Title", Category, modes, "one-line description")
 //   id        folder src/games/<id>/, save /games/<id>.bin, stats <id>.csv;
 //             the game defines `extern const games::GameOps <id>_ops`
+//             and its How To Play pages `games::Help <id>_help`
 //   Category  Puzzles, Strategy, Word, Dice or Other
 //   modes     kSolo, kVsComputer, kPassAndPlay, kNetwork (or-ed)
 //

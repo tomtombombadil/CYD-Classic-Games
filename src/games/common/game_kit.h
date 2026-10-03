@@ -45,6 +45,7 @@ enum MenuId : intptr_t {
     kLevel0 = 0, kLevel1 = 1, kLevel2 = 2,   // new game: vs computer level / puzzle level
     kPassAndPlay = 3, kWireless = 4,
     kStats = 5, kExitGame = 6, kSettings = 7, kExitMenu = 8, kRestart = 9,
+    kHowToPlay = 10,
 };
 struct MenuHandlers {
     void (*pick)(int id);          // a level, pass-and-play or restart was tapped
@@ -53,14 +54,24 @@ struct MenuHandlers {
     void (*reopen)();              // show this menu again (Back from Settings)
 };
 // Two-player: "New game vs computer: Easy Medium Hard", Pass and play,
-// Wireless (not yet), Stats | Settings, and at the bottom Exit Menu | Exit Game.
+// Wireless (not yet), How To Play, Stats | Settings, and at the bottom Exit Menu | Exit Game.
 void menu_two_player(const char* title, const MenuHandlers& h);
-// Solo puzzle: "New Game:" three levels, Restart, Stats | Settings, and at
+// Solo puzzle: "New Game:" three levels, Restart, How To Play,
+// Stats | Settings, and at
 // the bottom Exit Menu | Exit Game.
 // levels == nullptr: one "New Game" key (id kLevel0). restart = false hides
 // "Restart This Game".
 void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h,
                bool restart = true);
+
+// ---- How To Play ----------------------------------------------------------------------
+// The open game's help pages (games.def / <id>_help.cpp), one per screen:
+// heading with "2 / 4", the text, and [<] [Back To Menu] [>] at the bottom.
+// `back` reopens the game's menu.
+void how_to_play(void (*back)(), int page = 0);
+// The standard menu row that opens it (full width, above Stats | Settings);
+// the standard menus include it already.
+void how_to_play_key(lv_event_cb_t cb, intptr_t id);
 
 // ---- Stats --------------------------------------------------------------------------------
 void stats_two_player(const char* game_id, const twoplayer::Sides& sides, void (*back)());

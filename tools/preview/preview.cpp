@@ -639,6 +639,27 @@ int main(int argc, char** argv)
         ui::app_go_home_now();
     }
 
+    {   // How To Play: every page of every game (light), a few also dark.
+        // kit::how_to_play() reports any page whose text runs into the keys.
+        for (int g = 0; g < games::count(); ++g) {
+            const games::GameInfo& gi = games::get(g);
+            ui::app_open_game_now(g);
+            for (int p = 0; p < gi.help->count; ++p) {
+                kit::how_to_play(nullptr, p);
+                shot(out + "_light_40_help_" + gi.id + "_" + std::to_string(p + 1) + ".ppm");
+            }
+            ui::close_overlays();
+            ui::app_go_home_now();
+        }
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("chess"));
+        kit::how_to_play(nullptr, 0);
+        shot(out + "_dark_40_help_chess_1.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
     // 5. "All games": back to the picker, which now offers the last game
     ui::app_go_home_now();
     shot(out + "_light_10_picker_after.ppm");

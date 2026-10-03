@@ -95,7 +95,9 @@ starts). Tap anywhere to go on to the game picker.
   (bottom left) closes the menu and goes back to the game; **Exit Game**
   (bottom right) saves the game and comes back here.
 
-Every game saves itself and keeps its own stats. Theme, sound, brightness
+Every game has **How To Play** in its ☰ menu: a few short pages on the
+idea, the rules and how its screen works. Every game saves itself and
+keeps its own stats. Theme, sound, brightness
 and touch calibration are shared.
 
 ## Settings

@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <lvgl.h>
+#include "help.h"
 
 namespace games {
 
@@ -46,6 +47,7 @@ struct GameInfo {
     uint8_t        modes;
     const char*    blurb;
     const GameOps* ops;
+    const Help*    help;               // How To Play pages
 };
 
 int             count();

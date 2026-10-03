@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include "games/registry.h"
 #include "ui/shell.h"
 #include "ui/theme.h"
 #include "ui/widgets.h"
@@ -39,6 +40,7 @@ void menu_cb(lv_event_t* e)
         case kStats:     if (handlers.stats) handlers.stats(); break;
         case kExitGame:  app_go_home(); break;
         case kSettings:  settings_open(handlers.reopen); break;
+        case kHowToPlay: how_to_play(handlers.reopen); break;
         case kExitMenu:  close_overlays(); if (handlers.back) handlers.back(); break;
         case kWireless:  break;                       // stage 5 (multiplayer)
         default:
@@ -69,6 +71,7 @@ lv_obj_t* row_key(lv_obj_t* r, const char* text, intptr_t id)
 
 void menu_tail()
 {
+    how_to_play_key(menu_cb, kHowToPlay);
     lv_obj_t* r = row(menu_btn_h());
     row_key(r, "Stats", kStats);
     row_key(r, "Settings", kSettings);
@@ -242,6 +245,100 @@ void menu_solo(const char* title, const char* const levels[3], const MenuHandler
     }
     if (restart) overlay_button(overlay(), "Restart This Game", menu_cb, kRestart);
     menu_tail();
+}
+
+// ---- How To Play -------------------------------------------------------------------------
+namespace {
+void (*help_back)() = nullptr;
+int   help_page = 0;
+
+void help_cb(lv_event_t* e)
+{
+    const intptr_t id = reinterpret_cast<intptr_t>(lv_event_get_user_data(e));
+    if (id == 0) { if (help_back) help_back(); else close_overlays(); return; }
+    how_to_play(help_back, help_page + int(id));
+}
+
+lv_obj_t* help_key(lv_obj_t* r, const char* text, intptr_t id, bool grow, bool on)
+{
+    const bool large = metrics().large;
+    lv_obj_t* b = make_key(r, large ? 56 : 48, menu_btn_h(), on ? help_cb : nullptr, id);
+    if (grow) lv_obj_set_flex_grow(b, 1);
+    key_label(b, text, menu_font());
+    if (!on) set_dim(b, true);
+    return b;
+}
+} // namespace
+
+void how_to_play_key(lv_event_cb_t cb, intptr_t id)
+{
+    overlay_button(overlay(), "How To Play", cb, id);
+}
+
+void how_to_play(void (*back)(), int page)
+{
+    help_back = back;
+    const int gi = app_current_game();
+    const games::Help* h = gi >= 0 ? games::get(gi).help : nullptr;
+    const int n = h ? h->count : 0;
+    if (page < 0) page = 0;
+    if (n && page >= n) page = n - 1;
+    help_page = page;
+
+    overlay_begin(gi >= 0 ? games::get(gi).title : "How To Play");
+    const bool large = metrics().large;
+
+    // Heading: "How To Play: <page title>" .... "2 / 4"
+    lv_obj_t* head = lv_obj_create(overlay());
+    lv_obj_remove_style_all(head);
+    lv_obj_set_size(head, lv_pct(100), LV_SIZE_CONTENT);
+    lv_obj_set_scrollable(head, false);
+    lv_obj_t* ht = lv_label_create(head);
+    lv_label_set_text(ht, n ? h->pages[page].title : "How To Play");
+    lv_obj_set_style_text_font(ht, menu_font(), 0);
+    lv_obj_set_style_text_color(ht, pal().entry, 0);
+    if (n > 1) {
+        char pg[24];
+        snprintf(pg, sizeof pg, "%d / %d", page + 1, n);
+        lv_obj_t* pl = lv_label_create(head);
+        lv_label_set_text(pl, pg);
+        lv_obj_set_style_text_font(pl, menu_font(), 0);
+        lv_obj_set_style_text_color(pl, pal().muted, 0);
+        lv_obj_align(pl, LV_ALIGN_TOP_RIGHT, 0, 0);
+    }
+
+    lv_obj_t* body = lv_label_create(overlay());
+    lv_label_set_long_mode(body, LV_LABEL_LONG_MODE_WRAP);
+    lv_obj_set_width(body, lv_pct(100));
+    lv_label_set_text(body, n ? h->pages[page].text : "");
+    lv_obj_set_style_text_font(body, large ? &lv_font_montserrat_20 : &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(body, pal().ink, 0);
+    lv_obj_set_style_text_line_space(body, large ? 2 : 1, 0);
+
+    // Bottom row: [<] [Back To Menu] [>]
+    lv_obj_t* r = lv_obj_create(overlay());
+    lv_obj_remove_style_all(r);
+    lv_obj_set_size(r, lv_pct(100), menu_btn_h());
+    lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_column(r, 6, 0);
+    lv_obj_set_scrollable(r, false);
+    lv_obj_set_ignore_layout(r, true);
+    lv_obj_align(r, LV_ALIGN_BOTTOM_MID, 0, 0);
+    help_key(r, LV_SYMBOL_LEFT, -1, false, page > 0);
+    lv_obj_t* mid = help_key(r, "Back To Menu", 0, true, true);
+    lv_obj_add_state(mid, LV_STATE_CHECKED);
+    help_key(r, LV_SYMBOL_RIGHT, 1, false, page + 1 < n);
+
+#ifdef CYD_PREVIEW
+    // Every page must fit without scrolling: report text running into the keys
+    lv_obj_update_layout(overlay());
+    lv_area_t a, k;
+    lv_obj_get_coords(body, &a);
+    lv_obj_get_coords(r, &k);
+    if (a.y2 >= k.y1 - 2)
+        fprintf(stderr, "HELP OVERFLOW %s page %d at %dx%d: %d px\n", gi >= 0 ? games::get(gi).id : "?",
+                page + 1, metrics().w, metrics().h, a.y2 - k.y1 + 3);
+#endif
 }
 
 // ---- Stats ---------------------------------------------------------------------------------

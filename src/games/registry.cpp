@@ -9,15 +9,16 @@
 
 namespace games {
 
-// Each game provides `const GameOps <id>_ops` in its own folder.
-#define GAME(id, title, cat, modes, blurb) extern const GameOps id##_ops;
+// Each game provides `const GameOps <id>_ops` and `const Help <id>_help`
+// in its own folder.
+#define GAME(id, title, cat, modes, blurb) extern const GameOps id##_ops; extern const Help id##_help;
 #include CYD_GAMES_DEF
 #undef GAME
 
 namespace {
 
 const GameInfo kGames[] = {
-#define GAME(id, title, cat, modes, blurb) {#id, title, Category::cat, static_cast<uint8_t>(modes), blurb, &id##_ops},
+#define GAME(id, title, cat, modes, blurb) {#id, title, Category::cat, static_cast<uint8_t>(modes), blurb, &id##_ops, &id##_help},
 #include CYD_GAMES_DEF
 #undef GAME
 };

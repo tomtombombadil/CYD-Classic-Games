@@ -66,6 +66,13 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   - `<id>_screen.*` - LVGL UI. Hardware actions go through the app shell
     (`ui::Shell` in `src/ui/shell.h`, filled in by main.cpp), so it also
     builds in `tools/preview/`.
+  - `<id>_help.cpp` - How To Play pages (`CYD_HELP(<id>, pages)`, plain
+    data, see `src/games/help.h`): the idea, the rules, how this game's
+    screen works, levels. Shared two-player page `kHelpTwoPlayer` in
+    `common/help_common.*`. Each page must fit a 240x320 screen with no
+    scrolling; the preview renders every page at both sizes and prints
+    `HELP OVERFLOW` if text runs into the keys. Keep it current when a
+    game's rules or controls change.
   - `<id>_app.cpp` - the registry entry (`games::GameOps <id>_ops`: open,
     close, save, tick, restyle, summary for "Continue", icon) and the
     save/stats glue through the shell.
@@ -74,7 +81,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 - The game list is `src/games/games.def` (one `GAME(id, "Title", Category,
   modes, "blurb")` line each). `src/games/registry.*` builds the table from
   it and `tools/make_site.py` reads it for the web page; nothing else
-  hard-codes the game list. Adding a game = folder + `games.def` line.
+  hard-codes the game list. Adding a game = folder (incl. `<id>_help.cpp`)
+  + `games.def` line.
 - Shared game code in `src/games/common/`:
   - `two_player.*`, `puzzle_stats.*` (plain C++, host-tested): stats CSV
     formats for two-player games and solo puzzles.
@@ -147,7 +155,10 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   display size like every screen.
 - Resistive touch: big targets; tap, never drag or swipe. Moving a piece =
   tap the piece, then tap the destination. Swipe games (2048) slide by
-  tapping the board edge in that direction.
+  tapping the board edge in that direction. 2048 (Tom, 2026-10-03): the
+  board's two diagonals, extended to the screen edges, split the whole
+  play area into 4 invisible tap zones (top = up, right = right, ...);
+  a tap in a zone = a swipe that way.
 - Long-press is not forbidden, just not preferred: never the only way to do
   something. Propose each use to Tom and ask before adding it. Approved
   (2026-10-02): Minesweeper (long-press = flag, besides the Flag toggle);
@@ -158,7 +169,9 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 - Strong highlight tints with distinct hues (cheap TN panels wash out pale
   tints at an angle). No shrinking fonts to squeeze labels in.
 - Each game: top bar with a 3-line hamburger menu (new game, restart,
-  stats, Settings). Its LAST row, pinned to the bottom, is always
+  **How To Play** (Tom, 2026-10-03: every game; full-width key above
+  Stats | Settings, opens `kit::how_to_play()`: pages with < > keys and
+  Back To Menu), stats, Settings). Its LAST row, pinned to the bottom, is always
   **Exit Menu** (bottom left, primary; closes the menu) | **Exit Game**
   (bottom right; saves and frees the game, back to the picker) - Tom's
   rule, use `ui::overlay_exit_row()`. The picker reopens the last game in

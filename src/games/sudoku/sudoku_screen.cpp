@@ -6,6 +6,7 @@
 #include "sudoku_app.h"
 #include "sudoku_board_view.h"
 #include "sudoku_stock.h"
+#include "games/common/game_kit.h"
 #include "ui/shell.h"
 #include "ui/sound.h"
 #include "ui/theme.h"
@@ -302,7 +303,7 @@ void new_game_cb(lv_event_t* e)
     start_new(static_cast<sudoku::Difficulty>(reinterpret_cast<intptr_t>(lv_event_get_user_data(e))));
 }
 
-enum MenuAction : intptr_t { kRestart, kSettings, kExitMenu, kStats, kExitGame };
+enum MenuAction : intptr_t { kRestart, kSettings, kExitMenu, kStats, kExitGame, kHowToPlay };
 
 void back_to_menu() { open_menu(); }
 
@@ -321,6 +322,7 @@ void menu_cb(lv_event_t* e)
             update();
             break;
         case kSettings:   settings_open(back_to_menu); break;
+        case kHowToPlay:  kit::how_to_play(back_to_menu); break;
         case kExitMenu:   close_overlays(); update(); break;
         case kStats:      open_stats(); break;
         case kExitGame:   app_go_home(); break;
@@ -549,6 +551,7 @@ void open_menu()
         key_label(b, sudoku::difficulty_name(static_cast<sudoku::Difficulty>(d)), menu_font());
     }
     overlay_button(overlay(), "Restart This Puzzle", menu_cb, kRestart);
+    kit::how_to_play_key(menu_cb, kHowToPlay);
     overlay_pair("Stats", menu_cb, kStats, "Settings", menu_cb, kSettings);
     overlay_exit_row(menu_cb, kExitMenu, kExitGame);
 }
