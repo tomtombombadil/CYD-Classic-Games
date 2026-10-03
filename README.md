@@ -21,7 +21,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 ## Screenshots
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
-page, Sudoku and its menu, Chess (and a long-press showing where a piece can
+page, Sudoku and its menu, Chess (and a tap showing where a piece can
 go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
@@ -31,7 +31,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_sudoku_light.png" width="240" alt="Sudoku in progress">
 <img src="docs/screenshots/small_sudoku_menu.png" width="240" alt="Sudoku menu with Exit Menu and Exit Game">
 <img src="docs/screenshots/small_chess.png" width="240" alt="Chess against the computer">
-<img src="docs/screenshots/small_chess_peek.png" width="240" alt="Chess: long-press shows where a piece can move">
+<img src="docs/screenshots/small_chess_peek.png" width="240" alt="Chess: a tap shows where a piece can move">
 <img src="docs/screenshots/small_checkers.png" width="240" alt="Checkers">
 <img src="docs/screenshots/small_reversi.png" width="240" alt="Reversi with legal moves shown as dots">
 <img src="docs/screenshots/small_fourconnect.png" width="240" alt="FourConnect against the computer">
@@ -109,7 +109,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
 greyed out, until it's built). Coming next: more games from the plan
-(Hangman, Mancala, Nine Men's Morris...), then wireless play. The plan is in
+(Mancala, Nine Men's Morris...), then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -184,8 +184,9 @@ new one counts as a loss.
   last disc played.
 - **Tic-Tac-Toe:** tap a square. Hard plays perfectly: the best you can do
   is a draw.
-- **Long-press** (Chess and Checkers): hold a piece, yours or the other
-  side's, to see where it could move. The next tap clears it.
+- **Seeing moves** (Chess and Checkers): tap one of your pieces and dots
+  show where it can go; tap a dot to move. Tap one of the other side's
+  pieces to see its moves; the next tap clears that.
 - **Play Again** appears when a game ends.
 
 ## CYD-dle

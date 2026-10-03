@@ -31,8 +31,7 @@ constexpr const char* kId = "chess";
 Game* G = nullptr;
 
 int  sel = -1;                         // picked piece
-bool peek = false;                     // long-press view on screen
-int  peek_saved = -1;                  // the selection the peek covers
+bool peek = false;                     // showing a piece's moves, not a pick
 int  promo_from = -1, promo_to = -1;   // waiting for the promotion choice
 
 // Solid (U+265A..F) and outline (U+2654..9) symbols, by piece (Pawn = 1 .. King = 6)
@@ -153,11 +152,15 @@ void ask_promotion(int from, int to)
 void on_tap(int sq)
 {
     if (!G) return;
-    if (peek) { sel = peek_saved; peek = false; }   // (press lost mid-peek)
-    if (!match::human_may_move()) { redraw(); return; }
+    // A tap acts on what's shown: a move for the picked piece, else a pick.
+    // Any piece shows where it can go (Tom, 2026-10-03): your own piece is
+    // picked (dots), the other side's - or any piece while you can't move -
+    // is only shown, and the next tap clears that view.
+    if (peek) { clear_pick(); redraw(); return; }
+    const bool may = match::human_may_move();
     MoveList l;
     G->legal(l);
-    if (sel >= 0) {
+    if (may && sel >= 0) {
         int found = -1, count = 0;
         for (int k = 0; k < l.n; ++k)
             if (l.m[k].from == sel && l.m[k].to == sq) { found = k; ++count; }
@@ -165,32 +168,17 @@ void on_tap(int sq)
         if (count > 1) { ask_promotion(sel, sq); return; }
     }
     const uint8_t c = G->pos.sq[sq];
-    if (c && side_of(c) == G->turn()) {
+    if (c && may && side_of(c) == G->turn()) {
         bool has = false;
         for (int k = 0; k < l.n; ++k) has |= l.m[k].from == sq;
         sel = has ? sq : -1;
         if (!has) ui::sound(ui::Sound::Error);
+    } else if (c && sq != sel) {
+        sel = sq;                               // just a look at its moves
+        peek = true;
     } else {
         clear_pick();
     }
-    redraw();
-}
-
-void on_long(int sq)
-{
-    if (!G || !G->pos.sq[sq]) return;
-    if (!peek) peek_saved = sel;
-    sel = sq;
-    peek = true;
-    redraw();
-}
-
-// Released: back to what was picked before; the tap that follows acts on it
-void on_long_end()
-{
-    if (!peek) return;
-    sel = peek_saved;
-    peek = false;
     redraw();
 }
 
@@ -238,8 +226,6 @@ void build()
     cfg.flipped = shown_flipped = flipped();
     cfg.draw_piece = draw_piece;
     cfg.on_tap = on_tap;
-    cfg.on_long_press = on_long;
-    cfg.on_long_end = on_long_end;
     board8::create(lv_screen_active(), margin, top, m.w - 2 * margin, bottom - top, cfg);
     match::restart_view();
     redraw();

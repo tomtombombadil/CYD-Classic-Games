@@ -31,10 +31,7 @@ Game* G = nullptr;
 int  sel = -1;                         // picked piece
 int  path_n = 0;                       // landings tapped so far
 uint8_t path[kMaxPath];
-// The pick a long-press peek covers, restored when it ends
-int     peek_sel = -1, peek_path_n = 0;
-uint8_t peek_path[kMaxPath];
-bool peek = false;                     // long-press view on screen
+bool peek = false;                     // showing a piece's moves, not a pick
 char note_text[40] = "";
 uint64_t must_jump = 0;                // pieces that can jump, lit while the note shows
 
@@ -132,20 +129,19 @@ void clear_pick()
     peek = false;
 }
 
-// Back to the pick from before the long-press
-void on_long_end_quiet()
-{
-    sel = peek_sel;
-    path_n = peek_path_n;
-    memcpy(path, peek_path, sizeof path);
-    peek = false;
-}
-
 void on_tap(int sq)
 {
     if (!G) return;
-    if (peek) on_long_end_quiet();               // (press lost mid-peek)
-    if (!match::human_may_move()) { redraw(); return; }
+    // Any piece shows where it can go (Tom, 2026-10-03): your own piece is
+    // picked (dots), the other side's - or any piece while you can't move -
+    // is only shown, and the next tap clears that view.
+    if (peek) { clear_pick(); redraw(); return; }
+    const bool may = match::human_may_move();
+    if (!may) {
+        if (G->pos.cell(sq) >= 0) { sel = sq; path_n = 0; peek = true; }
+        redraw();
+        return;
+    }
     MoveList l;
     G->legal(l);
     if (sel >= 0) {
@@ -182,30 +178,13 @@ void on_tap(int sq)
                 match::refresh();                    // show the note
             }
         }
+    } else if (G->pos.cell(sq) >= 0) {
+        sel = sq;                               // the other side's: just a look
+        path_n = 0;
+        peek = true;
     } else {
         clear_pick();
     }
-    redraw();
-}
-
-void on_long(int sq)
-{
-    if (!G || G->pos.cell(sq) < 0) return;
-    if (!peek) {
-        peek_sel = sel;
-        peek_path_n = path_n;
-        memcpy(peek_path, path, sizeof path);
-    }
-    sel = sq;
-    path_n = 0;
-    peek = true;
-    redraw();
-}
-
-void on_long_end()
-{
-    if (!peek) return;
-    on_long_end_quiet();
     redraw();
 }
 
@@ -252,8 +231,6 @@ void build()
     cfg.flipped = flipped();
     cfg.draw_piece = draw_piece;
     cfg.on_tap = on_tap;
-    cfg.on_long_press = on_long;
-    cfg.on_long_end = on_long_end;
     board8::create(lv_screen_active(), margin, top, m.w - 2 * margin, bottom - top, cfg);
     match::restart_view();
     redraw();

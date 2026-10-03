@@ -623,7 +623,7 @@ int main(int argc, char** argv)
     }
 
     {   // Chess vs the computer: player is White, an opening, a knight picked,
-        // then a long-press on a black piece; and the promotion question
+        // then a tap on a white piece shows its moves; and the promotion question
         chess::Game* g = new chess::Game();
         const char* opening[] = {"e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "g8f6", "d2d3", "f8c5", "c2c3"};
         for (const char* mv : opening) {
@@ -643,16 +643,10 @@ int main(int argc, char** argv)
         preview_tap_square(57);                                  // b8 knight... moved: c6
         preview_tap_square(42, 550);                             // a slow, firm tap still picks
         shot(out + "_light_27_chess_pick.ppm");
-        {   // long-press the white bishop on c4: its moves show while held
-            int x, y;
-            board8::square_center(26, &x, &y);
-            touch_x = int16_t(x); touch_y = int16_t(y); touch_down = true;
-            run(900);
-            shot(out + "_light_28_chess_peek.ppm");
-            touch_down = false;
-            run(80);
-            shot(out + "_light_28_chess_after_peek.ppm");          // the knight is still picked
-        }
+        preview_tap_square(26);                                  // tap the white bishop on c4: its moves
+        shot(out + "_light_28_chess_peek.ppm");
+        preview_tap_square(26);                                  // the next tap clears the view
+        shot(out + "_light_28_chess_after_peek.ppm");
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Dark);
         ui::app_open_game_now(games::find("chess"));

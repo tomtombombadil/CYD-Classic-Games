@@ -19,7 +19,7 @@ const HelpPage kPages[] = {
     {"Playing",
         "Tap one of your pieces (its landing squares show as dots), then tap where it goes. When a jump is possible, only pieces that can jump respond.\n"
         "A double jump is tapped one landing at a time.\n"
-        "Hold a piece for a moment to see where it could move; letting go puts things back."},
+        "Tap one of the other side's pieces to see where it can go; the next tap clears that."},
     {"New Games", kHelpTwoPlayer},
 };
 

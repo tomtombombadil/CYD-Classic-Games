@@ -84,12 +84,12 @@ write("reversi", [
 write("checkers", [
  ("The Idea", "Pieces move diagonally on the dark squares; Black goes first.\nA man moves one step forward. Jump an enemy piece by hopping over it to the empty square beyond; it's removed.\nTake all the other side's pieces, or leave them no move, to win."),
  ("Jumps And Kings", "Jumping is compulsory: if you can jump, you must. After a jump, the same piece keeps jumping while it can.\nA man reaching the far row is crowned king and moves both ways. Crowning ends the move.\n40 moves each with no jump and no man moving is a draw."),
- ("Playing", "Tap one of your pieces (its landing squares show as dots), then tap where it goes. When a jump is possible, only pieces that can jump respond.\nA double jump is tapped one landing at a time.\nHold a piece for a moment to see where it could move; letting go puts things back."),
+ ("Playing", "Tap one of your pieces (its landing squares show as dots), then tap where it goes. When a jump is possible, only pieces that can jump respond.\nA double jump is tapped one landing at a time.\nTap one of the other side's pieces to see where it can go; the next tap clears that."),
  TP,
 ], True)
 
 write("chess", [
- ("Playing", "Tap one of your pieces: dots show where it can go. Then tap the square.\nA pawn reaching the far side asks what it becomes (Queen, Rook, Bishop, Knight).\nHold any piece, either side's, for a moment to see its moves; letting go puts things back."),
+ ("Playing", "Tap one of your pieces: dots show where it can go. Then tap the square.\nA pawn reaching the far side asks what it becomes (Queen, Rook, Bishop, Knight).\nTap one of the other side's pieces to see its moves; the next tap clears that."),
  ("The Rules", "White moves first. Castling, en passant and promotion all work. A king in check has its square tinted red; you must get it out of check.\nCheckmate wins. Stalemate, threefold repetition, 50 moves with no capture or pawn move, and too little material to mate are draws."),
  ("The Computer", "Easy looks 2 moves ahead. Medium looks 3, thinking up to 2 seconds. Hard looks up to 6, thinking up to 6 seconds a move.\nThe screen stays usable while it thinks. Against the computer you and it take turns playing White."),
  TP,

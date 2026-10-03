@@ -252,15 +252,18 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   preset on first open; History: 40 rolls as text, newest first, paged;
   save "RPD1" ~5 KB, written 15 s after a change and on close). Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
-  view: tap, long-press peek, target dots). Checkers: when a jump is
+  view: tap, target dots). Checkers: when a jump is
   compulsory (American rules - yes, a jump must be taken; Tom checked and
   it was right) the pieces that can jump light up (warn tint) with the
   "A jump must be taken" note. board8 taps (Tom, 2026-10-03:
   Chess taps were "very bad"): a tap acts on release (CLICKED, any
   length) at the square where the stylus came DOWN (lift-off readings
-  drift); long-press = own 750 ms timer (LVGL's 400 ms turned firm taps
-  into peeks, and the old peek then ate the next tap too); the peek shows
-  only while held and the game restores its previous pick on release.
+  drift). Seeing moves (Tom, 2026-10-03, replaces the long-press peek):
+  tap your own piece = pick it, dots show its moves, second tap = the
+  destination; tap one of the other side's pieces (or any piece while
+  it isn't your turn) = only show its moves; the next tap clears that.
+  Chess/Checkers use no long-press now (board8 still supports one: own
+  750 ms timer - LVGL's 400 ms turned firm taps into long-presses).
 - Shared UI in `src/ui/`: `widgets.*` (keys, hamburger, overlays, tables,
   screen metrics, `scratch_table()`: two shared heap tables for stats
   screens - never `static Table`, each costs ~1 KB of static RAM), `app_shell.cpp` (picker, game switching),
@@ -311,8 +314,9 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 - Long-press is not forbidden, just not preferred: never the only way to do
   something. Propose each use to Tom and ask before adding it. Approved
   (2026-10-02): Minesweeper (long-press = flag, besides the Flag toggle);
-  Chess and Checkers (long-press any piece, either side, to see where it
-  can move). Declined: Sudoku long-press to clear.
+  Chess and Checkers long-press peek (2026-10-02) was replaced by a tap
+  on the other side's piece (2026-10-03). Declined: Sudoku long-press to
+  clear.
 - No "tap again" / "are you sure" confirmations, ever. Buttons act on the
   first tap.
 - Strong highlight tints with distinct hues (cheap TN panels wash out pale
@@ -350,7 +354,7 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   Games use the named sounds (place, move, error, win, lose...), never raw
   tones. **Go easy on sounds** (Tom): they add to the game, never narrate
   taps. Silent: every key press (picker, menus, Settings, keyboards),
-  picking up a piece, holding a die, long-press peeks. Sounding: a move or
+  picking up a piece, holding a die, looking at a piece's moves. Sounding: a move or
   placement, the other side's reply, mistakes, hints, game end, and one
   sample when the Volume slider is released.
 - Settings (☰ → Settings, shared): [Theme | Invert Colors], Brightness
