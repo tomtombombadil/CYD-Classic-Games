@@ -221,6 +221,25 @@ lv_obj_t* overlay_bottom_button(const char* text, lv_event_cb_t cb, intptr_t use
     return b;
 }
 
+void overlay_exit_row(lv_event_cb_t cb, intptr_t exit_menu_id, intptr_t exit_game_id)
+{
+    lv_obj_t* row = lv_obj_create(overlay_obj);
+    lv_obj_remove_style_all(row);
+    lv_obj_set_size(row, lv_pct(100), menu_btn_h());
+    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_column(row, 6, 0);
+    lv_obj_set_scrollable(row, false);
+    lv_obj_set_ignore_layout(row, true);
+    lv_obj_align(row, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_t* a = make_key(row, 10, menu_btn_h(), cb, exit_menu_id);
+    lv_obj_set_flex_grow(a, 1);
+    lv_obj_add_state(a, LV_STATE_CHECKED);
+    key_label(a, "Exit Menu", menu_font());
+    lv_obj_t* b = make_key(row, 10, menu_btn_h(), cb, exit_game_id);
+    lv_obj_set_flex_grow(b, 1);
+    key_label(b, "Exit Game", menu_font());
+}
+
 void close_overlays()
 {
     if (overlay_closer) {

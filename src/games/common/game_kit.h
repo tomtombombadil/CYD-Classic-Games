@@ -44,19 +44,19 @@ void flash_stop();
 enum MenuId : intptr_t {
     kLevel0 = 0, kLevel1 = 1, kLevel2 = 2,   // new game: vs computer level / puzzle level
     kPassAndPlay = 3, kWireless = 4,
-    kStats = 5, kAllGames = 6, kSettings = 7, kBack = 8, kRestart = 9,
+    kStats = 5, kExitGame = 6, kSettings = 7, kExitMenu = 8, kRestart = 9,
 };
 struct MenuHandlers {
     void (*pick)(int id);          // a level, pass-and-play or restart was tapped
     void (*stats)();               // open the game's stats screen
-    void (*back)();                // "Back to game" (after the menu closed)
+    void (*back)();                // "Exit Menu" (after the menu closed)
     void (*reopen)();              // show this menu again (Back from Settings)
 };
 // Two-player: "New game vs computer: Easy Medium Hard", Pass and play,
-// Wireless (not yet), Stats | All games, Settings, Back to game.
+// Wireless (not yet), Stats | Settings, and at the bottom Exit Menu | Exit Game.
 void menu_two_player(const char* title, const MenuHandlers& h);
-// Solo puzzle: "New game:" three levels, Restart, Stats | All games,
-// Settings, Back to game.
+// Solo puzzle: "New Game:" three levels, Restart, Stats | Settings, and at
+// the bottom Exit Menu | Exit Game.
 void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h);
 
 // ---- Stats --------------------------------------------------------------------------------

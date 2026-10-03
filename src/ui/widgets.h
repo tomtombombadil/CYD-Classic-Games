@@ -56,6 +56,9 @@ void      overlay_pair(const char* a, lv_event_cb_t cb_a, intptr_t ida,
 // A primary button pinned to the bottom of the overlay (outside the column flow)
 lv_obj_t* overlay_bottom_button(const char* text, lv_event_cb_t cb, intptr_t user);
 void      close_overlays();
+// The last row of every game's ☰ menu (Tom's layout): "Exit Menu" bottom
+// left (primary), "Exit Game" bottom right, pinned to the bottom.
+void      overlay_exit_row(lv_event_cb_t cb, intptr_t exit_menu_id, intptr_t exit_game_id);
 
 // ---- Tables (stats screens) ------------------------------------------------------
 // Each table is 4 column labels holding all rows ("\n"-separated) plus a

@@ -37,9 +37,9 @@ void menu_cb(lv_event_t* e)
     const intptr_t id = reinterpret_cast<intptr_t>(lv_event_get_user_data(e));
     switch (id) {
         case kStats:     if (handlers.stats) handlers.stats(); break;
-        case kAllGames:  app_go_home(); break;
+        case kExitGame:  app_go_home(); break;
         case kSettings:  settings_open(handlers.reopen); break;
-        case kBack:      close_overlays(); if (handlers.back) handlers.back(); break;
+        case kExitMenu:  close_overlays(); if (handlers.back) handlers.back(); break;
         case kWireless:  break;                       // stage 4
         default:
             close_overlays();
@@ -71,9 +71,8 @@ void menu_tail()
 {
     lv_obj_t* r = row(menu_btn_h());
     row_key(r, "Stats", kStats);
-    row_key(r, "All games", kAllGames);
-    overlay_button(overlay(), "Settings", menu_cb, kSettings);
-    overlay_button(overlay(), "Back to game", menu_cb, kBack, true);
+    row_key(r, "Settings", kSettings);
+    overlay_exit_row(menu_cb, kExitMenu, kExitGame);
 }
 
 // Delete last / Clear all on stats screens act at once, then redraw
@@ -111,7 +110,7 @@ void stats_bottom(bool any)
     lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_column(r, 6, 0);
     lv_obj_set_scrollable(r, false);
-    const char* labels[2] = {"Delete last", "Clear all"};
+    const char* labels[2] = {"Delete Last", "Clear All"};
     for (int k = 0; k < 2; ++k) {
         lv_obj_t* b = make_key(r, 10, bh, stats_action_cb, k + 1);
         lv_obj_set_flex_grow(b, 1);
@@ -219,12 +218,12 @@ void menu_two_player(const char* title, const MenuHandlers& h)
 {
     handlers = h;
     overlay_begin(title);
-    overlay_text("New game vs computer:", false);
+    overlay_text("New Game vs Computer:", false);
     lv_obj_t* r1 = row(menu_btn_h());
     for (int l = 0; l < twoplayer::kLevels; ++l)
         row_key(r1, twoplayer::level_name(static_cast<twoplayer::Level>(l)), l);
     lv_obj_t* r2 = row(menu_btn_h());
-    row_key(r2, "Pass and play", kPassAndPlay);
+    row_key(r2, "Pass and Play", kPassAndPlay);
     set_dim(row_key(r2, "Wireless", kWireless), true);   // CYD to CYD comes in stage 4
     menu_tail();
 }
@@ -233,10 +232,10 @@ void menu_solo(const char* title, const char* const levels[3], const MenuHandler
 {
     handlers = h;
     overlay_begin(title);
-    overlay_text("New game:", false);
+    overlay_text("New Game:", false);
     lv_obj_t* r1 = row(menu_btn_h());
     for (int l = 0; l < 3; ++l) row_key(r1, levels[l], l);
-    overlay_button(overlay(), "Restart this game", menu_cb, kRestart);
+    overlay_button(overlay(), "Restart This Game", menu_cb, kRestart);
     menu_tail();
 }
 
@@ -267,22 +266,22 @@ void stats_two_player(const char* game_id, const twoplayer::Sides& sides, void (
             snprintf(c, sizeof c, "%lu", (unsigned long)sum.drawn[l]);
             table_add(t, twoplayer::level_name(static_cast<twoplayer::Level>(l)), a, b, c);
         }
-        const char* const head[4] = {"vs computer", "Won", "Lost", "Draw"};
+        const char* const head[4] = {"Vs Computer", "Won", "Lost", "Draw"};
         static const int8_t pct[4] = {46, 18, 18, 18};
         table_show(t, head, pct, hf, bf);
 
         static Table p;
         table_clear(p);
         char w1[24], w2[24];
-        snprintf(w1, sizeof w1, "%s won", sides.side1);
-        snprintf(w2, sizeof w2, "%s won", sides.side2);
+        snprintf(w1, sizeof w1, "%s Won", sides.side1);
+        snprintf(w2, sizeof w2, "%s Won", sides.side2);
         snprintf(a, sizeof a, "%lu", (unsigned long)sum.side1);
         snprintf(b, sizeof b, "%lu", (unsigned long)sum.side2);
         snprintf(c, sizeof c, "%lu", (unsigned long)sum.draws);
         table_add(p, w1, a, "", "");
         table_add(p, w2, b, "", "");
         table_add(p, "Draw", c, "", "");
-        const char* const head2[4] = {"Pass and play", "Games", "", ""};
+        const char* const head2[4] = {"Pass and Play", "Games", "", ""};
         static const int8_t pct2[4] = {46, 30, 12, 12};
         table_show(p, head2, pct2, hf, bf);
     }
@@ -329,7 +328,7 @@ void stats_solo(const char* game_id, const char* const levels[3], void (*back)()
             char tm[16], mv[12];
             twoplayer::format_time(tm, sizeof tm, r.seconds);
             snprintf(mv, sizeof mv, "%u", (unsigned)r.moves);
-            table_add(rt, levels[r.level < 3 ? r.level : 0], tm, mv, r.solved ? "Solved" : "Gave up");
+            table_add(rt, levels[r.level < 3 ? r.level : 0], tm, mv, r.solved ? "Solved" : "Gave Up");
         }
         const char* const head2[4] = {"Recent", "Time", "Moves", ""};
         table_show(rt, head2, pct_recent, hf, hf);

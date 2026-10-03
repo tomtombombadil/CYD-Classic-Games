@@ -214,7 +214,7 @@ void build()
     lv_obj_set_pos(info_l, pad, m.h - pad - ih);
     again_k = make_key(scr, m.w - 2 * pad, kh, again_cb, 0);
     lv_obj_add_state(again_k, LV_STATE_CHECKED);
-    key_label(again_k, "Play again", menu_font());
+    key_label(again_k, "Play Again", menu_font());
     lv_obj_set_pos(again_k, pad, m.h - pad - ih - pad - kh);
     const int top = bar.h, bottom = m.h - pad - ih - pad - kh - pad;
     const int n = G->p.n, margin = m.large ? 8 : 4;

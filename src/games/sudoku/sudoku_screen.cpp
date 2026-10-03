@@ -302,7 +302,7 @@ void new_game_cb(lv_event_t* e)
     start_new(static_cast<sudoku::Difficulty>(reinterpret_cast<intptr_t>(lv_event_get_user_data(e))));
 }
 
-enum MenuAction : intptr_t { kRestart, kSettings, kBackToGame, kStats, kAllGames };
+enum MenuAction : intptr_t { kRestart, kSettings, kExitMenu, kStats, kExitGame };
 
 void back_to_menu() { open_menu(); }
 
@@ -321,9 +321,9 @@ void menu_cb(lv_event_t* e)
             update();
             break;
         case kSettings:   settings_open(back_to_menu); break;
-        case kBackToGame: close_overlays(); update(); break;
+        case kExitMenu:   close_overlays(); update(); break;
         case kStats:      open_stats(); break;
-        case kAllGames:   app_go_home(); break;
+        case kExitGame:   app_go_home(); break;
     }
 }
 
@@ -534,7 +534,7 @@ void set_input_mode(InputMode m)
 void open_menu()
 {
     overlay_begin("Sudoku");
-    overlay_text("Start a new game:", false);
+    overlay_text("Start a New Game:", false);
 
     lv_obj_t* grid = lv_obj_create(overlay());
     lv_obj_remove_style_all(grid);
@@ -548,10 +548,9 @@ void open_menu()
         lv_obj_t* b = make_key(grid, half, menu_btn_h(), new_game_cb, d);
         key_label(b, sudoku::difficulty_name(static_cast<sudoku::Difficulty>(d)), menu_font());
     }
-    overlay_button(overlay(), "Restart this puzzle", menu_cb, kRestart);
-    overlay_pair("Stats", menu_cb, kStats, "All games", menu_cb, kAllGames);
-    overlay_button(overlay(), "Settings", menu_cb, kSettings);
-    overlay_button(overlay(), "Back to game", menu_cb, kBackToGame, true);
+    overlay_button(overlay(), "Restart This Puzzle", menu_cb, kRestart);
+    overlay_pair("Stats", menu_cb, kStats, "Settings", menu_cb, kSettings);
+    overlay_exit_row(menu_cb, kExitMenu, kExitGame);
 }
 
 void open_stats()

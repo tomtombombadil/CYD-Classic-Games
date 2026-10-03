@@ -389,7 +389,7 @@ void app_open_game_now(int index)
 void app_go_home_now()
 {
     close_current();
-    cat_open = -1;                       // "All games" = the category list
+    cat_open = -1;                       // "Exit Game" = back to the category list
     picker_build();
 }
 

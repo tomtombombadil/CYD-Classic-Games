@@ -65,14 +65,14 @@ Candidates, grouped. Order of building is in section 6.
 | Sudoku | Port of CYD-Sudoku v1.0.0 as-is |
 | Minesweeper | Flag mode toggle (like Sudoku's Notes) |
 | Nonograms | Generated puzzles, checked for one solution |
-| Light Switch (Lights Out) | Tiny; name to confirm |
+| Light Switch (Lights Out) | Built |
 | Sliding Tiles (15-Puzzle) | Tap a tile next to the gap |
 | Peg Solitaire | Tap peg, tap hole |
-| Code Breaker (Mastermind) | Colors or symbols; name to confirm |
+| MasterCYD (Mastermind) | Colors or symbols |
 | Memory Match | Symbols, not cards |
 | 2048 | Tap the board edge to slide (no swipes) |
-| Box Pusher (Sokoban) | Needs freely licensed or generated levels; name to confirm |
-| Kakuro / Math Cages (KenKen) | Reuse Sudoku's grid UI; name to confirm |
+| SokoCYD (Sokoban) | Needs freely licensed or generated levels |
+| Kakuro / KenCYD (KenKen) | Reuse Sudoku's grid UI |
 
 
 **Strategy (vs computer, pass-and-play, CYD vs CYD)**
@@ -80,13 +80,13 @@ Candidates, grouped. Order of building is in section 6.
 |---|---|
 | Chess | Own MIT engine; levels by depth/time |
 | Checkers | Strong AI is cheap |
-| Reversi (Othello) | Strong AI is cheap; Reversi is the public-domain name |
+| Reversi (Othello) | Strong AI is cheap |
 | FourConnect (Connect Four) | Can play perfectly; easy levels hold back |
 | Mancala (Kalah) | Two rows of six pits |
 | Tic-Tac-Toe / Ultimate Tic-Tac-Toe | Ultimate is the interesting one |
 | Nine Men's Morris | Big targets |
 | Gomoku | 15x15, 16 px cells on 240-wide boards |
-| Sea Battle (Battleship) | Two grids, flip between them; name to confirm |
+| You Sunk My CYD! (Battleship) | Two grids, flip between them |
 
 **Word**
 | Game | Notes |
@@ -94,7 +94,7 @@ Candidates, grouped. Order of building is in section 6.
 | CYD-dle (Wordle-style) | Public-domain word list; on-screen keyboard |
 | Trivia | Question bank license to check (Open Trivia DB is CC BY-SA) |
 | Hangman | word guess by letter with limit to bad guesses |
-| Spin & Solve (Wheel of Fortune) | phrase guess with spinning reward/fail aspect; name to confirm |
+| Wheel of CYD (Wheel of Fortune) | phrase guess with spinning reward/fail aspect |
 
 **Dice**
 | Game | Notes |
@@ -118,7 +118,7 @@ Chinese checkers, Dots and Boxes (thin tap targets).
 - Disconnects: the game pauses and is saved on both boards; either can
   resume when the other reappears, or end it.
 - Games: chess, checkers, Reversi, FourConnect first; later Mancala,
-  Ultimate Tic-Tac-Toe, Nine Men's Morris, Sea Battle, Gomoku.
+  Ultimate Tic-Tac-Toe, Nine Men's Morris, You Sunk My CYD!, Gomoku.
 - Every two-player game also has vs computer and pass-and-play (one CYD
   handed back and forth).
 
@@ -134,7 +134,7 @@ Chinese checkers, Dots and Boxes (thin tap targets).
    square" board UI, AI task on core 0, pass-and-play.
 4. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,
    Checkers, Chess.
-5. **More puzzles:** Minesweeper, Nonograms, Code Breaker, Memory Match,
+5. **More puzzles:** Minesweeper, Nonograms, MasterCYD, Memory Match,
    2048, Peg Solitaire.
 6. **Word and dice games:** CYD-dle, Yaht-CYD, Farkle; Trivia if a
    suitable question bank is found.
@@ -154,12 +154,16 @@ Decided (Tom, 2026-10-02):
 - Long-press: allowed, not preferred; ask Tom per use.
 - Sound with a Settings toggle for silent play; custom themes.
 
+- Long-press: yes for Minesweeper (flag) and Chess/Checkers (show a
+  piece's moves); no for Sudoku.
+- Names: Light Switch, MasterCYD, SokoCYD, KenCYD, You Sunk My CYD!,
+  Wheel of CYD, Reversi.
+- Every game menu ends with Exit Menu (bottom left) | Exit Game (bottom
+  right). Title Case menu text. Default palettes follow the splash art.
+- Order after stage 2: Reversi, Checkers, Chess, then CYD-dle and Yaht-CYD.
+
 Open:
-- Where long-press would help (proposals go to Tom).
-- Names for the other trademarked candidates: Lights Out, Mastermind,
-  Sokoban, KenKen, Battleship, Wheel of Fortune (provisional names in
-  section 4), and whether to call Othello by its public-domain name Reversi.
-- Final game lineup and order (section 6 is a proposal).
+- Final game lineup and order after that.
 
 ## 8. Distribution
 - Web flasher (ESP Web Tools on GitHub Pages), updated on every push to main

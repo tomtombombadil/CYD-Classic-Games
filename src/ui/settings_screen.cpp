@@ -116,7 +116,7 @@ void tt_done_cb(lv_event_t*) { settings_open(back_fn); }
 
 void settings_open_touch_test()
 {
-    overlay_begin("Touch test", tt_stop);
+    overlay_begin("Touch Test", tt_stop);
     tt_info = overlay_text("Tap anywhere. Red dot = first reading of a tap, blue = the rest.", true);
     tt_n = tt_misses = tt_log_n = tt_dot_next = 0;
     for (auto& d : tt_dots) d = nullptr;
@@ -199,11 +199,11 @@ void settings_open(void (*back)())
     lv_obj_add_event_cb(sl, brightness_cb, LV_EVENT_VALUE_CHANGED, nullptr);
     lv_obj_add_event_cb(sl, brightness_cb, LV_EVENT_RELEASED, nullptr);
 
-    // Full width each: "Swap red/blue" doesn't fit half a row at the menu font.
-    overlay_pair("Invert colors", action_cb, kInvert, nullptr, nullptr, 0);
-    overlay_pair("Swap red/blue", action_cb, kSwapRb, nullptr, nullptr, 0);
+    // Full width each: "Swap Red/Blue" doesn't fit half a row at the menu font.
+    overlay_pair("Invert Colors", action_cb, kInvert, nullptr, nullptr, 0);
+    overlay_pair("Swap Red/Blue", action_cb, kSwapRb, nullptr, nullptr, 0);
     overlay_pair("Recalibrate", action_cb, kRecal,
-                 H.raw_touch ? "Touch test" : nullptr, action_cb, kTouchTest);
+                 H.raw_touch ? "Touch Test" : nullptr, action_cb, kTouchTest);
     overlay_button(overlay(), "Back", action_cb, kBack, true);
     char info[96];
     snprintf(info, sizeof info, "%s, firmware %s", H.board_name ? H.board_name : "",

@@ -49,6 +49,11 @@ struct Palette {
     lv_color_t frame;              // FourConnect board
     lv_color_t lit;                // Light Switch: a light that is on
     lv_color_t win;                // winning line, solved highlight
+    // 8x8 boards (Reversi, Checkers, Chess)
+    lv_color_t sq_light, sq_dark;  // checkerboard squares
+    lv_color_t felt;               // Reversi table
+    lv_color_t stone_dark, stone_light;   // Reversi discs, checkers, chess men
+    lv_color_t target;             // dots: where the picked piece may go
 };
 
 // ---- Custom themes -------------------------------------------------------------

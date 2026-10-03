@@ -134,16 +134,30 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   tap the piece, then tap the destination. Swipe games (2048) slide by
   tapping the board edge in that direction.
 - Long-press is not forbidden, just not preferred: never the only way to do
-  something. Propose each use to Tom and ask before adding it.
+  something. Propose each use to Tom and ask before adding it. Approved
+  (2026-10-02): Minesweeper (long-press = flag, besides the Flag toggle);
+  Chess and Checkers (long-press any piece, either side, to see where it
+  can move). Declined: Sudoku long-press to clear.
 - No "tap again" / "are you sure" confirmations, ever. Buttons act on the
   first tap.
 - Strong highlight tints with distinct hues (cheap TN panels wash out pale
   tints at an angle). No shrinking fonts to squeeze labels in.
 - Each game: top bar with a 3-line hamburger menu (new game, restart,
-  stats, Settings, "All games"). The picker is the boot screen and
-  reopens the last game in one tap. "All games" saves the game and frees it.
+  stats, Settings). Its LAST row, pinned to the bottom, is always
+  **Exit Menu** (bottom left, primary; closes the menu) | **Exit Game**
+  (bottom right; saves and frees the game, back to the picker) - Tom's
+  rule, use `ui::overlay_exit_row()`. The picker reopens the last game in
+  one tap.
+- Title Case for all menu text: button labels, menu titles and headings,
+  table headers ("Exit Menu", "Restart This Puzzle", "Pass and Play").
+  Status lines and help sentences stay in sentence case. CSV stats files
+  keep their existing wording (parsers depend on it).
 - Colors come from `src/ui/theme.cpp` palettes (Light/Dark), never
-  hard-coded elsewhere.
+  hard-coded elsewhere. Both default palettes are drawn from the splash
+  art (Tom, 2026-10-02): Light = parchment/cream with night-sky navy ink,
+  Dark = night-sky navy with cream text; accents coat gold, hat blue,
+  glade teal-green, wood brown. Subtle and cohesive, never garish or
+  childish. Tom plans game icons in the splash's style.
 - Game clocks count only while the game screen is up AND there was a touch
   in the last 2 minutes. Times feed the stats, so nothing may count
   unattended time.
@@ -239,9 +253,11 @@ Backgammon, most chess engines) are reference only. Update
   a license that sits with MIT (public domain, CC0, or permissive with
   attribution). Share-alike data (e.g. CC BY-SA) needs Tom's OK first.
 - No trademarked game names. Tom's names: **FourConnect** (Connect Four),
-  **CYD-dle** (Wordle), **Yaht-CYD** (Yahtzee). Classic public-domain games
-  (chess, checkers, mancala, ...) are fine by name. Others still to decide
-  are listed in docs/SPEC.md section 7.
+  **CYD-dle** (Wordle), **Yaht-CYD** (Yahtzee), **Light Switch** (Lights
+  Out), **MasterCYD** (Mastermind), **SokoCYD** (Sokoban), **KenCYD**
+  (KenKen), **You Sunk My CYD!** (Battleship), **Wheel of CYD** (Wheel of
+  Fortune), **Reversi** (Othello). Classic public-domain games (chess,
+  checkers, mancala, ...) are fine by name.
 
 ## Releases and web flasher
 - Every push to main: CI runs the host tests, builds every env that has

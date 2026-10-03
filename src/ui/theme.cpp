@@ -9,68 +9,87 @@ Palette      p_light, p_dark, p_custom;
 bool         built = false;
 CustomThemes customs;
 
+// Both themes take their colors from the splash art (Tom Tom Bombadil in a
+// twilight glade): Light is the warm parchment and cream of the title
+// banners with the night-sky navy as ink, Dark is that night sky with cream
+// text. Accents are the coat's gold, the hat's blue, the glade's teal-green
+// and the wood's warm brown, kept muted so the games stay calm. Highlights
+// still use clearly different hues (teal-blue rows, gold same-digit, amber
+// selection) so they survive a TN panel seen at an angle.
 void build()
 {
     if (built) return;
     built = true;
 
     Palette& l = p_light;
-    l.screen       = lv_color_hex(0xEEF0F2);
-    l.cell         = lv_color_hex(0xFFFFFF);
-    l.line_thin    = lv_color_hex(0xA9B0B9);
-    l.line_thick   = lv_color_hex(0x1E232B);
-    l.given        = lv_color_hex(0x1E232B);
-    l.entry        = lv_color_hex(0x1A52AA);
-    l.hinted       = lv_color_hex(0x13804A);
-    l.note         = lv_color_hex(0x4E5663);
-    l.note_match   = lv_color_hex(0x000000);
-    l.conflict     = lv_color_hex(0xC01818);
-    l.conflict_bg  = lv_color_hex(0xF2B8B8);
-    l.peer         = lv_color_hex(0xC9D5E3);   // was #FBF2D2: too pale off-angle
-    l.same         = lv_color_hex(0xF4CC52);
-    l.selected     = lv_color_hex(0xE39A1E);
-    l.key          = lv_color_hex(0xFFFFFF);
-    l.key_border   = lv_color_hex(0xA9B0B9);
-    l.key_pressed  = lv_color_hex(0xD5DAE0);
-    l.key_on       = lv_color_hex(0xE3B53A);
+    l.screen       = lv_color_hex(0xF2EDDC);   // parchment
+    l.cell         = lv_color_hex(0xFFFCF2);   // cream
+    l.line_thin    = lv_color_hex(0xB5AD98);
+    l.line_thick   = lv_color_hex(0x1D2F4F);   // night-sky navy
+    l.given        = lv_color_hex(0x1D2F4F);
+    l.entry        = lv_color_hex(0x1F62A6);   // hat blue
+    l.hinted       = lv_color_hex(0x2C7A5E);   // glade green
+    l.note         = lv_color_hex(0x5B6271);
+    l.note_match   = lv_color_hex(0x0B1730);
+    l.conflict     = lv_color_hex(0xB8322A);
+    l.conflict_bg  = lv_color_hex(0xF0B9AE);
+    l.peer         = lv_color_hex(0xC4DADF);   // pale teal-blue (strong enough off-angle)
+    l.same         = lv_color_hex(0xF0C766);   // coat gold
+    l.selected     = lv_color_hex(0xDE8E3A);   // lantern amber
+    l.key          = lv_color_hex(0xFFFCF2);
+    l.key_border   = lv_color_hex(0xB5AD98);
+    l.key_pressed  = lv_color_hex(0xE4DCC6);
+    l.key_on       = lv_color_hex(0xE0AA4C);
     l.key_on_text  = lv_color_hex(0x1E1B12);
-    l.key_dim_text = lv_color_hex(0xB9BFC7);
-    l.ink          = lv_color_hex(0x1E232B);
-    l.muted        = lv_color_hex(0x4E5663);
-    l.piece_a      = lv_color_hex(0xD32F2F);   // red disc, O
-    l.piece_b      = lv_color_hex(0xF2B807);   // yellow disc
-    l.frame        = lv_color_hex(0x1F57B8);   // FourConnect board
-    l.lit          = lv_color_hex(0xF4CC52);   // a light that is on
-    l.win          = lv_color_hex(0x13804A);   // winning line / solved
+    l.key_dim_text = lv_color_hex(0xBDB5A2);
+    l.ink          = lv_color_hex(0x1D2F4F);
+    l.muted        = lv_color_hex(0x5B6271);
+    l.piece_a      = lv_color_hex(0xC2412F);   // red disc, O
+    l.piece_b      = lv_color_hex(0xE9B53C);   // yellow disc
+    l.frame        = lv_color_hex(0x1E5D8C);   // FourConnect board: splash blue
+    l.lit          = lv_color_hex(0xE8AE3E);   // a light that is on (deeper than cream)
+    l.win          = lv_color_hex(0x2C7A5E);   // winning line / solved
+    l.sq_light     = lv_color_hex(0xEADCBA);   // board squares: pale wood
+    l.sq_dark      = lv_color_hex(0xA36E50);   //                warm brown
+    l.felt         = lv_color_hex(0x3C8569);   // Reversi table
+    l.stone_dark   = lv_color_hex(0x1B2233);
+    l.stone_light  = lv_color_hex(0xF7F2E4);
+    l.target       = lv_color_hex(0x2C7A5E);   // where a picked piece may go
 
     Palette& d = p_dark;
-    d.screen       = lv_color_hex(0x101318);
-    d.cell         = lv_color_hex(0x1C2128);
-    d.line_thin    = lv_color_hex(0x3C4450);
-    d.line_thick   = lv_color_hex(0xA7B0BC);
-    d.given        = lv_color_hex(0xEEF0F3);
-    d.entry        = lv_color_hex(0x8CC0FF);
-    d.hinted       = lv_color_hex(0x6FD69E);
-    d.note         = lv_color_hex(0xA9B1BC);
+    d.screen       = lv_color_hex(0x0E1A33);   // night sky
+    d.cell         = lv_color_hex(0x172642);
+    d.line_thin    = lv_color_hex(0x2F4268);
+    d.line_thick   = lv_color_hex(0xA9BCD6);
+    d.given        = lv_color_hex(0xF3EAD3);   // cream
+    d.entry        = lv_color_hex(0x8CC6EA);
+    d.hinted       = lv_color_hex(0x79CFAE);
+    d.note         = lv_color_hex(0xA6B3C7);
     d.note_match   = lv_color_hex(0xFFFFFF);
-    d.conflict     = lv_color_hex(0xFF8A8A);
-    d.conflict_bg  = lv_color_hex(0x6A2424);
-    d.peer         = lv_color_hex(0x33414F);
-    d.same         = lv_color_hex(0x6B5414);
-    d.selected     = lv_color_hex(0x9A6608);
-    d.key          = lv_color_hex(0x232932);
-    d.key_border   = lv_color_hex(0x4A5360);
-    d.key_pressed  = lv_color_hex(0x343C48);
-    d.key_on       = lv_color_hex(0xE3B53A);
+    d.conflict     = lv_color_hex(0xFF8A7A);
+    d.conflict_bg  = lv_color_hex(0x6A2A2A);
+    d.peer         = lv_color_hex(0x24405E);
+    d.same         = lv_color_hex(0x6E5A1F);
+    d.selected     = lv_color_hex(0x9E621E);
+    d.key          = lv_color_hex(0x1B2B4A);
+    d.key_border   = lv_color_hex(0x3B5078);
+    d.key_pressed  = lv_color_hex(0x2A3E64);
+    d.key_on       = lv_color_hex(0xE0AA4C);
     d.key_on_text  = lv_color_hex(0x16130A);
-    d.key_dim_text = lv_color_hex(0x4E5663);
-    d.ink          = lv_color_hex(0xEEF0F3);
-    d.muted        = lv_color_hex(0xA9B1BC);
-    d.piece_a      = lv_color_hex(0xF0564F);
-    d.piece_b      = lv_color_hex(0xF5C842);
-    d.frame        = lv_color_hex(0x2D5BA8);
-    d.lit          = lv_color_hex(0xE8B730);
-    d.win          = lv_color_hex(0x6FD69E);
+    d.key_dim_text = lv_color_hex(0x4B5A78);
+    d.ink          = lv_color_hex(0xF3EAD3);
+    d.muted        = lv_color_hex(0xA6B3C7);
+    d.piece_a      = lv_color_hex(0xE5604E);
+    d.piece_b      = lv_color_hex(0xF0C24E);
+    d.frame        = lv_color_hex(0x285F92);
+    d.lit          = lv_color_hex(0xE8B94A);
+    d.win          = lv_color_hex(0x79CFAE);
+    d.sq_light     = lv_color_hex(0xB9A47E);
+    d.sq_dark      = lv_color_hex(0x6B4733);
+    d.felt         = lv_color_hex(0x2B6652);
+    d.stone_dark   = lv_color_hex(0x10151F);
+    d.stone_light  = lv_color_hex(0xF3EEDF);
+    d.target       = lv_color_hex(0x79CFAE);
 }
 
 uint32_t hex_of(lv_color_t c) { return (uint32_t(c.red) << 16) | (uint32_t(c.green) << 8) | c.blue; }
@@ -109,8 +128,8 @@ void apply_custom(const CustomTheme& ct, Palette& out)
 const char* role_name(Role r)
 {
     static const char* const names[kRoles] = {
-        "Background", "Board", "Grid lines", "Text", "Your marks",
-        "Selected", "Matching", "Row/col", "Buttons", "Accent",
+        "Background", "Board", "Grid Lines", "Text", "Your Marks",
+        "Selected", "Matching", "Row/Col", "Buttons", "Accent",
     };
     return names[static_cast<int>(r)];
 }

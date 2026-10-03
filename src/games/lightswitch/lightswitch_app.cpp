@@ -222,7 +222,7 @@ void build()
     const int ky = m.h - pad - ih - pad - kh;
     again_k = make_key(scr, m.w - 2 * pad, kh, again_cb, 0);
     lv_obj_add_state(again_k, LV_STATE_CHECKED);
-    key_label(again_k, "Play again", menu_font());
+    key_label(again_k, "Play Again", menu_font());
     lv_obj_set_pos(again_k, pad, ky);
     hint_k = make_key(scr, m.w - 2 * pad, kh, hint_cb, 0);
     key_label(hint_k, "Hint", menu_font());

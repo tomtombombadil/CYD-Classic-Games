@@ -179,7 +179,7 @@ void build_chrome(int* top, int* bottom)
     lv_obj_set_pos(info_l, pad, m.h - pad - ih);
     again_k = make_key(scr, m.w - 2 * pad, kh, again_cb, 0);
     lv_obj_add_state(again_k, LV_STATE_CHECKED);
-    key_label(again_k, "Play again", menu_font());
+    key_label(again_k, "Play Again", menu_font());
     lv_obj_set_pos(again_k, pad, m.h - pad - ih - pad - kh);
     *top = bar.h;
     *bottom = m.h - pad - ih - pad - kh - pad;
