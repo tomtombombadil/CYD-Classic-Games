@@ -14,7 +14,7 @@ namespace {
 
 void (*back_fn)() = nullptr;
 
-enum Action : intptr_t { kTheme, kInvert, kSwapRb, kRecal, kTouchTest, kBack, kSound };
+enum Action : intptr_t { kTheme, kInvert, kSwapRb, kRecal, kTouchTest, kBack };
 
 void brightness_cb(lv_event_t* e)
 {
@@ -22,6 +22,64 @@ void brightness_cb(lv_event_t* e)
     settings().brightness = static_cast<uint8_t>(lv_slider_get_value(sl));
     if (shell().set_brightness) shell().set_brightness(settings().brightness);
     if (lv_event_get_code(e) == LV_EVENT_RELEASED) save_settings();
+}
+
+// Volume: 0..100 %, 0 = silent ("Muted"). A tap left of the track lands on
+// 0. On release it plays one sound at the new level and saves.
+lv_obj_t* volume_label = nullptr;
+
+void volume_text() { if (volume_label) lv_label_set_text(volume_label, settings().volume ? "Volume" : "Muted"); }
+
+void volume_cb(lv_event_t* e)
+{
+    lv_obj_t* sl = lv_event_get_target_obj(e);
+    settings().volume = static_cast<uint8_t>(lv_slider_get_value(sl));
+    volume_text();
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        save_settings();
+        sound(Sound::Place);
+    }
+}
+
+// One row: label (fixed width, so the sliders line up) and a slider
+lv_obj_t* slider_row(const char* text, int label_w, int lo, int hi, int value,
+                     lv_event_cb_t cb, lv_obj_t** label_out)
+{
+    const bool large = metrics().large;
+    lv_obj_t* row = lv_obj_create(overlay());
+    lv_obj_remove_style_all(row);
+    lv_obj_set_size(row, lv_pct(100), menu_btn_h());
+    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(row, large ? 14 : 10, 0);
+    lv_obj_set_scrollable(row, false);
+    lv_obj_t* bl = lv_label_create(row);
+    lv_label_set_text(bl, text);
+    lv_obj_set_width(bl, label_w);
+    lv_obj_set_style_text_font(bl, menu_font(), 0);
+    lv_obj_set_style_text_color(bl, pal().ink, 0);
+    if (label_out) *label_out = bl;
+    lv_obj_t* sl = lv_slider_create(row);
+    lv_obj_remove_style_all(sl);
+    lv_obj_set_flex_grow(sl, 1);
+    lv_obj_set_height(sl, large ? 12 : 10);
+    lv_obj_set_style_margin_right(sl, large ? 14 : 10, 0);  // room for the knob
+    lv_obj_set_style_bg_color(sl, pal().key_border, LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(sl, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_radius(sl, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(sl, pal().key_on, LV_PART_INDICATOR);
+    lv_obj_set_style_bg_opa(sl, LV_OPA_COVER, LV_PART_INDICATOR);
+    lv_obj_set_style_radius(sl, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);
+    lv_obj_set_style_bg_color(sl, pal().ink, LV_PART_KNOB);
+    lv_obj_set_style_bg_opa(sl, LV_OPA_COVER, LV_PART_KNOB);
+    lv_obj_set_style_radius(sl, LV_RADIUS_CIRCLE, LV_PART_KNOB);
+    lv_obj_set_style_pad_all(sl, large ? 9 : 7, LV_PART_KNOB);   // knob size
+    lv_obj_set_ext_click_area(sl, large ? 16 : 12);               // easy to grab
+    lv_slider_set_range(sl, lo, hi);
+    lv_slider_set_value(sl, value, LV_ANIM_OFF);
+    lv_obj_add_event_cb(sl, cb, LV_EVENT_VALUE_CHANGED, nullptr);
+    lv_obj_add_event_cb(sl, cb, LV_EVENT_RELEASED, nullptr);
+    return sl;
 }
 
 // ---- Touch test -------------------------------------------------------------
@@ -132,12 +190,6 @@ void action_cb(lv_event_t* e)
     const Shell& H = shell();
     switch (reinterpret_cast<intptr_t>(lv_event_get_user_data(e))) {
         case kTheme: theme_open(); break;
-        case kSound:
-            settings().sound = !settings().sound;
-            save_settings();
-            if (settings().sound) sound(Sound::Place);   // let them hear it's on
-            settings_open(back_fn);
-            break;
         case kInvert: if (H.toggle_invert) H.toggle_invert(); break;
         case kSwapRb: if (H.toggle_swap_rb) H.toggle_swap_rb(); break;
         case kRecal:
@@ -158,49 +210,21 @@ void settings_reopen() { settings_open(back_fn); }
 
 void settings_open(void (*back)())
 {
+    volume_label = nullptr;
     back_fn = back;
     const Shell& H = shell();
     const UiSettings& S = settings();
-    const bool large = metrics().large;
     overlay_begin("Settings");
-    overlay_pair("Theme", action_cb, kTheme,
-                 S.sound ? "Sound: On" : "Sound: Off", action_cb, kSound);
+    overlay_pair("Theme", action_cb, kTheme, "Invert Colors", action_cb, kInvert);
 
-    // Brightness: label + slider, applied while dragging, saved on release
-    lv_obj_t* row = lv_obj_create(overlay());
-    lv_obj_remove_style_all(row);
-    lv_obj_set_size(row, lv_pct(100), menu_btn_h());
-    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(row, large ? 14 : 10, 0);
-    lv_obj_set_scrollable(row, false);
-    lv_obj_t* bl = lv_label_create(row);
-    lv_label_set_text(bl, "Brightness");
-    lv_obj_set_style_text_font(bl, menu_font(), 0);
-    lv_obj_set_style_text_color(bl, pal().ink, 0);
-    lv_obj_t* sl = lv_slider_create(row);
-    lv_obj_remove_style_all(sl);
-    lv_obj_set_flex_grow(sl, 1);
-    lv_obj_set_height(sl, large ? 12 : 10);
-    lv_obj_set_style_margin_right(sl, large ? 14 : 10, 0);  // room for the knob
-    lv_obj_set_style_bg_color(sl, pal().key_border, LV_PART_MAIN);
-    lv_obj_set_style_bg_opa(sl, LV_OPA_COVER, LV_PART_MAIN);
-    lv_obj_set_style_radius(sl, LV_RADIUS_CIRCLE, LV_PART_MAIN);
-    lv_obj_set_style_bg_color(sl, pal().key_on, LV_PART_INDICATOR);
-    lv_obj_set_style_bg_opa(sl, LV_OPA_COVER, LV_PART_INDICATOR);
-    lv_obj_set_style_radius(sl, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);
-    lv_obj_set_style_bg_color(sl, pal().ink, LV_PART_KNOB);
-    lv_obj_set_style_bg_opa(sl, LV_OPA_COVER, LV_PART_KNOB);
-    lv_obj_set_style_radius(sl, LV_RADIUS_CIRCLE, LV_PART_KNOB);
-    lv_obj_set_style_pad_all(sl, large ? 9 : 7, LV_PART_KNOB);   // knob size
-    lv_obj_set_ext_click_area(sl, large ? 16 : 12);               // easy to grab
-    lv_slider_set_range(sl, kMinBrightness, 255);
-    lv_slider_set_value(sl, S.brightness, LV_ANIM_OFF);
-    lv_obj_add_event_cb(sl, brightness_cb, LV_EVENT_VALUE_CHANGED, nullptr);
-    lv_obj_add_event_cb(sl, brightness_cb, LV_EVENT_RELEASED, nullptr);
+    // Brightness and Volume: applied while dragging, saved on release
+    lv_point_t sz;
+    lv_text_get_size(&sz, "Brightness", menu_font(), 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    slider_row("Brightness", sz.x, kMinBrightness, 255, S.brightness, brightness_cb, nullptr);
+    slider_row("Volume", sz.x, 0, 100, S.volume, volume_cb, &volume_label);
+    volume_text();
 
-    // Full width each: "Swap Red/Blue" doesn't fit half a row at the menu font.
-    overlay_pair("Invert Colors", action_cb, kInvert, nullptr, nullptr, 0);
+    // Full width: "Swap Red/Blue" doesn't fit half a row at the menu font.
     overlay_pair("Swap Red/Blue", action_cb, kSwapRb, nullptr, nullptr, 0);
     overlay_pair("Recalibrate", action_cb, kRecal,
                  H.raw_touch ? "Touch Test" : nullptr, action_cb, kTouchTest);

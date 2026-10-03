@@ -156,7 +156,7 @@ void on_tap(int sq)
         bool has = false;
         for (int k = 0; k < l.n; ++k) has |= l.m[k].from == sq;
         sel = has ? sq : -1;
-        ui::sound(has ? ui::Sound::Select : ui::Sound::Error);
+        if (!has) ui::sound(ui::Sound::Error);
     } else {
         clear_pick();
     }
@@ -168,7 +168,6 @@ void on_long(int sq)
     if (!G || !G->pos.sq[sq]) return;
     sel = sq;
     peek = true;
-    ui::sound(ui::Sound::Select);
     redraw();
 }
 

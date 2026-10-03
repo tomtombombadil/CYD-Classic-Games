@@ -25,6 +25,9 @@ inline int   custom_slot(Theme t)  { return static_cast<int>(t) - 2; }
 inline Theme custom_theme(int slot) { return static_cast<Theme>(2 + slot); }
 enum class InputMode : uint8_t { CellFirst = 0, DigitFirst = 1 };
 
+// Volume 50 % by default: tiny CYD speakers distort near 100 % (Tom)
+constexpr uint8_t kDefaultVolume = 50;
+
 // Saved on the device by the app (see src/app/settings_store.*), shared by
 // every game.
 struct UiSettings {
@@ -32,7 +35,7 @@ struct UiSettings {
     InputMode input = InputMode::DigitFirst;   // Sudoku's input mode; Tom's default
     uint8_t   brightness = 200;                // backlight, kMinBrightness..255
     char      last_game[16] = "";              // registry id for "Continue" on the picker
-    bool      sound = true;                    // false = silent play
+    uint8_t   volume = kDefaultVolume;         // 0..100 %, 0 = silent play
     uint8_t   splash_next = 0;                 // which splash image the next boot shows
 };
 constexpr uint8_t kMinBrightness = 20;         // never let the screen go fully dark

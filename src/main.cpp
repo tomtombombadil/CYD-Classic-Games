@@ -73,7 +73,7 @@ void flash_invert(bool on) { panel_prefs_flash(lvgl_port_gfx(), on); }
 void play_tones(const ui::Tone* t, int n)
 {
     static_assert(sizeof(ui::Tone) == sizeof(SpeakerTone), "tone layouts differ");
-    speaker_play(reinterpret_cast<const SpeakerTone*>(t), n);
+    speaker_play(reinterpret_cast<const SpeakerTone*>(t), n, ui::settings().volume);
 }
 
 void recalibrate()

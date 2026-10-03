@@ -191,7 +191,6 @@ void dice_press_cb(lv_event_t* e)
     Game& g = S->g;
     if (g.rolls == 0 || g.rolls >= 3 || g.over()) return;
     g.toggle_hold(k);
-    sound(Sound::Select);
     save();
     lv_obj_invalidate(dice_obj);
 }

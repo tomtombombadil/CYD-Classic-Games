@@ -1,6 +1,7 @@
 #include "speaker.h"
 
 #include <Arduino.h>
+#include <math.h>
 #include "boards/board_select.h"
 
 #ifdef BOARD_PIN_SPEAKER
@@ -8,13 +9,24 @@
 namespace {
 
 constexpr int      kMaxTones = 16;
-constexpr uint32_t kDuty     = 128;          // 50 % of 8 bits: a plain square wave
+constexpr uint8_t  kBits     = 12;           // duty resolution: fine steps at low volume
+constexpr uint32_t kFull     = 1u << kBits;
 constexpr uint32_t kAmpOffMs = 60;           // amp stays on briefly after the last tone
 
 SpeakerTone queue[kMaxTones];
 int         count = 0, pos = 0;
 uint32_t    step_end = 0, idle_since = 0;
 bool        ready = false, playing = false, amp_on = false;
+uint32_t    duty = 0;
+
+uint32_t duty_for(uint8_t volume)
+{
+    if (!volume) return 0;
+    if (volume > 100) volume = 100;
+    const float a = (volume / 100.0f) * (volume / 100.0f);      // amplitude, 0..1
+    const uint32_t d = static_cast<uint32_t>(asinf(a) / float(M_PI) * kFull + 0.5f);
+    return d ? d : 1;                                          // 100 % -> kFull / 2
+}
 
 void amp(bool on)
 {
@@ -29,8 +41,8 @@ void start_step()
 {
     const SpeakerTone& t = queue[pos];
     if (t.hz) {
-        ledcChangeFrequency(BOARD_PIN_SPEAKER, t.hz, 8);
-        ledcWrite(BOARD_PIN_SPEAKER, kDuty);
+        ledcChangeFrequency(BOARD_PIN_SPEAKER, t.hz, kBits);
+        ledcWrite(BOARD_PIN_SPEAKER, duty);
     } else {
         ledcWrite(BOARD_PIN_SPEAKER, 0);
     }
@@ -41,15 +53,17 @@ void start_step()
 
 void speaker_begin()
 {
-    ready = ledcAttach(BOARD_PIN_SPEAKER, 1000, 8);
+    ready = ledcAttach(BOARD_PIN_SPEAKER, 1000, kBits);
     if (ready) ledcWrite(BOARD_PIN_SPEAKER, 0);
     amp_on = true;
     amp(false);
 }
 
-void speaker_play(const SpeakerTone* tones, int n)
+void speaker_play(const SpeakerTone* tones, int n, uint8_t volume)
 {
     if (!ready || n <= 0) return;
+    duty = duty_for(volume);
+    if (!duty) { speaker_stop(); return; }
     if (n > kMaxTones) n = kMaxTones;
     for (int k = 0; k < n; ++k) queue[k] = tones[k];
     count = n;
@@ -81,7 +95,7 @@ void speaker_loop()
 #else   // board without a speaker pin
 
 void speaker_begin() {}
-void speaker_play(const SpeakerTone*, int) {}
+void speaker_play(const SpeakerTone*, int, uint8_t) {}
 void speaker_stop() {}
 void speaker_loop() {}
 

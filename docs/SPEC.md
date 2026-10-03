@@ -42,7 +42,7 @@ Budget (CYD-Sudoku v1.0.0 as the baseline):
   Other Games. A category opens a page of game icons (paged if needed).
 - Inside a game, the ☰ menu has: new game, restart, stats, Settings,
   All games.
-- **Settings** is shared: Theme, Sound On/Off (silent play), brightness,
+- **Settings** is shared: Theme, Volume slider (50 % default, far left = muted), brightness,
   invert colors, swap red/blue, recalibrate, touch test, player name (once
   multiplayer exists).
 - **Themes**: Light, Dark, and three Custom themes. A custom theme starts
@@ -134,10 +134,10 @@ Chinese checkers, Dots and Boxes (thin tap targets).
    square" board UI, AI task on core 0, pass-and-play. Then CYD-dle and
    Yaht-CYD (from stage 6). *Built 2026-10-02, waiting for hardware
    testing.*
-4. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,
+4. **More puzzles:** Minesweeper, Nonograms, MasterCYD, Memory Match,
+   2048, Peg Solitaire. (Tom, 2026-10-02: more games before wireless.)
+5. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,
    Checkers, Chess.
-5. **More puzzles:** Minesweeper, Nonograms, MasterCYD, Memory Match,
-   2048, Peg Solitaire.
 6. **Word and dice games:** (CYD-dle, Yaht-CYD done in stage 3) Farkle; Trivia if a
    suitable question bank is found.
 7. Remaining candidates as Tom picks them.
@@ -154,7 +154,8 @@ Decided (Tom, 2026-10-02):
 - No OTA; the web flasher is the update path.
 - Portrait by default; landscape allowed for a game where it clearly fits.
 - Long-press: allowed, not preferred; ask Tom per use.
-- Sound with a Settings toggle for silent play; custom themes.
+- Sound with a Volume slider in Settings (default 50 %, far left = muted); custom themes.
+- Sounds only for game events, never for plain key taps.
 
 - Long-press: yes for Minesweeper (flag) and Chess/Checkers (show a
   piece's moves); no for Sudoku.

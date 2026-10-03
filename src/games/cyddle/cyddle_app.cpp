@@ -266,7 +266,7 @@ void keys_press_cb(lv_event_t* e)
         const int d = dx * dx + dy * dy;
         if (d < best) { best = d; hit = c; }
     });
-    if (hit) { sound(Sound::Tap); key(hit); }
+    if (hit) key(hit);
 }
 
 void build()

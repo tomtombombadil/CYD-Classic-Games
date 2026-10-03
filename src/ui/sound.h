@@ -1,6 +1,12 @@
 // Named sounds for every game. Games say what happened (a piece was placed,
 // a move was wrong, the game was won) and this file decides how it sounds,
-// so the whole collection sounds alike. Silent when Settings > Sound is Off.
+// so the whole collection sounds alike. Played at Settings > Volume (0 =
+// silent).
+//
+// Tom's rule: sounds add to the game, they don't narrate every tap. Plain
+// key presses (picker, menus, Settings, keyboards), picking up a piece and
+// holding a die are silent. Sounds are for moves, the other side's reply,
+// mistakes, hints and the end of a game.
 #pragma once
 
 #include <cstdint>
@@ -8,10 +14,8 @@
 namespace ui {
 
 enum class Sound : uint8_t {
-    Tap,        // any key (played by make_key)
     Place,      // a digit, mark or piece put down
     Move,       // a piece moved / tiles slid
-    Select,     // a piece or cell picked up
     Error,      // a clash, an illegal move
     Hint,       // a hint filled in
     Win,        // solved / won

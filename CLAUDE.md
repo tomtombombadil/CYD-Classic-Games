@@ -175,10 +175,19 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 - Solve/win flash toggles the panel invert bit, no overlay animations.
 - Sound: the CYD speaker connector (GPIO26 via the board's amp) plays short
   tones through `ui::sound()` (`src/ui/sound.h`, device driver
-  `src/hal/speaker.*`). Settings has Sound On/Off for silent play; games
-  use the named sounds (tap, place, error, win, lose...), never raw tones.
-- Settings (☰ → Settings, shared): Theme, Sound, brightness, panel color
-  fixes, touch calibration, touch test.
+  `src/hal/speaker.*`). Settings has a **Volume slider** like Brightness
+  (Tom, 2026-10-02): 0-100 %, tapping left of the track = 0 % = muted
+  (label shows "Muted"), **default 50 %** (100 % distorts tiny speakers).
+  Volume = PWM duty (amplitude (v/100)^2, 100 % = 50 % duty). Stored in
+  UIS2 byte 8 as volume+1; 0 = unset -> 50 %, old "sound off" 1 -> 0 %.
+  Games use the named sounds (place, move, error, win, lose...), never raw
+  tones. **Go easy on sounds** (Tom): they add to the game, never narrate
+  taps. Silent: every key press (picker, menus, Settings, keyboards),
+  picking up a piece, holding a die, long-press peeks. Sounding: a move or
+  placement, the other side's reply, mistakes, hints, game end, and one
+  sample when the Volume slider is released.
+- Settings (☰ → Settings, shared): [Theme | Invert Colors], Brightness
+  slider, Volume slider, Swap Red/Blue, [Recalibrate | Touch Test], Back.
 - Themes: Light, Dark and 3 Custom slots. A custom theme starts from Light
   or Dark and overrides 10 color roles, each picked from a 48-color palette
   (`/themes.bin`). Games take every color from `ui::pal()`, so a custom
@@ -208,7 +217,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 ## Two-player games (Tom, 2026-10-02)
 - Every two-player game offers all three: vs computer (levels), pass-and-play
   (one CYD, two people take turns), and wireless CYD to CYD (below). The
-  new-game menu lists them; wireless shows as "coming" until stage 4.
+  new-game menu lists them; wireless shows as "coming" until stage 5 (multiplayer).
+- Tom, 2026-10-02: finish more games before building wireless play.
 
 ## Multiplayer (CYD to CYD)
 - ESP-NOW, peer to peer, no router or password. WiFi radio is OFF except

@@ -72,8 +72,8 @@ Sliding Tiles, Light Switch, Settings and the custom theme editor.
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
-greyed out, until it's built). Coming next: wireless play, then more
-puzzles (Minesweeper, MasterCYD, ...). The plan is in
+greyed out, until it's built). Coming next: more games (Minesweeper,
+MasterCYD, ...), then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -105,8 +105,12 @@ and touch calibration are shared.
   accent) opens a palette of 48 colors. Tap one and the change shows at
   once, in every game. **Default** puts a color back; **Reset: Light /
   Dark** starts the theme over from Light or Dark.
-- **Sound: On / Off.** Short beeps for taps, moves, mistakes and wins,
-  through a speaker on the board's speaker connector. Off = silent play.
+- **Volume:** a slider, like Brightness. It starts at 50 % (tiny speakers
+  distort near the top). Tap left of the slider for **Muted**, silent
+  play. A sound plays at the new level when you let go. Sounds come
+  through a speaker on the board's speaker connector, and only for what
+  matters in a game: moves, the computer's reply, mistakes, hints and the
+  end of a game. Plain button taps are silent.
 - **Brightness**, **Invert Colors**, **Swap Red/Blue**, **Recalibrate** and
   **Touch Test** (see below).
 

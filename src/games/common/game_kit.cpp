@@ -40,7 +40,7 @@ void menu_cb(lv_event_t* e)
         case kExitGame:  app_go_home(); break;
         case kSettings:  settings_open(handlers.reopen); break;
         case kExitMenu:  close_overlays(); if (handlers.back) handlers.back(); break;
-        case kWireless:  break;                       // stage 4
+        case kWireless:  break;                       // stage 5 (multiplayer)
         default:
             close_overlays();
             if (handlers.pick) handlers.pick(static_cast<int>(id));
@@ -224,7 +224,7 @@ void menu_two_player(const char* title, const MenuHandlers& h)
         row_key(r1, twoplayer::level_name(static_cast<twoplayer::Level>(l)), l);
     lv_obj_t* r2 = row(menu_btn_h());
     row_key(r2, "Pass and Play", kPassAndPlay);
-    set_dim(row_key(r2, "Wireless", kWireless), true);   // CYD to CYD comes in stage 4
+    set_dim(row_key(r2, "Wireless", kWireless), true);   // CYD to CYD comes in stage 5
     menu_tail();
 }
 

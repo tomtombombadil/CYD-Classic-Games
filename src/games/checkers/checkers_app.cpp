@@ -145,7 +145,6 @@ void on_tap(int sq)
         } else {
             // Exactly one move left, and the taps reached its end: play it
             if (n == 1 && l.m[only].n == path_n) { match::human_move(only); return; }
-            ui::sound(ui::Sound::Select);
             redraw();
             return;
         }
@@ -159,7 +158,6 @@ void on_tap(int sq)
             sel = sq;
             path_n = 0;
             note_text[0] = 0;
-            ui::sound(ui::Sound::Select);
         } else {
             clear_pick();
             if (l.n && l.m[0].jump()) {
@@ -180,7 +178,6 @@ void on_long(int sq)
     sel = sq;
     path_n = 0;
     peek = true;
-    ui::sound(ui::Sound::Select);
     redraw();
 }
 
