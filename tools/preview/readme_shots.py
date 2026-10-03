@@ -42,6 +42,7 @@ SHOTS = {
     "s_light_54_vpoker_held": "small_vpoker",
     "s_light_56_holdem_flop": "small_holdem",
     "s_light_58_farkle_pick": "small_farkle",
+    "s_light_60_mancala_sowing": "small_mancala",
     "s_light_40_help_twenty48_2": "small_help",
     "s_light_15_lightswitch": "small_lightswitch",
     "s_dark_0_settings": "small_settings_dark",

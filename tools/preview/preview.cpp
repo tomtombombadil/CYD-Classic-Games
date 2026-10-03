@@ -26,6 +26,11 @@
 #include "games/vpoker/vpoker_core.h"
 #include "games/holdem/holdem_core.h"
 #include "games/farkle/farkle_core.h"
+#include "games/mancala/mancala_core.h"
+namespace mancala_preview {
+mancala::Board* board();
+void finish();
+}
 namespace farkle_preview {
 farkle::Game* game();
 void refresh();
@@ -770,6 +775,38 @@ int main(int argc, char** argv)
         kit_preview_menu();
         shot(out + "_dark_57_holdem_menu.ppm");
         ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Mancala: the start, a game part-way (mid-sowing and settled), dark
+        ui::app_open_game_now(games::find("mancala"));
+        shot(out + "_light_60_mancala_new.ppm");
+        mancala::Board* b = mancala_preview::board();
+        if (b) {
+            const int opening[] = {2, 5, 1, 3, 4, 0, 2};
+            for (int m : opening) {
+                if (b->over() || !b->can_play(m)) continue;
+                const int side = b->side;
+                b->play(m);
+                (void)side;
+            }
+            // One more through the controller so it animates, caught mid-way
+            if (match::human_may_move()) {
+                int most = -1;                                // the fullest pit: a long sowing
+                for (int p = 0; p < 6; ++p) if (b->can_play(p) && (most < 0 || b->pit[p] > b->pit[most])) most = p;
+                match::human_move(most);
+                run(3 * 130 + 40);
+                shot(out + "_light_60_mancala_sowing.ppm");
+                run(2000);
+            }
+            mancala_preview::finish();
+            shot(out + "_light_60_mancala.ppm");
+        }
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("mancala"));
+        shot(out + "_dark_60_mancala.ppm");
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
     }

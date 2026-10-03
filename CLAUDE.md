@@ -250,7 +250,17 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   lines of label (Roll/Hit/Damage/Save/Check/Init/Heal) + pool + modifier,
   rolled with one tap, one tray row per line; a sample "Fighter Attacks"
   preset on first open; History: 40 rolls as text, newest first, paged;
-  save "RPD1" ~5 KB, written 15 s after a change and on close). Computer ties between equal moves are broken by a random
+  save "RPD1" ~5 KB, written 15 s after a change and on close). Mancala (id `mancala`; Kalah 6 pits x 4 seeds, Strategy; vs
+  computer / pass-and-play / wireless later; sides Gold and Blue;
+  portrait board: the left side's pits down the left column, stores in
+  the middle (left side's at the bottom), the other side's pits up the
+  right - sowing runs round that loop; vs computer the board turns so the
+  player is on the left; each move is shown seed by seed (130 ms a seed,
+  taps wait); capture = last seed in an empty own pit with seeds opposite
+  (both go to the store); a side out of seeds ends it, the other sweeps
+  its own; computer: Easy 1 move ahead, Medium 5, Hard deepening within
+  400k nodes (Hard beats Medium every test game); note line "You go
+  again" / "Captured N seeds"). Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
   view: tap, target dots). Checkers: when a jump is
   compulsory (American rules - yes, a jump must be taken; Tom checked and

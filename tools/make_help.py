@@ -186,6 +186,13 @@ write("farkle", [
  TP,
 ], two_player=True)
 
+write("mancala", [
+ ("The Idea", "Kalah, the classic Mancala: six pits a side with four seeds each, and a store for each player.\nYour pits run down the left; your store is at the bottom of the middle. Most seeds in your store at the end wins."),
+ ("A Move", "Tap one of your pits: its seeds are sown one at a time into the next pits - down your side, into your store, up the other side - skipping the other player's store.\nLast seed in your store: you go again.\nLast seed in an empty pit of yours: it and the seeds opposite go to your store."),
+ ("The End", "When either side's pits are all empty, the game ends: the other player puts the seeds left on their side into their store.\nThe pit last sown from is lit; your pits light up when it's your turn.\nvs Computer, the board turns so your pits are always on the left."),
+ TP,
+], two_player=True)
+
 write("vpoker", [
  ("The Idea", "The classic Jacks or Better machine. Bet 1 to 5 credits and get five cards. Tap the cards you want to keep: they say HELD. Then Draw replaces the rest, once.\nYour final hand pays by the table at the top, times your bet. The hand you hold lights up."),
  ("Paying Hands", "• Jacks or Better: a pair of Jacks, Queens, Kings or Aces\n• Two Pair, Three of a Kind\n• Straight: five in a row (A-2-3-4-5 and 10-J-Q-K-A count)\n• Flush: five of one suit\n• Full House, Four of a Kind, Straight Flush\n• Royal Flush: 10 to Ace of one suit, 4000 at a 5 credit bet"),

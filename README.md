@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Twenty-five games and an RPG dice roller so far: **Sudoku** (from
+> under way. Twenty-six games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **CYD-dle**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **CYD-dle**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, CYD-dle, Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -56,6 +56,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_vpoker.png" width="240" alt="Video Poker: a pair held">
 <img src="docs/screenshots/small_holdem.png" width="240" alt="Texas Hold'em: your turn after the flop">
 <img src="docs/screenshots/small_farkle.png" width="240" alt="Farkle: three dice set aside, Bank 1000">
+<img src="docs/screenshots/small_mancala.png" width="240" alt="Mancala: seeds being sown round the board">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -90,6 +91,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Nonograms | Puzzle Games | Solo, 5x5 / 8x8 / 10x10, solvable line by line |
 | 2048 | Puzzle Games | Solo, tap toward a side to slide; reach the 2048 tile |
 | Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
+| Mancala | Strategy Games | Kalah, six pits a side, sown seed by seed; vs computer or pass-and-play |
 | Checkers | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Reversi | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | FourConnect | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -109,7 +111,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
 greyed out, until it's built). Coming next: more games from the plan
-(Mancala, Nine Men's Morris...), then wireless play. The plan is in
+(Nine Men's Morris...), then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -312,6 +314,17 @@ The classic **Jacks or Better** machine. **Bet One** sets 1 to 5 credits
 shows what each hand pays at your bet and lights up the one you hold. A pair
 of Jacks or better pays; a Royal Flush pays 4000 at a 5-credit bet.
 **Hint** holds what the standard strategy keeps. 500 credits to start.
+
+## Mancala
+
+Kalah, the classic Mancala: six pits a side, four seeds in each. Your pits
+run down the left, your store is at the bottom of the middle. Tap one of
+your pits: its seeds are sown one at a time (you see them go) down your
+side, into your store, up the other side - never into the other store.
+Last seed in your store: you go again. Last seed in an empty pit of yours:
+it and the seeds opposite go to your store. When either side runs out, the
+other side keeps what's left on its side; most seeds wins. vs Computer the
+board turns so your pits are always on the left.
 
 ## Farkle
 

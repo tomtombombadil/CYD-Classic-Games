@@ -30,6 +30,7 @@
 #include "../../src/games/vpoker/vpoker_core.h"
 #include "../../src/games/holdem/holdem_core.h"
 #include "../../src/games/farkle/farkle_core.h"
+#include "../../src/games/mancala/mancala_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -1737,6 +1738,64 @@ static void test_farkle()
     CHECK(hard_wins > games * 55 / 100);
 }
 
+// ---- Mancala ---------------------------------------------------------------------------------
+static void test_mancala()
+{
+    using namespace mancala;
+    Board b;
+    // Pit 2 has 4 seeds: 3, 4, 5, store -> again
+    Sowing how;
+    CHECK(b.play(2, &how) && how.again && b.side == 0 && b.pit[kStore[0]] == 1 && how.n == 4);
+    CHECK(how.path[3] == kStore[0] && b.pit[2] == 0);
+    // Then pit 5 (5 seeds): store, 7, 8, 9, 10 -> Blue's turn
+    CHECK(b.play(5, &how) && !how.again && b.side == 1 && b.pit[kStore[0]] == 2 && b.pit[7] == 5);
+    // Skips the other store: Blue sows 13 from a pit, never into Gold's store
+    Board c;
+    for (int i = 0; i < 14; ++i) c.pit[i] = 0;
+    c.side = 1; c.pit[pit_index(1, 0)] = 13; c.pit[0] = 35;      // 48 seeds in all
+    const int gold_store = c.pit[kStore[0]];
+    CHECK(c.play(0, &how) && c.pit[kStore[0]] == gold_store);
+    for (int k = 0; k < how.n; ++k) CHECK(how.path[k] != kStore[0]);
+    // Capture: Gold's last seed in its empty pit 4 takes the opposite pit (8)
+    Board d;
+    for (int i = 0; i < 14; ++i) d.pit[i] = 0;
+    d.pit[3] = 1; d.pit[opposite(4)] = 6; d.pit[1] = 2; d.pit[pit_index(1, 2)] = 39; // 48
+    CHECK(d.play(3, &how) && how.captured == 7 && how.captured_from == opposite(4));
+    CHECK(d.pit[4] == 0 && d.pit[opposite(4)] == 0 && d.pit[kStore[0]] == 7);
+    // The end: Blue empties its side -> Gold sweeps its own seeds
+    Board e;
+    for (int i = 0; i < 14; ++i) e.pit[i] = 0;
+    e.side = 1; e.pit[pit_index(1, 5)] = 1; e.pit[0] = 10; e.pit[kStore[0]] = 17; e.pit[kStore[1]] = 20;
+    CHECK(e.play(5, &how) && how.ended && e.over() && e.pit[kStore[0]] == 27 && e.pit[kStore[1]] == 21);
+    CHECK(e.result() == 0);
+    // Seeds are never lost; computer levels, then the save
+    int wins[3] = {0, 0, 0};
+    for (int g = 0; g < 30; ++g) {
+        Board x;
+        const int strong = g % 3 == 1 ? 1 : 2, weak = g % 3 == 2 ? 1 : 0;
+        const int strong_side = g & 1;
+        int guard = 0;
+        while (!x.over() && ++guard < 400) {
+            const int m = best_move(x, x.side == strong_side ? strong : weak, uint32_t(g * 31 + guard));
+            CHECK(x.can_play(m));
+            x.play(m);
+            int total = 0;
+            for (int i = 0; i < 14; ++i) total += x.pit[i];
+            CHECK(total == 48);
+        }
+        CHECK(x.over());
+        if (x.result() == strong_side) ++wins[g % 3];
+        if (g == 0) {
+            uint8_t buf[Board::kSaveBytes];
+            Board y;
+            CHECK(x.serialize(buf, sizeof buf) == sizeof buf && y.deserialize(buf, sizeof buf));
+            CHECK(memcmp(x.pit, y.pit, 14) == 0 && y.side == x.side && y.moves == x.moves);
+        }
+    }
+    printf("mancala: Hard beat Easy %d/10, Medium beat Easy %d/10, Hard beat Medium %d/10\n", wins[0], wins[1], wins[2]);
+    CHECK(wins[0] >= 8 && wins[2] >= 6);
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -1805,6 +1864,7 @@ int main()
     test_vpoker();
     test_holdem();
     test_farkle();
+    test_mancala();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;
