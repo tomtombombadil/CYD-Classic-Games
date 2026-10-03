@@ -23,9 +23,13 @@ constexpr Tone kFanfare[] = {{784, 90}, {0, 25}, {1047, 90}, {0, 25}, {1319, 90}
 
 template <int N> constexpr Seq seq(const Tone (&t)[N]) { return {t, N}; }
 
+// Up C E G, then a quick G-C trill: short and pleased with itself
+constexpr Tone kTrill[]   = {{1047, 60}, {1319, 60}, {1568, 70}, {2093, 45}, {1568, 45},
+                             {2093, 45}, {1568, 45}, {2093, 160}};
+
 const Seq kSounds[] = {
     seq(kPlace), seq(kMove), seq(kError),
-    seq(kHint), seq(kWin), seq(kLose), seq(kDraw), seq(kTurn), seq(kFanfare),
+    seq(kHint), seq(kWin), seq(kLose), seq(kDraw), seq(kTurn), seq(kFanfare), seq(kTrill),
 };
 
 } // namespace

@@ -202,6 +202,24 @@ void update_status()
     lv_obj_invalidate(table);
 }
 
+// Once the dealer's cards are all shown (Tom): a blackjack gets the
+// fanfare, a round won overall a victory trill, a round lost the "aww";
+// a push is quiet
+void round_sound()
+{
+    if (S->recorded) return;                  // already settled (reopened game)
+    const Game& g = S->g;
+    int net = 0;
+    bool blackjack = false;
+    for (int i = 0; i < g.hands; ++i) {
+        net += hand_net(g.hand[i], g.result[i]);
+        blackjack |= g.result[i] == Result::Blackjack;
+    }
+    if (blackjack)    sound(Sound::Fanfare);
+    else if (net > 0) sound(Sound::Trill);
+    else if (net < 0) sound(Sound::Error);    // the two-tone "aww"
+}
+
 void reveal_cb(lv_timer_t*)
 {
     if (!S) return;
@@ -209,6 +227,7 @@ void reveal_cb(lv_timer_t*)
     if (dealer_shown >= S->g.dealer.n) {
         lv_timer_delete(reveal_timer);
         reveal_timer = nullptr;
+        round_sound();
         record_round();
         save();
     }
@@ -221,8 +240,7 @@ void round_over()
     const Game& g = S->g;
     S->recorded = 0;
     dealer_shown = 2;
-    for (int i = 0; i < g.hands; ++i)
-        if (g.result[i] == Result::Blackjack) sound(Sound::Fanfare);
+    (void)g;
     if (!reveal_timer) reveal_timer = lv_timer_create(reveal_cb, 450, nullptr);
     save();
     update_status();

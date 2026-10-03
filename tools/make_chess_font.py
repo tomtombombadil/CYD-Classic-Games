@@ -179,7 +179,15 @@ def main():
     fb.setupGlyphOrder(names)
     fb.setupCharacterMap(cmap)
     fb.setupGlyf(glyphs)
-    fb.setupHorizontalMetrics({n: (ADV, 0) for n in names})
+    # Left side bearing = each glyph's xMin (0 here shifted the pieces left
+    # in lv_font_conv's output)
+    glyf = fb.font["glyf"]
+    lsb = {}
+    for n in names:
+        g = glyf[n]
+        g.recalcBounds(glyf)
+        lsb[n] = getattr(g, "xMin", 0)
+    fb.setupHorizontalMetrics({n: (ADV, lsb[n]) for n in names})
     fb.setupHorizontalHeader(ascent=ASC, descent=DESC)
     fb.setupNameTable({"familyName": "CYD Chess Pieces", "styleName": "Regular"})
     fb.setupOS2(sTypoAscender=ASC, sTypoDescender=DESC, usWinAscent=ASC, usWinDescent=-DESC)

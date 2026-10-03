@@ -144,7 +144,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   (Tom, 2026-10-03: King and Queen must be obvious - King tallest with a
   cross, Queen a five-ball crown, Bishop mitre + slit, Pawn short); black
   pieces use thinner light lines (U+E000..) so they read as black; the
-  glyph is centred on its shape, not the line box), CYD-dle (word lists built by `tools/make_words.py` from
+  glyph is centred on its shape, not the line box; glyph left side
+  bearings must equal xMin or lv_font_conv shifts them off-centre), CYD-dle (word lists built by `tools/make_words.py` from
   `assets/words/`: ENABLE2K guesses, SCOWL-35 answers minus
   `blocklist.txt`/`answers_exclude.txt`; Easy 7 / Normal 6 / Hard must use
   hints; out of guesses = "Lost" in stats), Minesweeper (8x10/10,
@@ -190,7 +191,9 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   all 17s and peeks, 3:2, double any two, one split, split Aces one card;
   500 chips, New Chips +500 when broke; stats per hand CSV
   "#,Bet,Result,Net,Chips"; dealer's cards revealed one at a time;
-  Fanfare on a blackjack). Landscape (decided 2026-10-03): Solitaire
+  once all are shown (Tom, 2026-10-03): Fanfare on a blackjack,
+  `Sound::Trill` (a happy little victory trill) when the round nets a win,
+  `Sound::Error` (the "aww") when it nets a loss, silence on a push). Landscape (decided 2026-10-03): Solitaire
   stays portrait (Tom agreed: too short for late-game columns, mockup
   `card_mockups` case 5); Tom OK'd landscape for card games where it is
   truly better - none is on these 3:4 screens (Golf/Pyramid would gain
