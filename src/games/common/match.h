@@ -31,6 +31,10 @@ struct Game {
     // read the game's state). level 0..2.
     int  (*think)(int level, uint32_t seed, volatile bool* stop);
     void (*redraw)();              // board changed: invalidate the board view
+    // Optional: a score for the info line, e.g. "Black 12  White 9"
+    void (*score)(char* buf, size_t cap) = nullptr;
+    // Optional: a note after the last move, e.g. "White had no move" (or "")
+    void (*note)(char* buf, size_t cap) = nullptr;
 };
 
 // Call when the game opens (after its board was loaded) and on restyle.

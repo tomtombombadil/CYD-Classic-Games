@@ -5,6 +5,7 @@
 #include "../../src/games/common/two_player.h"
 #include "../../src/games/fourconnect/fourconnect_core.h"
 #include "../../src/games/lightswitch/lightswitch_core.h"
+#include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
 #include <chrono>
@@ -181,6 +182,68 @@ static void test_lightswitch()
     CHECK(back.deserialize(buf, sizeof buf) && back.lights == s.lights && back.par == s.par);
 }
 
+static void test_reversi()
+{
+    using namespace reversi;
+    Board b;
+    CHECK(b.count(0) == 2 && b.count(1) == 2 && b.side == 0);
+    CHECK(__builtin_popcountll(b.legal()) == 4);
+    CHECK(b.can_play(19) && !b.can_play(0));          // d3 legal, a1 not
+    CHECK(b.play(19));                                 // d3 flips d4
+    CHECK(b.count(0) == 4 && b.count(1) == 1 && b.side == 1);
+    CHECK(!b.play(19));
+    // A whole game by the computer ends, with a sensible result, and the
+    // save replays to the same position (passes included)
+    for (int g = 0; g < 4; ++g) {
+        Board p;
+        while (!p.over()) p.play(best_move(p, g % 3, 100 + g * 17 + p.plies));
+        CHECK(p.result() >= 0 && p.count(0) + p.count(1) <= 64);
+        uint8_t buf[Board::kSaveBytes];
+        CHECK(p.serialize(buf, sizeof buf));
+        Board back;
+        CHECK(back.deserialize(buf, sizeof buf) && back.disc[0] == p.disc[0] && back.disc[1] == p.disc[1]);
+    }
+    // Hard beats Easy
+    int hard = 0;
+    for (int g = 0; g < 6; ++g) {
+        Board p;
+        const int hs = g & 1;
+        while (!p.over()) p.play(best_move(p, p.side == hs ? 2 : 0, 7 + g * 13 + p.plies));
+        hard += p.result() == hs;
+    }
+    printf("reversi hard vs easy: %d/6\n", hard);
+    CHECK(hard >= 5);
+    // Passes: play random games until one has a pass; at that point the
+    // side that passed had no move and the same side moves again
+    int passes = 0;
+    uint32_t rng = 12345;
+    for (int g = 0; g < 400 && passes < 3; ++g) {
+        Board p;
+        while (!p.over()) {
+            const uint64_t l = p.legal();
+            int n = __builtin_popcountll(l);
+            rng ^= rng << 13; rng ^= rng >> 17; rng ^= rng << 5;
+            uint64_t x = l;
+            for (int k = rng % n; k > 0; --k) x &= x - 1;
+            const int mover = p.side;
+            Board before = p;
+            p.play(__builtin_ctzll(x));
+            if (p.last_was_pass() && !p.over()) {
+                ++passes;
+                CHECK(p.side == mover);
+                Board other = before;
+                other.play(__builtin_ctzll(x));
+                CHECK(other.legal() != 0);
+                uint8_t buf[Board::kSaveBytes];
+                p.serialize(buf, sizeof buf);
+                Board back;
+                CHECK(back.deserialize(buf, sizeof buf) && back.side == p.side && back.plies == p.plies);
+            }
+        }
+    }
+    CHECK(passes > 0);
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -220,6 +283,7 @@ int main()
     test_tictactoe();
     test_sliding();
     test_lightswitch();
+    test_reversi();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

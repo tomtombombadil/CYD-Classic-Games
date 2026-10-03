@@ -61,7 +61,7 @@ void update_status()
         else if (r >= 0)               snprintf(st, sizeof st, "Computer wins");
         else if (clock_.paused)        snprintf(st, sizeof st, "Paused");
         else if (computer_to_move())   snprintf(st, sizeof st, "Thinking...");
-        else                           snprintf(st, sizeof st, "Your turn");
+        else                           snprintf(st, sizeof st, "Your turn (%s)", side_name(S.human_side));
     } else {
         if (r == 2)                    snprintf(st, sizeof st, "Draw");
         else if (r >= 0)               snprintf(st, sizeof st, "%s wins!", side_name(r));
@@ -71,8 +71,13 @@ void update_status()
     kit::top_bar_status(bar, st);
 
     if (info_l) {
-        char in[64];
-        if (S.mode == Mode::Computer)
+        char in[80], extra[40] = "";
+        if (G.note) G.note(extra, sizeof extra);
+        if (!extra[0] && G.score) G.score(extra, sizeof extra);
+        if (extra[0])
+            snprintf(in, sizeof in, "%s. %s", extra,
+                     S.mode == Mode::Computer ? twoplayer::level_name(S.level) : "Pass and play");
+        else if (S.mode == Mode::Computer)
             snprintf(in, sizeof in, "vs Computer, %s. You: %s",
                      twoplayer::level_name(S.level), side_name(S.human_side));
         else

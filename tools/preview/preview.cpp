@@ -17,6 +17,7 @@
 #include "games/common/two_player.h"
 #include "games/lightswitch/lightswitch_core.h"
 #include "games/registry.h"
+#include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
 #include "games/sudoku/sudoku_screen.h"
@@ -422,6 +423,26 @@ int main(int argc, char** argv)
         kit::stats_solo("sliding", kSlideLevels, nullptr);
         shot(out + "_light_22_sliding_stats.ppm");
         ui::close_overlays();
+    }
+
+    {   // Reversi vs the computer, mid-game, player's turn
+        reversi::Board b;
+        for (int k = 0; k < 14; ++k) b.play(reversi::best_move(b, 1, 77 + k));
+        std::vector<uint8_t> buf(reversi::Board::kSaveBytes + match::kStateBytes);
+        b.serialize(buf.data(), buf.size());
+        match::State st; st.human_side = b.side; st.seconds = 183;
+        { match::State keep = match::state(); match::state() = st;
+          match::save_state(buf.data() + reversi::Board::kSaveBytes, match::kStateBytes);
+          match::state() = keep; }
+        save_game("reversi", buf.data(), buf.size());
+        ui::app_open_game_now(games::find("reversi"));
+        shot(out + "_light_23_reversi.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("reversi"));
+        shot(out + "_dark_23_reversi.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
     }
 
     // 5. "All games": back to the picker, which now offers the last game
