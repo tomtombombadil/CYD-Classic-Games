@@ -135,7 +135,7 @@ Chinese checkers, Dots and Boxes (thin tap targets).
    Yaht-CYD (from stage 6). *Built 2026-10-02, waiting for hardware
    testing.*
 4. **More puzzles:** Minesweeper, 2048, MasterCYD, Peg Solitaire, Memory
-   Match (*built 2026-10-03*), Nonograms. Then the card games (Klondike,
+   Match, Nonograms (*built 2026-10-03*). Then the card games (Klondike,
    FreeCell, Blackjack, Poker) on the shared card graphics (mocked up
    2026-10-03). (Tom, 2026-10-02: more games before wireless.)
 5. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,

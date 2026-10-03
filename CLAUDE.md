@@ -131,7 +131,10 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   unlimited undo; stuck = Lost only when you start another game),
   Memory Match (id `memory`; 4x4 / 4x5 / 5x6, LVGL symbols as pictures,
   each with a color too; backs = shared Starry Night card back; a miss
-  stays up until the next tap - no timers), 2048 (id `twenty48` - C names can't start
+  stays up until the next tap - no timers), Nonograms (id `nonogram`; 5x5 / 8x8 / 10x10;
+  random left-right mirrored pictures kept only when a line solver solves
+  them - unique, no guessing; Fill | Mark modes, no long-press; clue turns
+  grey when its line matches; fill/mark taps silent), 2048 (id `twenty48` - C names can't start
   with a digit; 4x4, 2 or 4 (10 %) after each slide, play on after 2048;
   one custom-drawn object below the top bar = board + 4 diagonal tap
   zones; preview checks each zone against the rules engine; stats only

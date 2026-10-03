@@ -19,6 +19,7 @@ GAME(minesweeper, "Minesweeper", Puzzles, kSolo, "Clear the field without hittin
 GAME(mastercyd, "MasterCYD", Puzzles, kSolo, "Crack the hidden color code in 10 guesses; dots and rings tell you how close you are")
 GAME(pegs, "Peg Solitaire", Puzzles, kSolo, "Jump pegs over each other until only one is left; triangle, English and European boards")
 GAME(memory, "Memory Match", Puzzles, kSolo, "Turn tiles two at a time and find every matching pair in as few turns as you can")
+GAME(nonogram, "Nonograms", Puzzles, kSolo, "Paint by numbers: fill the grid so every row and column matches its clue")
 GAME(fourconnect, "FourConnect", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Drop discs to line up four; three computer levels or pass-and-play")
 GAME(tictactoe, "Tic-Tac-Toe", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Three in a row; the Hard computer never loses")
 GAME(reversi, "Reversi", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Outflank and flip; legal moves shown as dots; Hard plays the endgame perfectly")

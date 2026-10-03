@@ -10,9 +10,9 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Fifteen games so far: **Sudoku** (from
+> under way. Sixteen games so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
-> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **2048**, **FourConnect**, **Tic-Tac-Toe**,
+> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **FourConnect**, **Tic-Tac-Toe**,
 > **Reversi**, **Checkers**, **Chess**, **CYD-dle** and **Yaht-CYD**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
@@ -23,7 +23,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a long-press showing where a piece can
 go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
-Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
+Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
 <img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
@@ -43,6 +43,7 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, a How To Play page, S
 <img src="docs/screenshots/small_2048.png" width="240" alt="2048 in progress">
 <img src="docs/screenshots/small_pegs.png" width="240" alt="Peg Solitaire, English board">
 <img src="docs/screenshots/small_memory.png" width="240" alt="Memory Match with a missed pair showing">
+<img src="docs/screenshots/small_nonogram.png" width="240" alt="Nonograms 10x10 part-way">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -74,6 +75,7 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, a How To Play page, S
 | MasterCYD | Puzzle Games | Solo, crack a color code in 10 guesses: Easy / Normal / Hard |
 | Peg Solitaire | Puzzle Games | Solo, Triangle / English / European boards, unlimited undo |
 | Memory Match | Puzzle Games | Solo, 4x4 / 4x5 / 5x6 tiles, fewest turns |
+| Nonograms | Puzzle Games | Solo, 5x5 / 8x8 / 10x10, solvable line by line |
 | 2048 | Puzzle Games | Solo, tap toward a side to slide; reach the 2048 tile |
 | Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Checkers | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -84,8 +86,8 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, a How To Play page, S
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
-greyed out, until it's built). Coming next: more games (Nonograms, then
-the card games: Klondike, FreeCell, Blackjack, Poker), then wireless play. The plan is in
+greyed out, until it's built). Coming next: the card games (Klondike,
+FreeCell, Blackjack, Poker), then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -230,6 +232,15 @@ turns as you can. A pair stays up (green edge); a miss stays up with a red
 edge until your next tap, which turns it back over and turns the tile you
 tapped, so there's no waiting. 4x4, 4x5 or 5x6 tiles. Stats keep your best
 time and fewest turns.
+
+## Nonograms
+
+Paint a hidden picture: the numbers beside each row and above each column
+give the runs of filled cells in that line, in order. **Fill** fills a cell
+(tap again to clear); **Mark** puts an X where you know nothing goes. A
+clue turns grey when its line matches, and the row and column you last
+tapped are tinted. Every puzzle has one answer and can be solved one line at
+a time, no guessing. 5x5, 8x8 or 10x10.
 
 ## 2048
 

@@ -11,6 +11,7 @@
 #include "../../src/games/mastercyd/mastercyd_core.h"
 #include "../../src/games/memory/memory_core.h"
 #include "../../src/games/minesweeper/minesweeper_core.h"
+#include "../../src/games/nonogram/nonogram_core.h"
 #include "../../src/games/pegs/pegs_core.h"
 #include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
@@ -875,6 +876,72 @@ static void test_memory()
     CHECK(g.tap(c) == Tap::First && !g.face_up(a) && !g.face_up(b) && g.face_up(c));
 }
 
+static void test_nonogram()
+{
+    using namespace nonogram;
+    {   // clues
+        const Clue a = clue_of(0b0110111, 7);
+        CHECK(a.n == 2 && a.run[0] == 3 && a.run[1] == 2);
+        CHECK(clue_of(0, 5).n == 0);
+        const Clue b = clue_of(0b10101, 5);
+        CHECK(b.n == 3 && b.run[0] == 1 && b.run[2] == 1);
+    }
+    {   // a known picture: play it, check row/col completion and solving
+        const uint16_t pic[5] = {0b11111, 0b10001, 0b10101, 0b10001, 0b11111};   // a framed dot
+        Game g; g.set_picture(5, pic);
+        uint8_t out[25];
+        CHECK(line_solve(5, g.rows, g.cols, out));
+        for (int r = 0; r < 5; ++r) for (int c = 0; c < 5; ++c)
+            CHECK((out[r * 5 + c] == Filled) == bool(pic[r] >> c & 1));
+        CHECK(!g.solved() && !g.row_done(0));
+        for (int r = 0; r < 5; ++r) for (int c = 0; c < 5; ++c)
+            if (pic[r] >> c & 1) g.tap(r, c, Filled);
+        CHECK(g.solved());
+        g.tap(0, 0, Marked);                         // no changes once solved
+        CHECK(g.cell[0] == Filled && g.solved());
+    }
+    {   // an "A" has one answer, but line logic alone can't find it: the
+        // generator would skip it
+        const uint16_t pic[5] = {0b01110, 0b10001, 0b11111, 0b10001, 0b10001};
+        Game g; g.set_picture(5, pic);
+        uint8_t out[25];
+        CHECK(!line_solve(5, g.rows, g.cols, out));
+    }
+    {   // a picture with two answers is not line-solvable
+        const uint16_t two[2] = {0b01, 0b10};
+        Game g; g.set_picture(2, two);
+        uint8_t out[4];
+        CHECK(!line_solve(2, g.rows, g.cols, out));
+    }
+    // Generated puzzles: line-solvable to exactly the picture, mirrored, clues fit
+    long worst_tries_us = 0;
+    for (int lv = 0; lv < kLevels; ++lv)
+        for (int s = 1; s <= 40; ++s) {
+            Rng rng(s * 31 + lv);
+            Game g;
+            const auto t0 = std::chrono::steady_clock::now();
+            g.start(lv, rng);
+            const long us = long(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0).count());
+            if (us > worst_tries_us) worst_tries_us = us;
+            CHECK(g.n == level_size(lv));
+            uint8_t out[kMaxN * kMaxN];
+            CHECK(line_solve(g.n, g.rows, g.cols, out));
+            for (int r = 0; r < g.n; ++r) {
+                CHECK(g.rows[r].n <= kMaxClues && g.cols[r].n <= kMaxClues);
+                for (int c = 0; c < g.n; ++c) {
+                    CHECK((out[r * g.n + c] == Filled) == bool(g.picture[r] >> c & 1));
+                    CHECK(bool(g.picture[r] >> c & 1) == bool(g.picture[r] >> (g.n - 1 - c) & 1));
+                }
+            }
+            uint8_t buf[Game::kSaveBytes];
+            g.tap(0, 0, Filled); g.tap(1, 1, Marked);
+            CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+            Game h;
+            CHECK(h.deserialize(buf, sizeof buf) && h.cell[0] == Filled && h.cell[h.n + 1] == Marked && h.picture[3] == g.picture[3]);
+        }
+    printf("nonogram: worst generate %.1f ms\n", worst_tries_us / 1000.0);
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -931,6 +998,7 @@ int main()
     test_mastercyd();
     test_pegs();
     test_memory();
+    test_nonogram();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

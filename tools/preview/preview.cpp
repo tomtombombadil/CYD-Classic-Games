@@ -26,6 +26,7 @@
 #include "games/mastercyd/mastercyd_core.h"
 #include "games/pegs/pegs_core.h"
 #include "games/memory/memory_core.h"
+#include "games/nonogram/nonogram_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -784,6 +785,41 @@ int main(int argc, char** argv)
         shot(out + "_dark_38_memory.ppm");
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Nonograms: 10x10 part-way (light), 8x8 (dark), 5x5 solved
+        using namespace nonogram;
+        auto stage = [&](const Game& g, uint32_t secs, bool mark) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 6, 0);
+            g.serialize(buf.data(), buf.size());
+            buf[Game::kSaveBytes] = mark ? 1 : 0;
+            buf[Game::kSaveBytes + 1] = g.solved() ? 1 : 0;
+            for (int k = 0; k < 4; ++k) buf[Game::kSaveBytes + 2 + k] = uint8_t(secs >> (8 * k));
+            save_game("nonogram", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("nonogram"));
+        };
+        Game g; Rng rng(77); g.start(2, rng);
+        for (int r = 0; r < 6; ++r)
+            for (int c = 0; c < g.n; ++c) {
+                if (g.picture[r] >> c & 1) { if ((r + c) % 3) g.tap(r, c, Filled); }
+                else if (r < 3) g.tap(r, c, Marked);
+            }
+        stage(g, 251, false);
+        run(30);
+        shot(out + "_light_39_nonogram.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        Game h; Rng r2(5); h.start(1, r2);
+        for (int r = 0; r < 4; ++r) for (int c = 0; c < h.n; ++c) if (h.picture[r] >> c & 1) h.tap(r, c, Filled);
+        stage(h, 96, true);
+        shot(out + "_dark_39_nonogram.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        Game s; Rng r3(2); s.start(0, r3);
+        for (int r = 0; r < s.n; ++r) for (int c = 0; c < s.n; ++c) if (s.picture[r] >> c & 1) s.tap(r, c, Filled);
+        stage(s, 48, false);
+        shot(out + "_light_39_nonogram_solved.ppm");
+        ui::app_go_home_now();
     }
 
     {   // Card games: mockups of the shared card graphics (not games yet)
