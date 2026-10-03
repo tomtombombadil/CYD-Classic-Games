@@ -27,6 +27,8 @@ SHOTS = {
     "s_light_32_minesweeper": "small_minesweeper",
     "s_light_36_mastercyd": "small_mastercyd",
     "s_light_35_twenty48": "small_2048",
+    "s_light_37_pegs": "small_pegs",
+    "s_light_38_memory": "small_memory",
     "s_light_40_help_twenty48_2": "small_help",
     "s_light_15_lightswitch": "small_lightswitch",
     "s_dark_0_settings": "small_settings_dark",

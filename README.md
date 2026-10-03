@@ -10,9 +10,9 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Thirteen games so far: **Sudoku** (from
+> under way. Fifteen games so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
-> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **2048**, **FourConnect**, **Tic-Tac-Toe**,
+> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **2048**, **FourConnect**, **Tic-Tac-Toe**,
 > **Reversi**, **Checkers**, **Chess**, **CYD-dle** and **Yaht-CYD**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
@@ -23,7 +23,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a long-press showing where a piece can
 go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
-Minesweeper, MasterCYD, 2048, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
+Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
 <img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
@@ -41,6 +41,8 @@ Minesweeper, MasterCYD, 2048, a How To Play page, Sliding Tiles, Light Switch, S
 <img src="docs/screenshots/small_minesweeper.png" width="240" alt="Minesweeper with flags">
 <img src="docs/screenshots/small_mastercyd.png" width="240" alt="MasterCYD, guess 5 of 10">
 <img src="docs/screenshots/small_2048.png" width="240" alt="2048 in progress">
+<img src="docs/screenshots/small_pegs.png" width="240" alt="Peg Solitaire, English board">
+<img src="docs/screenshots/small_memory.png" width="240" alt="Memory Match with a missed pair showing">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -70,6 +72,8 @@ Minesweeper, MasterCYD, 2048, a How To Play page, Sliding Tiles, Light Switch, S
 | Sliding Tiles | Puzzle Games | Solo, 3x3, 4x4 (the 15-Puzzle) or 5x5 |
 | Minesweeper | Puzzle Games | Solo, Easy / Medium / Hard, never needs a guess |
 | MasterCYD | Puzzle Games | Solo, crack a color code in 10 guesses: Easy / Normal / Hard |
+| Peg Solitaire | Puzzle Games | Solo, Triangle / English / European boards, unlimited undo |
+| Memory Match | Puzzle Games | Solo, 4x4 / 4x5 / 5x6 tiles, fewest turns |
 | 2048 | Puzzle Games | Solo, tap toward a side to slide; reach the 2048 tile |
 | Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Checkers | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -80,8 +84,8 @@ Minesweeper, MasterCYD, 2048, a How To Play page, Sliding Tiles, Light Switch, S
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
-greyed out, until it's built). Coming next: more games (Nonograms,
-Memory Match, Peg Solitaire, ...), then wireless play. The plan is in
+greyed out, until it's built). Coming next: more games (Nonograms, then
+the card games: Klondike, FreeCell, Blackjack, Poker), then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -208,6 +212,24 @@ right color in the right place, a **ring** a right color in the wrong place
 (they don't say which pegs). The code shows at the top when the game ends.
 Easy: 4 pegs, no color twice. Normal: 4 pegs, colors may repeat. Hard: 5
 pegs. Stats keep wins, losses and best times per level.
+
+## Peg Solitaire
+
+Jump a peg over a neighbouring peg into the empty hole beyond it; the
+jumped peg comes off. Finish with one peg. Tap a peg (the holes it can jump
+to show as dots), then tap the hole. **Undo** takes back any number of
+jumps, even after you're stuck. Boards: **Triangle** (15 holes, six jump
+directions), **English** (the 33-hole cross) and **European** (37 holes,
+starting with the hole two above the centre, since the centre start can't
+be solved there). Every board's start is checked solvable by the tests.
+
+## Memory Match
+
+Every picture is on two face-down tiles; find all the pairs in as few
+turns as you can. A pair stays up (green edge); a miss stays up with a red
+edge until your next tap, which turns it back over and turns the tile you
+tapped, so there's no waiting. 4x4, 4x5 or 5x6 tiles. Stats keep your best
+time and fewest turns.
 
 ## 2048
 

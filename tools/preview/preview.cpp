@@ -24,6 +24,8 @@
 #include "games/yahtcyd/yahtcyd_core.h"
 #include "games/twenty48/twenty48_core.h"
 #include "games/mastercyd/mastercyd_core.h"
+#include "games/pegs/pegs_core.h"
+#include "games/memory/memory_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -712,6 +714,74 @@ int main(int argc, char** argv)
         h.submit();
         stage(h, 402);
         shot(out + "_dark_36_mastercyd_solved.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Peg Solitaire: English part-way with a peg picked (light), Triangle (dark), European
+        using namespace pegs;
+        auto stage = [&](const Game& g, uint32_t secs) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+            g.serialize(buf.data(), buf.size());
+            for (int k = 0; k < 4; ++k) buf[Game::kSaveBytes + 1 + k] = uint8_t(secs >> (8 * k));
+            save_game("pegs", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("pegs"));
+        };
+        Game g; g.start(English);
+        const uint8_t eng[][2] = {{10,24},{15,17},{2,16},{4,2},{17,15},{14,16},{18,4},{20,18},{23,9}};
+        for (auto& mv : eng) g.play(mv[0], mv[1]);
+        stage(g, 131);
+        run(50);
+        int x = 0, y = 0;
+        {   // tap the peg on hole 30 (row 4, col 2)
+            const int m = W >= 320 ? 8 : 4;
+            (void)m;
+        }
+        (void)x; (void)y;
+        shot(out + "_light_37_pegs.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        Game t; t.start(Triangle);
+        t.play(14, 0); t.play(16, 14);
+        stage(t, 20);
+        shot(out + "_dark_37_pegs_triangle.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        Game e; e.start(European);
+        stage(e, 0);
+        shot(out + "_light_37_pegs_european.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Memory Match: 4x5 with pairs found and a miss showing (light), 5x6 (dark)
+        using namespace memory;
+        auto stage = [&](const Game& g, uint32_t secs) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+            g.serialize(buf.data(), buf.size());
+            for (int k = 0; k < 4; ++k) buf[Game::kSaveBytes + 1 + k] = uint8_t(secs >> (8 * k));
+            save_game("memory", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("memory"));
+        };
+        Game g; Rng rng(9); g.start(1, rng);
+        int done = 0;
+        for (int a = 0; a < g.tiles() && done < 4; ++a)
+            for (int b = a + 1; b < g.tiles(); ++b)
+                if (!g.matched[a] && g.pic[a] == g.pic[b]) { g.tap(a); g.tap(b); ++done; break; }
+        int x = 0; while (g.matched[x]) ++x;
+        int y = x + 1; while (g.matched[y] || g.pic[y] == g.pic[x]) ++y;
+        g.tap(x); g.tap(y);
+        g.turns = 9;
+        stage(g, 74);
+        shot(out + "_light_38_memory.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        Game h; Rng r2(3); h.start(2, r2);
+        for (int a = 0, n = 0; a < h.tiles() && n < 9; ++a)
+            for (int b = a + 1; b < h.tiles(); ++b)
+                if (!h.matched[a] && h.pic[a] == h.pic[b]) { h.tap(a); h.tap(b); ++n; break; }
+        h.tap(h.tiles() - 1);
+        stage(h, 140);
+        shot(out + "_dark_38_memory.ppm");
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
     }

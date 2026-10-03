@@ -124,7 +124,14 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   result "Lost" added), MasterCYD (4 pegs no repeats / 4 / 5 pegs,
   6 colors from the palette (red, yellow, green, blue, white, black, each
   with a rim), 10 guesses; answers are shapes - filled dot = exact, ring =
-  near - in one line), 2048 (id `twenty48` - C names can't start
+  near - in one line), Peg Solitaire (id `pegs`; Triangle 15 / English
+  33 / European 37 on a 7x7 grid; European starts with hole 10 empty -
+  the centre start is unsolvable; tests replay stored one-peg solutions
+  found offline (a live search is far too slow under sanitizers);
+  unlimited undo; stuck = Lost only when you start another game),
+  Memory Match (id `memory`; 4x4 / 4x5 / 5x6, LVGL symbols as pictures,
+  each with a color too; backs = shared Starry Night card back; a miss
+  stays up until the next tap - no timers), 2048 (id `twenty48` - C names can't start
   with a digit; 4x4, 2 or 4 (10 %) after each slide, play on after 2048;
   one custom-drawn object below the top bar = board + 4 diagonal tap
   zones; preview checks each zone against the rules engine; stats only

@@ -205,7 +205,8 @@ void draw_back(lv_layer_t* layer, int x, int y, int w, int h, Look look)
                 const int r = (s[0] + s[1]) % 3 == 0 && w >= 40 ? 2 : 1;
                 kit::fill_rect(layer, sx - r, sy - r, sx + r, sy + r, gold, r);
             }
-            const int mr = pw / 5, mx = x1 + pw * 62 / 100, my = y1 + ph * 22 / 100;   // crescent
+            const int mr = (pw < ph ? pw : ph) / 5;                     // crescent, inside the panel
+            const int mx = x1 + pw * 62 / 100, my = y1 + mr + mr / 4 + 3;
             kit::fill_rect(layer, mx - mr, my - mr, mx + mr, my + mr, gold, mr);
             kit::fill_rect(layer, mx - mr + mr / 2, my - mr - mr / 4, mx + mr + mr / 2, my + mr - mr / 4, base, mr);
             break;

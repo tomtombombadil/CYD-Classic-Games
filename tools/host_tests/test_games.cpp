@@ -9,13 +9,16 @@
 #include "../../src/games/fourconnect/fourconnect_core.h"
 #include "../../src/games/lightswitch/lightswitch_core.h"
 #include "../../src/games/mastercyd/mastercyd_core.h"
+#include "../../src/games/memory/memory_core.h"
 #include "../../src/games/minesweeper/minesweeper_core.h"
+#include "../../src/games/pegs/pegs_core.h"
 #include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
 #include "../../src/games/twenty48/twenty48_core.h"
 #include "../../src/games/yahtcyd/yahtcyd_core.h"
 #include <chrono>
+#include <unordered_set>
 #include <cstdio>
 #include <cstring>
 
@@ -776,6 +779,102 @@ static void test_mastercyd()
     }
 }
 
+static void test_pegs()
+{
+    using namespace pegs;
+    Game g;
+    g.start(English);
+    CHECK(g.peg_count() == 32 && !g.peg(24));
+    // Opening jumps into the centre: from 10 (2,3) over 17, from 38 (5,3), 22 (3,1), 26 (3,5)
+    CHECK(g.find(10, 24) && g.find(38, 24) && g.find(22, 24) && g.find(26, 24));
+    CHECK(!g.find(24, 10) && !g.find(9, 24) && g.legal(nullptr) == 4);
+    CHECK(g.play(10, 24) && g.peg_count() == 31 && !g.peg(17) && !g.peg(10) && g.peg(24));
+    CHECK(g.undo() && g.peg_count() == 32 && g.peg(17) && !g.peg(24) && !g.undo());
+    Game t; t.start(Triangle);
+    CHECK(t.peg_count() == 14 && t.legal(nullptr) == 2);      // into the top from row 2
+    Game e; e.start(European);
+    CHECK(e.peg_count() == 36);
+    // Every level can be finished with one peg: replay a known solution
+    // (found offline by a symmetry-reduced search)
+    static const uint8_t sol_tri[][2] = {{14,0},{16,14},{0,16},{21,7},{24,8},{29,15},{30,16},{7,23},{8,24},{32,16},{16,30},{31,29},{28,30}};
+    static const uint8_t sol_eng[][2] = {{10,24},{15,17},{2,16},{4,2},{17,15},{14,16},{18,4},{20,18},{23,9},{2,16},{21,23},{23,9},{25,11},{4,18},{27,25},{25,11},{37,23},{28,30},{30,16},{9,23},{23,25},{32,18},{11,25},{34,32},{31,33},{46,32},{25,39},{44,46},{46,32},{33,31},{31,45}};
+    static const uint8_t sol_eur[][2] = {{8,10},{11,9},{22,8},{8,10},{36,22},{17,15},{3,17},{14,16},{28,14},{17,15},{14,16},{19,17},{33,19},{20,18},{23,9},{2,16},{37,23},{32,30},{45,31},{46,32},{17,15},{15,29},{31,17},{23,37},{44,30},{29,31},{25,11},{4,18},{17,19},{12,26},{27,25},{31,33},{34,32},{25,39},{40,38}};
+    const uint8_t (*sols[3])[2] = {sol_tri, sol_eng, sol_eur};
+    const int lens[3] = {int(sizeof sol_tri / 2), int(sizeof sol_eng / 2), int(sizeof sol_eur / 2)};
+    for (int lv = 0; lv < kLevels; ++lv) {
+        Game s; s.start(lv);
+        bool ok = true;
+        for (int i = 0; i < lens[lv] && ok; ++i) ok = s.play(sols[lv][i][0], sols[lv][i][1]);
+        CHECK(ok && s.solved() && s.stuck());
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(s.serialize(buf, sizeof buf) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf, sizeof buf) && h.pegs == s.pegs && h.moves == s.moves);
+        while (h.undo()) {}
+        Game fresh; fresh.start(lv);
+        CHECK(h.pegs == fresh.pegs);
+    }
+}
+
+static void test_memory()
+{
+    using namespace memory;
+    for (int lv = 0; lv < kLevels; ++lv) {
+        Rng rng(40 + lv); Game g; g.start(lv, rng);
+        int count[kPictures] = {};
+        for (int i = 0; i < g.tiles(); ++i) ++count[g.pic[i]];
+        for (int p = 0; p < kPictures; ++p) CHECK(count[p] == 0 || count[p] == 2);
+        // Perfect memory: turn tiles left to right, pairing as soon as known
+        int seen_at[kPictures]; for (int& s : seen_at) s = -1;
+        for (int i = 0; i < g.tiles() && !g.solved(); ++i) {
+            if (g.matched[i]) continue;
+            const int other = seen_at[g.pic[i]];
+            if (other >= 0) {
+                CHECK(g.tap(i) == Tap::First);
+                CHECK(g.tap(other) == Tap::Match);
+                continue;
+            }
+            CHECK(g.tap(i) == Tap::First);
+            seen_at[g.pic[i]] = i;
+            // turn the next unknown tile as the second of the pair
+            int j = i + 1;
+            while (j < g.tiles() && g.matched[j]) ++j;
+            if (j >= g.tiles()) break;
+            const Tap r = g.tap(j);
+            if (r == Tap::Match) { ++i; continue; }
+            CHECK(r == Tap::Miss && g.face_up(i) && g.face_up(j));
+            if (seen_at[g.pic[j]] < 0) seen_at[g.pic[j]] = j;
+            else {                                       // j's partner known: next tap takes it
+                const int k = seen_at[g.pic[j]];
+                CHECK(g.tap(j) == Tap::Ignored);         // tapping a showing tile just hides the pair
+                CHECK(!g.face_up(i) && !g.face_up(j));
+                CHECK(g.tap(k) == Tap::First && g.tap(j) == Tap::Match);
+            }
+            i = j;
+        }
+        // Finish anything left by pairing known tiles
+        for (int a = 0; a < g.tiles() && !g.solved(); ++a)
+            for (int b = a + 1; b < g.tiles(); ++b)
+                if (!g.matched[a] && !g.matched[b] && g.pic[a] == g.pic[b]) {
+                    g.up_a = g.up_b = -1;                    // put any showing tiles down
+                    CHECK(g.tap(a) == Tap::First && g.tap(b) == Tap::Match);
+                }
+        CHECK(g.solved() && g.turns >= g.pairs());
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf, sizeof buf) && h.solved() && h.turns == g.turns);
+    }
+    // A miss stays up until the next tap, which also turns the new tile
+    Rng rng(5); Game g; g.start(0, rng);
+    int a = 0, b = 1;
+    while (g.pic[b] == g.pic[a]) ++b;
+    int c = 0;
+    while (c == a || c == b) ++c;
+    CHECK(g.tap(a) == Tap::First && g.tap(b) == Tap::Miss && g.turns == 1);
+    CHECK(g.tap(c) == Tap::First && !g.face_up(a) && !g.face_up(b) && g.face_up(c));
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -830,6 +929,8 @@ int main()
     test_minesweeper();
     test_twenty48();
     test_mastercyd();
+    test_pegs();
+    test_memory();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;
