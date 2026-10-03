@@ -27,6 +27,7 @@
 #include "../../src/games/yahtcyd/yahtcyd_core.h"
 #include "../../src/ui/log_pack.h"
 #include "../../src/games/rpgdice/rpgdice_core.h"
+#include "../../src/games/vpoker/vpoker_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -1498,6 +1499,88 @@ static void test_rpgdice()
     delete b;
 }
 
+// ---- Video Poker -------------------------------------------------------------------------------
+static void test_vpoker()
+{
+    using namespace vpoker;
+    // Cards from text: "AS KH 10D 2C" (rank, suit S H D C)
+    auto hand = [](const char* t, uint8_t out[5]) {
+        for (int i = 0; i < 5; ++i) {
+            while (*t == ' ') ++t;
+            int r;
+            if (*t == 'A') { r = 1; ++t; } else if (*t == 'K') { r = 13; ++t; } else if (*t == 'Q') { r = 12; ++t; }
+            else if (*t == 'J') { r = 11; ++t; } else { r = 0; while (*t >= '0' && *t <= '9') r = r * 10 + (*t++ - '0'); }
+            const int s = *t == 'S' ? 0 : *t == 'H' ? 1 : *t == 'D' ? 2 : 3;
+            ++t;
+            out[i] = uint8_t(s * 13 + r - 1);
+        }
+    };
+    struct Case { const char* cards; Rank r; };
+    const Case ranks[] = {
+        {"10H JH QH KH AH", RoyalFlush}, {"5C 6C 7C 8C 9C", StraightFlush}, {"AS 2S 3S 4S 5S", StraightFlush},
+        {"9S 9H 9D 9C 2H", FourKind}, {"3S 3H 3D 7C 7H", FullHouse}, {"2D 8D JD 4D KD", Flush},
+        {"AS 2H 3D 4C 5S", Straight}, {"10S JH QD KC AS", Straight}, {"QS KH AD 2C 3S", Nothing},
+        {"7S 7H 7D 2C 9H", ThreeKind}, {"4S 4H 9D 9C KH", TwoPair}, {"JS JH 2D 5C 8H", JacksOrBetter},
+        {"10S 10H 2D 5C 8H", Nothing}, {"AS 3H 6D 9C QH", Nothing},
+    };
+    for (const Case& c : ranks) { uint8_t h[5]; hand(c.cards, h); CHECK(evaluate(h) == c.r); }
+    CHECK(pay(RoyalFlush, 5) == 4000 && pay(RoyalFlush, 4) == 1000 && pay(FullHouse, 3) == 27 && pay(Nothing, 5) == 0);
+    // The simple strategy's choices (bit i = card i held)
+    struct Hold { const char* cards; uint8_t mask; };
+    const Hold holds[] = {
+        {"10H JH QH KH 2C", 0x0F},             // 4 to a royal
+        {"10H JH QH KH AS", 0x0F},             // 4 to a royal beats the straight
+        {"7S 7H 7D 2C 9H", 0x07},              // trips
+        {"4S 4H 9D 9C KH", 0x0F},              // two pair
+        {"JS JH 2D 5C 8H", 0x03},              // high pair
+        {"JS QS KS 3D 3H", 0x07},              // 3 to a royal beats a low pair
+        {"2S 6S 9S QS 4H", 0x0F},              // 4 to a flush
+        {"5S 5H 9D JC 2H", 0x03},              // low pair
+        {"5S 6H 7D 8C KH", 0x0F},              // 4 to an open straight
+        {"QS KS 3D 7C 9H", 0x03},              // 2 suited high cards
+        {"JS QH KD 4C 2H", 0x03},              // three unsuited high cards: the lowest two
+        {"10S JS 3D 6C 8H", 0x03},             // suited 10 and J
+        {"KS 3H 5D 8C 9S", 0x01},              // one high card
+        {"2S 5H 7D 9C 4S", 0x00},              // nothing: draw five
+    };
+    for (const Hold& c : holds) {
+        uint8_t h[5]; hand(c.cards, h);
+        const uint8_t m = hint(h);
+        if (m != c.mask) printf("vpoker hint %s: %02x, expected %02x\n", c.cards, m, c.mask);
+        CHECK(m == c.mask);
+    }
+    // A round: bet comes off, the draw pays
+    Game g;
+    g.bet = 5;
+    CHECK(g.deal(42) && g.credits == kStartCredits - 5 && g.phase == Phase::Dealt);
+    g.toggle_hold(0);
+    const uint8_t kept = g.hand[0];
+    CHECK(g.draw() && g.hand[0] == kept && g.phase == Phase::Done);
+    CHECK(g.credits == kStartCredits - 5 + pay(g.last_rank, 5));
+    uint8_t buf[Game::kSaveBytes];
+    Game b;
+    CHECK(g.serialize(buf, sizeof buf) == sizeof buf && b.deserialize(buf, sizeof buf));
+    CHECK(b.credits == g.credits && memcmp(b.hand, g.hand, 5) == 0 && b.phase == Phase::Done);
+    Record r{5, TwoPair, 10, 515}, back;
+    char line[64] = "7,";
+    format_body(line + 2, sizeof line - 2, r);
+    CHECK(parse_line(line, back) && back.rank == TwoPair && back.win == 10 && back.credits == 515);
+    // The hint's play returns close to the full-pay strategy's 99.5 % (frequent hands only: no royals luck)
+    Game sim;
+    sim.credits = 1 << 30;
+    long hands = 0, pairs_up = 0;
+    for (int n = 0; n < 20000; ++n) {
+        sim.bet = 5;
+        sim.deal(uint32_t(n) * 2654435761u + 9);
+        sim.held = hint(sim.hand);
+        sim.draw();
+        ++hands;
+        pairs_up += sim.last_rank >= JacksOrBetter;
+    }
+    printf("vpoker: hint play won %ld of %ld hands\n", pairs_up, hands);
+    CHECK(pairs_up * 100 > hands * 43 && pairs_up * 100 < hands * 48);   // ~45.4 %
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -1563,6 +1646,7 @@ int main()
     test_blackjack();
     test_log_pack();
     test_rpgdice();
+    test_vpoker();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

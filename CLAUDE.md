@@ -195,7 +195,15 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   "#,Bet,Result,Net,Chips"; dealer's cards revealed one at a time;
   once all are shown (Tom, 2026-10-03): Fanfare on a blackjack,
   `Sound::Trill` (a happy little victory trill) when the round nets a win,
-  `Sound::Error` (the "aww") when it nets a loss, silence on a push). Landscape (decided 2026-10-03): Solitaire
+  `Sound::Error` (the "aww") when it nets a loss, silence on a push),
+  Video Poker (id `vpoker`; Jacks or Better, full-pay 9/6 table, Royal
+  4000 at 5 credits; bet 1-5, Bet Max deals at once; fresh deck each
+  hand; tap a card's column to hold (gold face + HELD); Hint = the
+  standard simple strategy (matches exact best play on sampled hands;
+  hand frequencies match published figures); 500 credits, New Credits
+  +500; pay table in two columns with the held/final hand lit; stats CSV
+  "#,Bet,Hand,Win,Credits"; win = Trill, Four of a Kind and up = Fanfare +
+  flash, a losing hand is silent - most hands lose). Landscape (decided 2026-10-03): Solitaire
   stays portrait (Tom agreed: too short for late-game columns, mockup
   `card_mockups` case 5); Tom OK'd landscape for card games where it is
   truly better - none is on these 3:4 screens (Golf/Pyramid would gain

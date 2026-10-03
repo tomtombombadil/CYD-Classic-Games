@@ -29,6 +29,7 @@ GAME(solitaire, "Solitaire", Cards, kSolo, "Klondike: build the four suits up fr
 GAME(spider, "Spider", Cards, kSolo, "Two decks, ten columns: build King-to-Ace runs in one suit; 1, 2 or 4 suits")
 GAME(freecell, "FreeCell", Cards, kSolo, "Every card face up, four free cells: nearly every deal can be won")
 GAME(blackjack, "Blackjack", Cards, kSolo, "You against the dealer: get closer to 21 without going over; split, double, 3 to 2 blackjacks")
+GAME(vpoker, "Video Poker", Cards, kSolo, "Jacks or Better: hold the cards you like, draw once, get paid by the full-pay table")
 GAME(pyramid, "Pyramid", Cards, kSolo, "Pair up cards that add to 13 and take the pyramid apart; Kings go alone")
 GAME(golf, "Golf", Cards, kSolo, "Clear seven columns onto the waste, one rank up or down at a time")
 GAME(cyddle, "CYD-dle", Word, kSolo, "Guess the five-letter word in six tries; green, gold and grey hints")

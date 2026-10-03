@@ -10,9 +10,9 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Twenty-two games and an RPG dice roller so far: **Sudoku** (from
+> under way. Twenty-three games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
-> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **FourConnect**, **Tic-Tac-Toe**,
+> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **FourConnect**, **Tic-Tac-Toe**,
 > **Reversi**, **Checkers**, **Chess**, **CYD-dle**, **Yaht-CYD** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
@@ -23,7 +23,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a long-press showing where a piece can
 go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
-RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
+RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
 <img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
@@ -53,6 +53,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_golf.png" width="240" alt="Golf">
 <img src="docs/screenshots/small_freecell.png" width="240" alt="FreeCell">
 <img src="docs/screenshots/small_blackjack.png" width="240" alt="Blackjack">
+<img src="docs/screenshots/small_vpoker.png" width="240" alt="Video Poker: a pair held">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -97,13 +98,14 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Golf | Card Games | Clear the columns one rank up or down |
 | FreeCell | Card Games | All cards face up, four free cells, nearly every deal winnable |
 | Blackjack | Card Games | You against the dealer: hit, stand, double, split; 3 to 2 blackjacks |
+| Video Poker | Card Games | Jacks or Better, full-pay table, bet 1 to 5 credits, Hint |
 | CYD-dle | Word Games | Solo, guess the five-letter word: Easy / Normal / Hard |
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 | RPG Dice | Dice Games | Every role-playing die, each shown as rolled; presets and history |
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
-greyed out, until it's built). Coming next: Video Poker and Texas
-Hold'em, then wireless play. The plan is in
+greyed out, until it's built). Coming next: Texas Hold'em, then more
+games from the plan, then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -296,6 +298,15 @@ bet doubled) or **Split** a pair into two hands. The dealer turns the hidden
 card over when you're done and draws to 17, one card at a time. Blackjack
 pays 3 to 2. Six-deck shoe. You start with 500 chips; run out and **New
 Chips** gives you another 500.
+
+## Video Poker
+
+The classic **Jacks or Better** machine. **Bet One** sets 1 to 5 credits
+(**Bet Max** bets 5 and deals at once). Tap the cards to keep - they say
+**HELD** - then **Draw** replaces the rest, once. The pay table at the top
+shows what each hand pays at your bet and lights up the one you hold. A pair
+of Jacks or better pays; a Royal Flush pays 4000 at a 5-credit bet.
+**Hint** holds what the standard strategy keeps. 500 credits to start.
 
 ## Spider, Pyramid, Golf and FreeCell
 

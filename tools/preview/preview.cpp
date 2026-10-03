@@ -23,6 +23,7 @@
 #include "games/cyddle/cyddle_core.h"
 #include "games/yahtcyd/yahtcyd_core.h"
 #include "games/rpgdice/rpgdice_core.h"
+#include "games/vpoker/vpoker_core.h"
 namespace rpgdice_preview {
 void set_pool(const int* counts, int mod);
 void roll_pool(uint32_t seed);
@@ -697,6 +698,35 @@ int main(int argc, char** argv)
         shot(out + "_dark_30_yahtcyd.ppm");
         kit_preview_menu();
         shot(out + "_dark_31_yahtcyd_menu.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Video Poker: a fresh table, a dealt hand with the hint's holds, a win
+        ui::app_open_game_now(games::find("vpoker"));
+        shot(out + "_light_54_vpoker_new.ppm");
+        ui::app_go_home_now();
+        vpoker::Game g;
+        uint32_t seed = 1;
+        // a deal whose hint holds a pair
+        for (;; ++seed) { vpoker::Game t; t.deal(seed); if (vpoker::evaluate(t.hand) == vpoker::JacksOrBetter) { g = t; break; } }
+        g.held = vpoker::hint(g.hand);
+        uint8_t buf[vpoker::Game::kSaveBytes];
+        g.serialize(buf, sizeof buf);
+        save_game("vpoker", buf, sizeof buf);
+        ui::app_open_game_now(games::find("vpoker"));
+        shot(out + "_light_54_vpoker_held.ppm");
+        ui::app_go_home_now();
+        // a finished hand that won: a full house
+        for (;; ++seed) { vpoker::Game t; t.deal(seed); t.held = vpoker::hint(t.hand); t.draw(); if (t.last_rank == vpoker::FullHouse) { g = t; break; } }
+        g.serialize(buf, sizeof buf);
+        save_game("vpoker", buf, sizeof buf);
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("vpoker"));
+        shot(out + "_dark_54_vpoker_win.ppm");
+        kit_preview_menu();
+        shot(out + "_dark_55_vpoker_menu.ppm");
         ui::close_overlays();
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);

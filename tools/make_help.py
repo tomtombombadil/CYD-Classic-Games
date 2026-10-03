@@ -178,3 +178,9 @@ write("rpgdice", [
  ("Presets", "A preset rolls up to four lines at once, each a label (Hit, Damage...), dice and a modifier: a fighter's two attacks are Hit d20+7, Damage d8+5, Hit d20+4, Damage d6+5.\nPresets: tap one to roll it. Edit Presets: change a name, lines, dice and modifiers. + New makes one."),
  ("History", "History lists every roll, newest first: the dice, each one's number and the total. < > turn the pages.\nClear History empties it. Rolls, presets and history are saved on the board."),
 ])
+
+write("vpoker", [
+ ("The Idea", "The classic Jacks or Better machine. Bet 1 to 5 credits and get five cards. Tap the cards you want to keep: they say HELD. Then Draw replaces the rest, once.\nYour final hand pays by the table at the top, times your bet. The hand you hold lights up."),
+ ("Paying Hands", "• Jacks or Better: a pair of Jacks, Queens, Kings or Aces\n• Two Pair, Three of a Kind\n• Straight: five in a row (A-2-3-4-5 and 10-J-Q-K-A count)\n• Flush: five of one suit\n• Full House, Four of a Kind, Straight Flush\n• Royal Flush: 10 to Ace of one suit, 4000 at a 5 credit bet"),
+ ("Keys", "Bet One adds a credit to the bet (1 to 5, then back to 1). Bet Max bets 5 and deals at once.\nHint holds the cards the standard Jacks or Better strategy keeps: about the best play there is.\nYou start with 500 credits; run out and New Credits gives you 500 more."),
+])

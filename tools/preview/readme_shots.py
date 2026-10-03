@@ -39,6 +39,7 @@ SHOTS = {
     "s_light_46_golf": "small_golf",
     "s_light_49_freecell": "small_freecell",
     "s_light_51_blackjack_done": "small_blackjack",
+    "s_light_54_vpoker_held": "small_vpoker",
     "s_light_40_help_twenty48_2": "small_help",
     "s_light_15_lightswitch": "small_lightswitch",
     "s_dark_0_settings": "small_settings_dark",
