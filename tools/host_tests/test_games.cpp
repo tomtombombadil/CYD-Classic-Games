@@ -12,6 +12,7 @@
 #include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
+#include "../../src/games/twenty48/twenty48_core.h"
 #include "../../src/games/yahtcyd/yahtcyd_core.h"
 #include <chrono>
 #include <cstdio>
@@ -616,6 +617,95 @@ static void test_minesweeper()
     CHECK(chorded);
 }
 
+static void test_twenty48()
+{
+    using namespace twenty48;
+    Rng rng(5);
+    auto row = [](Game& g, int r, uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+        g.cell[r * 4] = a; g.cell[r * 4 + 1] = b; g.cell[r * 4 + 2] = c; g.cell[r * 4 + 3] = d;
+    };
+    {   // 2 2 2 2 left -> 4 4 . . (pairs nearest the wall first), score 8
+        Game g; row(g, 0, 1, 1, 1, 1);
+        uint8_t m = 0;
+        CHECK(g.slide(Dir::Left, rng, &m));
+        CHECK(g.cell[0] == 2 && g.cell[1] == 2 && m == 2 && g.score == 8 && g.moves == 1);
+        int tiles = 0; for (int i = 0; i < kCells; ++i) tiles += g.cell[i] != 0;
+        CHECK(tiles == 3);                                 // two 4s + the new tile
+    }
+    {   // 4 4 8 . left -> 8 8 . . (no merging twice in one slide)
+        Game g; row(g, 1, 2, 2, 3, 0);
+        CHECK(g.slide(Dir::Left, rng));
+        CHECK(g.cell[4] == 3 && g.cell[5] == 3 && g.score == 8);
+    }
+    {   // 2 2 4 . right -> . . 4 4 ; 2 . 2 2 right -> . . 2 4
+        Game g; row(g, 0, 1, 1, 2, 0); row(g, 3, 1, 0, 1, 1);
+        CHECK(g.slide(Dir::Right, rng));
+        CHECK(g.cell[2] == 2 && g.cell[3] == 2);
+        CHECK(g.cell[14] == 1 && g.cell[15] == 2);
+    }
+    {   // columns: up and down
+        Game g; g.cell[0] = 1; g.cell[4] = 1; g.cell[12] = 2;
+        CHECK(g.slide(Dir::Up, rng));
+        CHECK(g.cell[0] == 2 && g.cell[4] == 2);
+        Game h; h.cell[3] = 3; h.cell[7] = 3; h.cell[11] = 3;
+        CHECK(h.slide(Dir::Down, rng));
+        CHECK(h.cell[15] == 4 && h.cell[11] == 3);
+    }
+    {   // a slide that moves nothing changes nothing
+        Game g; row(g, 0, 1, 2, 3, 4);
+        CHECK(!g.can_slide(Dir::Left) && !g.slide(Dir::Left, rng) && g.moves == 0);
+        CHECK(g.can_slide(Dir::Down));
+    }
+    {   // full board, no pairs: over
+        Game g;
+        const uint8_t pat[16] = {1,2,1,2, 2,1,2,1, 1,2,1,2, 2,1,2,1};
+        for (int i = 0; i < kCells; ++i) g.cell[i] = pat[i];
+        CHECK(g.over());
+        g.cell[0] = 2;                                     // now 4 next to 4
+        CHECK(!g.over());
+    }
+    {   // reaching 2048
+        Game g; row(g, 0, 10, 10, 0, 0);
+        uint8_t m = 0;
+        CHECK(g.slide(Dir::Left, rng, &m) && m == kWinExp && g.won);
+    }
+    // Random games: invariants, save round trip
+    uint32_t best = 0;
+    for (int n = 0; n < 50; ++n) {
+        Game g; Rng r(1000 + n);
+        g.start(r);
+        int tiles = 0; for (int i = 0; i < kCells; ++i) tiles += g.cell[i] != 0;
+        CHECK(tiles == 2);
+        while (!g.over()) {
+            // simple corner strategy so games get somewhere
+            const Dir order[4] = {Dir::Down, Dir::Left, Dir::Right, Dir::Up};
+            bool moved = false;
+            for (Dir d : order) if (g.slide(d, r)) { moved = true; break; }
+            CHECK(moved);
+            if (!moved) break;
+        }
+        if (g.score > best) best = g.score;
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf, sizeof buf));
+        CHECK(memcmp(h.cell, g.cell, kCells) == 0 && h.score == g.score && h.moves == g.moves && h.won == g.won);
+    }
+    CHECK(best > 1000);
+    // History CSV
+    Record rec; rec.score = 20512; rec.tile = 2048; rec.moves = 1043; rec.seconds = 1840;
+    char body[96];
+    CHECK(format_body(body, sizeof body, rec) > 0);
+    CHECK(strcmp(body, "20512,2048,1043,1840,30:40\n") == 0);
+    char line[120];
+    snprintf(line, sizeof line, "4,%s", body);
+    Record back;
+    CHECK(parse_line(line, back) && back.score == 20512 && back.tile == 2048 && back.moves == 1043);
+    Summary s; s.add(back); rec.score = 100; rec.tile = 16; s.add(rec);
+    CHECK(s.games == 2 && s.best == 20512 && s.best_tile == 2048 && s.wins == 1 && s.newest(0).score == 100);
+    printf("2048: best random-play score %lu\n", (unsigned long)best);
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -668,6 +758,7 @@ int main()
     test_cyddle();
     test_yahtcyd();
     test_minesweeper();
+    test_twenty48();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

@@ -111,12 +111,18 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   9x11/15, 10x11/20; mines placed on the first tap; generator retries until
   a logic solver clears the board - never a guess; long-press flags; no
   Restart; stats Won/Lost via `stats_solo(..., win_loss)`; puzzle CSV
-  result "Lost" added), Yaht-CYD (official joker rules; boxes "Run of 4"/"Run of 5" so
+  result "Lost" added), 2048 (id `twenty48` - C names can't start
+  with a digit; 4x4, 2 or 4 (10 %) after each slide, play on after 2048;
+  one custom-drawn object below the top bar = board + 4 diagonal tap
+  zones; preview checks each zone against the rules engine; stats only
+  for finished games or games that reached 2048; tile colors are a ramp
+  over palette roles so custom themes recolor them), Yaht-CYD (official joker rules; boxes "Run of 4"/"Run of 5" so
   the card fits). Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
   view: tap, long-press peek, target dots).
 - Shared UI in `src/ui/`: `widgets.*` (keys, hamburger, overlays, tables,
-  screen metrics), `app_shell.cpp` (picker, game switching),
+  screen metrics, `scratch_table()`: two shared heap tables for stats
+  screens - never `static Table`, each costs ~1 KB of static RAM), `app_shell.cpp` (picker, game switching),
   `settings_screen.cpp` (Settings, themes + palette editor, touch test), `sound.*`, `theme.*`.
 - Game picker (after the splash): "Classic Games" title bar with ☰
   (Settings), a "Continue <last game>" card (icon, title, the game's

@@ -359,7 +359,7 @@ void stats_two_player(const char* game_id, const twoplayer::Sides& sides, void (
     if (!ok || sum.total == 0) {
         overlay_text("No games recorded yet. Every finished game is listed here.", false);
     } else {
-        static Table t;
+        Table& t = scratch_table(0);
         table_clear(t);
         char a[12], b[12], c[12];
         for (int l = 0; l < twoplayer::kLevels; ++l) {
@@ -372,7 +372,7 @@ void stats_two_player(const char* game_id, const twoplayer::Sides& sides, void (
         static const int8_t pct[4] = {46, 18, 18, 18};
         table_show(t, head, pct, hf, bf);
 
-        static Table p;
+        Table& p = scratch_table(1);
         table_clear(p);
         char w1[24], w2[24];
         snprintf(w1, sizeof w1, "%s Won", sides.side1);
@@ -411,7 +411,7 @@ void stats_solo(const char* game_id, const char* const levels[3], void (*back)()
         overlay_text("No games recorded yet. Finished games, and games you leave "
                      "for a new one, are listed here.", false);
     } else {
-        static Table t;
+        Table& t = scratch_table(0);
         table_clear(t);
         for (int l = 0; l < puzzle::kLevels; ++l) {
             char n[12], bt[16] = "-", bm[12] = "-";
@@ -431,7 +431,7 @@ void stats_solo(const char* game_id, const char* const levels[3], void (*back)()
         const char* const* head = win_loss ? head_wl : head_sm;
         table_show(t, head, pct, hf, bf);
 
-        static Table rt;
+        Table& rt = scratch_table(1);
         table_clear(rt);
         const int show = sum.recent_n < (large ? 6 : 4) ? sum.recent_n : (large ? 6 : 4);
         for (int i = 0; i < show; ++i) {

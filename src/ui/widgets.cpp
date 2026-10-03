@@ -252,6 +252,15 @@ void close_overlays()
 // ---- Tables ------------------------------------------------------------------------
 void table_clear(Table& t) { t = Table{}; }
 
+Table& scratch_table(int which)
+{
+    static Table* tables[2] = {nullptr, nullptr};
+    which = which ? 1 : 0;
+    if (!tables[which]) tables[which] = new Table();
+    table_clear(*tables[which]);
+    return *tables[which];
+}
+
 void table_add(Table& t, const char* a, const char* b, const char* c, const char* d)
 {
     // Every column gets a line per row, even when the cell is empty, so the

@@ -571,7 +571,8 @@ void open_stats()
         overlay_text("No games recorded yet. Solved puzzles, and puzzles you leave "
                      "for a new game, are listed here.", false);
     } else {
-        static Table levels, recent;          // ~2 KB each: keep off the stack
+        Table& levels = scratch_table(0);
+        Table& recent = scratch_table(1);
         table_clear(levels);
         table_clear(recent);
         for (int d = 0; d < 4; ++d) {
@@ -595,7 +596,7 @@ void open_stats()
             stats::format_time(t, sizeof t, r.seconds);
             if (r.hints) snprintf(h, sizeof h, "%u", (unsigned)r.hints);
             table_add(recent, sudoku::difficulty_name(static_cast<sudoku::Difficulty>(r.difficulty & 3)),
-                      stats::result_name(r.result), t, h);
+                      r.result == stats::Result::Solved ? "Solved" : "Gave Up", t, h);   // CSV keeps "Gave up"
         }
         const char* const head2[4] = {"Recent", "", "Time", "Hints"};
         table_show(recent, head2, pct, rf, rf);
@@ -618,7 +619,7 @@ void open_stats()
         lv_obj_set_style_pad_column(row, 6, 0);
         lv_obj_set_clickable(row, false);
         lv_obj_set_scrollable(row, false);
-        const char* labels[2] = {"Delete last", "Clear all"};
+        const char* labels[2] = {"Delete Last", "Clear All"};
         for (int k = 0; k < 2; ++k) {
             lv_obj_t* b = make_key(row, 10, bh, stats_action_cb, k + 1);
             lv_obj_set_flex_grow(b, 1);

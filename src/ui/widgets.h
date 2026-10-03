@@ -69,6 +69,10 @@ struct Table {
     size_t len[4];
     int    rows;
 };
+// Two shared tables for building stats screens (lv_label_set_text copies
+// the text, so they're scratch space). On the heap, made on first use:
+// static Tables cost ~1 KB of static RAM each. Cleared on return.
+Table& scratch_table(int which);           // which = 0 or 1
 void table_clear(Table& t);
 void table_add(Table& t, const char* a, const char* b, const char* c, const char* d);
 // pct = column widths in percent of the overlay width

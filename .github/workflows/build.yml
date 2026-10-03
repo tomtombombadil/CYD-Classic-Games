@@ -69,7 +69,7 @@ jobs:
       - name: The other games and the shared stats formats
         run: |
           G=src/games
-          g++ -std=c++17 -O1 -Wall -Werror -fsanitize=address,undefined -o test_games tools/host_tests/test_games.cpp $G/common/two_player.cpp $G/common/puzzle_stats.cpp $G/fourconnect/fourconnect_core.cpp $G/tictactoe/tictactoe_core.cpp $G/sliding/sliding_core.cpp $G/lightswitch/lightswitch_core.cpp $G/reversi/reversi_core.cpp $G/checkers/checkers_core.cpp $G/chess/chess_core.cpp $G/cyddle/cyddle_core.cpp $G/yahtcyd/yahtcyd_core.cpp $G/minesweeper/minesweeper_core.cpp
+          g++ -std=c++17 -O1 -Wall -Werror -fsanitize=address,undefined -o test_games tools/host_tests/test_games.cpp $G/common/two_player.cpp $G/common/puzzle_stats.cpp $G/fourconnect/fourconnect_core.cpp $G/tictactoe/tictactoe_core.cpp $G/sliding/sliding_core.cpp $G/lightswitch/lightswitch_core.cpp $G/reversi/reversi_core.cpp $G/checkers/checkers_core.cpp $G/chess/chess_core.cpp $G/cyddle/cyddle_core.cpp $G/yahtcyd/yahtcyd_core.cpp $G/minesweeper/minesweeper_core.cpp $G/twenty48/twenty48_core.cpp
           ./test_games
 
   build:

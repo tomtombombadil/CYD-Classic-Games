@@ -22,6 +22,7 @@
 #include "games/chess/chess_core.h"
 #include "games/cyddle/cyddle_core.h"
 #include "games/yahtcyd/yahtcyd_core.h"
+#include "games/twenty48/twenty48_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -637,6 +638,49 @@ int main(int argc, char** argv)
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
         ui::app_go_home_now();
+    }
+
+    {   // 2048: a game in progress (light), the four tap zones checked
+        // against the rules engine, a finished game (dark)
+        using namespace twenty48;
+        auto stage = [&](const Game& g, uint32_t secs) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+            g.serialize(buf.data(), buf.size());
+            for (int k = 0; k < 4; ++k) buf[Game::kSaveBytes + 1 + k] = uint8_t(secs >> (8 * k));
+            save_game("twenty48", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("twenty48"));
+        };
+        Game mid;
+        const uint8_t cells[kCells] = {1, 0, 2, 1,  0, 3, 1, 0,  2, 4, 5, 2,  7, 6, 8, 9};
+        for (int i = 0; i < kCells; ++i) mid.cell[i] = cells[i];
+        mid.score = 3112; mid.moves = 241; mid.spawned = 3;
+        stage(mid, 512);
+        shot(out + "_light_35_twenty48.ppm");
+        // Tap points: just under the top bar, far left, bottom, far right
+        const int pts[4][2] = {{W / 2, H * 13 / 100}, {6, H / 2}, {W / 2, H - 6}, {W - 6, H / 2}};
+        const Dir dirs[4] = {Dir::Up, Dir::Left, Dir::Down, Dir::Right};
+        for (int k = 0; k < 4; ++k) {
+            ui::app_go_home_now();
+            stage(mid, 512);
+            run(100);
+            preview_press(pts[k][0], pts[k][1], 60);
+            ui::app_go_home_now();                       // saves
+            Game got, want = mid;
+            got.deserialize(files["twenty48"].data(), files["twenty48"].size());
+            Rng rng(seed());
+            want.slide(dirs[k], rng);
+            if (memcmp(got.cell, want.cell, kCells) != 0 || got.moves != want.moves)
+                fprintf(stderr, "2048 ZONE FAIL: tap %d,%d did not slide %d (moves %u want %u, cell0 %u want %u)\n", pts[k][0], pts[k][1], k, got.moves, want.moves, got.cell[0], want.cell[0]);
+        }
+        ui::app_set_theme(ui::Theme::Dark);
+        Game done;
+        const uint8_t full[kCells] = {1, 2, 3, 4,  5, 6, 7, 8,  9, 10, 11, 1,  2, 3, 4, 5};
+        for (int i = 0; i < kCells; ++i) done.cell[i] = full[i];
+        done.score = 27460; done.moves = 1290; done.won = true;
+        stage(done, 2210);
+        shot(out + "_dark_35_twenty48_over.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
     }
 
     {   // How To Play: every page of every game (light), a few also dark.

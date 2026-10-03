@@ -10,9 +10,9 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Eleven games so far: **Sudoku** (from
+> under way. Twelve games so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
-> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **FourConnect**, **Tic-Tac-Toe**,
+> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **2048**, **FourConnect**, **Tic-Tac-Toe**,
 > **Reversi**, **Checkers**, **Chess**, **CYD-dle** and **Yaht-CYD**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
@@ -23,7 +23,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a long-press showing where a piece can
 go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
-Minesweeper, Sliding Tiles, Light Switch, Settings and the custom theme editor.
+Minesweeper, 2048, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
 <img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
@@ -39,6 +39,8 @@ Minesweeper, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 <img src="docs/screenshots/small_cyddle.png" width="240" alt="CYD-dle word game">
 <img src="docs/screenshots/small_yahtcyd.png" width="240" alt="Yaht-CYD dice game">
 <img src="docs/screenshots/small_minesweeper.png" width="240" alt="Minesweeper with flags">
+<img src="docs/screenshots/small_2048.png" width="240" alt="2048 in progress">
+<img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
 <img src="docs/screenshots/small_settings_dark.png" width="240" alt="Settings, dark theme">
@@ -66,6 +68,7 @@ Minesweeper, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 | Light Switch | Puzzle Games | Solo, Easy / Medium / Hard, with par and hints |
 | Sliding Tiles | Puzzle Games | Solo, 3x3, 4x4 (the 15-Puzzle) or 5x5 |
 | Minesweeper | Puzzle Games | Solo, Easy / Medium / Hard, never needs a guess |
+| 2048 | Puzzle Games | Solo, tap toward a side to slide; reach the 2048 tile |
 | Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Checkers | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Reversi | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -193,6 +196,21 @@ can be cleared by logic alone: you never have to guess.
 - Easy 8x10 with 10 mines, Medium 9x11 with 15, Hard 10x11 with 20: sized so
   every cell is big enough for a stylus on the 2.8" boards.
 - Stats: games won and lost per level, and your best time.
+
+## 2048
+
+Slide the tiles so equal tiles meet and merge: 2 + 2 = 4, 4 + 4 = 8, and on
+up to 2048 (then keep going for a higher score). After every slide a new 2
+(sometimes a 4) appears; the newest tile has a dark ring. The game ends when
+no slide can move anything.
+
+No swiping on a resistive screen: **tap toward the side you want**. The
+board's two diagonals, extended to the screen edges, split everything below
+the top bar into four invisible zones: tap above the board to slide up,
+below it to slide down, beside it to slide left or right (anywhere in a
+zone works, on the board too). The top bar shows the score; under the board
+are your best score and the move count. Stats keep every game played to the
+end (and any game that reached 2048): best and average score, top tile.
 
 ## Light Switch
 

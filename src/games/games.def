@@ -14,6 +14,7 @@
 GAME(sudoku, "Sudoku", Puzzles, kSolo, "9x9 with notes and hints; four levels graded by solving technique")
 GAME(lightswitch, "Light Switch", Puzzles, kSolo, "Flip a light and its neighbours until every light is off; par shows the fewest presses")
 GAME(sliding, "Sliding Tiles", Puzzles, kSolo, "The 15-Puzzle, plus 3x3 and 5x5: slide the tiles back into order")
+GAME(twenty48, "2048", Puzzles, kSolo, "Tap toward a side to slide every tile that way; merge equal tiles to reach 2048")
 GAME(minesweeper, "Minesweeper", Puzzles, kSolo, "Clear the field without hitting a mine; every board solvable by logic, no guessing")
 GAME(fourconnect, "FourConnect", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Drop discs to line up four; three computer levels or pass-and-play")
 GAME(tictactoe, "Tic-Tac-Toe", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Three in a row; the Hard computer never loses")

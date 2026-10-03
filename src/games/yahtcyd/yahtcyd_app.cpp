@@ -346,7 +346,7 @@ void open_stats()
     if (!ok || sum.games == 0) {
         overlay_text("No games recorded yet. Every finished game is listed here.", false);
     } else {
-        static Table t;
+        Table& t = scratch_table(0);
         table_clear(t);
         char a[12], b[12], c[12], d[12];
         snprintf(a, sizeof a, "%lu", (unsigned long)sum.games);
@@ -357,7 +357,7 @@ void open_stats()
         const char* const head[4] = {"Games", "Best", "Average", "Yaht-CYDs"};
         static const int8_t pct[4] = {22, 22, 26, 30};
         table_show(t, head, pct, hf, bf);
-        static Table rt;
+        Table& rt = scratch_table(1);
         table_clear(rt);
         for (int i = 0; i < sum.recent_n && i < (large ? 6 : 4); ++i) {
             const Record& r = sum.newest(i);
