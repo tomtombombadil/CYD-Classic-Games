@@ -200,7 +200,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   zones; preview checks each zone against the rules engine; stats only
   for finished games or games that reached 2048; tile colors are a ramp
   over palette roles so custom themes recolor them), Yaht-CYD (official joker rules; boxes "Run of 4"/"Run of 5" so
-  the card fits). Computer ties between equal moves are broken by a random
+  the card fits; used boxes filled solid `frame` blue - Tom: tell them
+  from open ones at a glance). Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
   view: tap, long-press peek, target dots).
 - Shared UI in `src/ui/`: `widgets.*` (keys, hamburger, overlays, tables,
@@ -221,7 +222,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   while Sudoku is open).
 - Shared across games: theme, sound, brightness, touch calibration, panel
   fixes (`/ui_settings.bin` format UIS2 = CYD-Sudoku's UIS1 + last game
-  id; two former reserved bytes hold the next splash image and sound-off;
+  id; former reserved bytes hold the next splash image, volume, card back
+  and flags (bit 0 = screen turned 180);
   `/themes.bin` custom themes, `/panel_prefs.bin`, `/touch_cal.bin`).
 - Stats store (`src/app/stats_store.*`) is game-agnostic: it numbers lines
   ("seq,body"), the game formats/parses the body and owns the header.
@@ -295,7 +297,12 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   placement, the other side's reply, mistakes, hints, game end, and one
   sample when the Volume slider is released.
 - Settings (☰ → Settings, shared): [Theme | Invert Colors], Brightness
-  slider, Volume slider, Swap Red/Blue, [Recalibrate | Diagnostics], Back.
+  slider, Volume slider, Swap Red/Blue, Rotate Screen 180 (Tom,
+  2026-10-03: USB cord out either end; a toggle, lit while on; UIS2
+  `flags` bit 0, applied before the splash; `lvgl_port_set_rotation()`
+  turns panel + touch at run time, calibration is rotation-independent),
+  [Recalibrate | Diagnostics], Back. Board/firmware line moved to
+  Diagnostics (no room).
   Diagnostics (`src/ui/diagnostics_screen.cpp`): [Touch Test | Device
   Log], board, firmware, free memory, uptime, Back. Device Log: paged
   with < > (opens on the newest page), [Clear Log | Copy To SD], [< Back >].

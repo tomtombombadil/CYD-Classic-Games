@@ -78,6 +78,8 @@ void play_tones(const ui::Tone* t, int n)
     speaker_play(reinterpret_cast<const SpeakerTone*>(t), n, ui::settings().volume);
 }
 
+void set_flip(bool flipped) { lvgl_port_set_rotation((CYD_ROTATION + (flipped ? 2 : 0)) & 3); }
+
 void recalibrate()
 {
     // Calibration draws with LovyanGFX directly; restarting afterwards gives
@@ -124,6 +126,7 @@ void setup()
 
     // Splash: a different one of the title images each boot, then a tap
     ui::UiSettings settings = settings_store_load();
+    if (settings.flip) set_flip(true);       // before the splash, so it shows the right way up
     lvgl_port_set_brightness(settings.brightness);
     const int shown = settings.splash_next % splash_count();
     settings.splash_next = static_cast<uint8_t>((shown + 1) % splash_count());
@@ -141,6 +144,7 @@ void setup()
     sh.toggle_swap_rb    = toggle_swap_rb;
     sh.flash_invert      = flash_invert;
     sh.set_brightness    = lvgl_port_set_brightness;
+    sh.set_flip          = set_flip;
     sh.recalibrate_touch = recalibrate;
     sh.raw_touch         = lvgl_port_raw_touch;
     sh.stats_append      = stats_store_append;

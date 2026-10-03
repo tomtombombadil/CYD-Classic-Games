@@ -141,6 +141,8 @@ and touch calibration are shared.
   through a speaker on the board's speaker connector, and only for what
   matters in a game: moves, the computer's reply, mistakes, hints and the
   end of a game. Plain button taps are silent.
+- **Rotate Screen 180** turns the picture (and touch) upside down, so the
+  USB cord can leave either end of the board. It's remembered.
 - **Brightness**, **Invert Colors**, **Swap Red/Blue**, **Recalibrate** (see
   below) and **Diagnostics**: a **Touch Test** and the **Device Log** (see
   [If the board crashes or misbehaves](#if-the-board-crashes-or-misbehaves)).

@@ -225,8 +225,11 @@ void card_draw_cb(lv_event_t* e)
             if (box >= 0) {
                 snprintf(name, sizeof name, "%s", box_name(box));
                 if (g.score[box] >= 0) {
+                    // Used: filled in solid blue, so open boxes stand out
+                    // (Tom: tell used from unused at a glance)
                     snprintf(val, sizeof val, "%d", g.score[box]);
-                    bg = P.cell;
+                    bg = P.frame;
+                    ink = vink = contrast_text(P.frame);
                 } else if (g.can_score(box)) {
                     snprintf(val, sizeof val, "%d", g.potential(box));
                     vink = g.potential(box) ? P.win : P.muted;     // scorable: show what it gives

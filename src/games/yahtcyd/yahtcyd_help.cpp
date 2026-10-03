@@ -8,7 +8,7 @@ using games::HelpPage;
 const HelpPage kPages[] = {
     {"The Idea",
         "Score as many points as you can with five dice in 13 turns.\n"
-        "Each turn: tap Roll, then tap dice to hold them (they turn gold) and roll the rest again, up to three rolls. Then tap an empty box on the score card to score that roll. Every box is used once."},
+        "Each turn: tap Roll, then tap dice to hold them (they turn gold) and roll the rest again, up to three rolls. Then tap an empty box on the score card to score that roll. Every box is used once; used boxes turn blue."},
     {"Upper Boxes",
         "Ones to Sixes score the total of the matching dice: three 4s in Fours = 12.\n"
         "If the upper boxes add up to 63 or more (three of each number), you earn a 35 point bonus.\n"

@@ -33,6 +33,7 @@ struct Shell {
     void (*toggle_swap_rb)();
     void (*flash_invert)(bool on);             // win flash: invert panel briefly
     void (*set_brightness)(uint8_t level);     // backlight
+    void (*set_flip)(bool flipped);            // turn the screen 180 degrees (nullptr = can't)
     void (*recalibrate_touch)();               // may not return (device restarts)
     // Unfiltered touch reading for the touch test (nullptr = not available)
     bool (*raw_touch)(int16_t* x, int16_t* y);

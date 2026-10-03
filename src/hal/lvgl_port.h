@@ -22,5 +22,9 @@ uint32_t lvgl_port_loop();
 // rotation applied, no press filtering). For the touch test screen.
 bool lvgl_port_raw_touch(int16_t* x, int16_t* y);
 
+// Turn the picture (and touch) to another rotation at run time, e.g. 180
+// degrees for a board held the other way up. Redraws everything.
+void lvgl_port_set_rotation(uint8_t rotation);
+
 // Backlight 0-255.
 void lvgl_port_set_brightness(uint8_t level);

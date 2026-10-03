@@ -14,7 +14,7 @@ namespace {
 
 void (*back_fn)() = nullptr;
 
-enum Action : intptr_t { kTheme, kInvert, kSwapRb, kRecal, kDiagnostics, kBack };
+enum Action : intptr_t { kTheme, kInvert, kSwapRb, kFlip, kRecal, kDiagnostics, kBack };
 
 void brightness_cb(lv_event_t* e)
 {
@@ -202,6 +202,13 @@ void action_cb(lv_event_t* e)
         case kTheme: theme_open(); break;
         case kInvert: if (H.toggle_invert) H.toggle_invert(); break;
         case kSwapRb: if (H.toggle_swap_rb) H.toggle_swap_rb(); break;
+        case kFlip:
+            if (!H.set_flip) break;
+            settings().flip = !settings().flip;
+            H.set_flip(settings().flip);
+            save_settings();
+            set_checked(lv_event_get_target_obj(e), settings().flip);
+            break;
         case kRecal:
             app_save_current();
             if (H.recalibrate_touch) H.recalibrate_touch();
@@ -238,12 +245,12 @@ void settings_open(void (*back)())
 
     // Full width: "Swap Red/Blue" doesn't fit half a row at the menu font.
     overlay_pair("Swap Red/Blue", action_cb, kSwapRb, nullptr, nullptr, 0);
+    // A toggle, lit while the screen is turned: the USB cord can leave
+    // either end of the board (board and firmware moved to Diagnostics)
+    lv_obj_t* flip = overlay_button(overlay(), "Rotate Screen 180", action_cb, kFlip);
+    set_checked(flip, S.flip);
     overlay_pair("Recalibrate", action_cb, kRecal, "Diagnostics", action_cb, kDiagnostics);
     overlay_button(overlay(), "Back", action_cb, kBack, true);
-    char info[96];
-    snprintf(info, sizeof info, "%s, firmware %s", H.board_name ? H.board_name : "",
-             H.firmware_version ? H.firmware_version : "");
-    overlay_text(info, true);
 }
 
 } // namespace ui

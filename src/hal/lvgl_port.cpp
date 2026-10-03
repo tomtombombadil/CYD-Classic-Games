@@ -101,6 +101,16 @@ LGFX& lvgl_port_gfx() { return gfx; }
 
 void lvgl_port_set_brightness(uint8_t level) { gfx.setBrightness(level); }
 
+void lvgl_port_set_rotation(uint8_t rotation)
+{
+    gfx.waitDMA();
+    gfx.setRotation(rotation);       // touch follows: LovyanGFX maps it per rotation
+    if (disp) {
+        lv_obj_invalidate(lv_screen_active());
+        lv_obj_invalidate(lv_layer_top());
+    }
+}
+
 bool lvgl_port_raw_touch(int16_t* x, int16_t* y)
 {
     gfx.waitDMA();
