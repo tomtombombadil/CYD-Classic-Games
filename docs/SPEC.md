@@ -131,12 +131,14 @@ Chinese checkers, Dots and Boxes (thin tap targets).
    FourConnect (vs computer + pass-and-play). *Built 2026-10-02, waiting
    for hardware testing.*
 3. **Strategy:** Reversi, Checkers, then Chess. Shared "tap piece, tap
-   square" board UI, AI task on core 0, pass-and-play.
+   square" board UI, AI task on core 0, pass-and-play. Then CYD-dle and
+   Yaht-CYD (from stage 6). *Built 2026-10-02, waiting for hardware
+   testing.*
 4. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,
    Checkers, Chess.
 5. **More puzzles:** Minesweeper, Nonograms, MasterCYD, Memory Match,
    2048, Peg Solitaire.
-6. **Word and dice games:** CYD-dle, Yaht-CYD, Farkle; Trivia if a
+6. **Word and dice games:** (CYD-dle, Yaht-CYD done in stage 3) Farkle; Trivia if a
    suitable question bank is found.
 7. Remaining candidates as Tom picks them.
 

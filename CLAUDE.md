@@ -90,8 +90,19 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
     flag (device); the preview stub runs it at once.
 - Games so far: Sudoku, Light Switch (5x5, par via GF(2) solve, two-tap
   hint), Sliding Tiles (3x3/4x4/5x5), FourConnect (bitboard negamax,
-  depth 1/3/8), Tic-Tac-Toe (negamax, depth 1/2/9 = perfect). Computer ties
-  between equal moves are broken by a random seed; no deliberate blunders.
+  depth 1/3/8), Tic-Tac-Toe (negamax, depth 1/2/9 = perfect), Reversi
+  (depth 2/4/6, Hard solves the last 10 empties exactly - decided at the
+  root only), Checkers (depth 2/5/7, ply cap 24, ai_stack 40 KB), Chess
+  (perft-verified; depth 2 / 3+2 s / 6+6 s; ai_stack 32 KB; position keys
+  computed, no static Zobrist tables - static RAM matters; save buffers on
+  the heap; pieces = DejaVu glyphs `chess_font_30/42.c`, solid then
+  outline), CYD-dle (word lists built by `tools/make_words.py` from
+  `assets/words/`: ENABLE2K guesses, SCOWL-35 answers minus
+  `blocklist.txt`/`answers_exclude.txt`; Easy 7 / Normal 6 / Hard must use
+  hints), Yaht-CYD (official joker rules; boxes "Run of 4"/"Run of 5" so
+  the card fits). Computer ties between equal moves are broken by a random
+  seed; no deliberate blunders. Board games use `common/board8.*` (8x8
+  view: tap, long-press peek, target dots).
 - Shared UI in `src/ui/`: `widgets.*` (keys, hamburger, overlays, tables,
   screen metrics), `app_shell.cpp` (picker, game switching),
   `settings_screen.cpp` (Settings, themes + palette editor, touch test), `sound.*`, `theme.*`.

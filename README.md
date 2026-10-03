@@ -9,45 +9,51 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **[CYD Classic Games Web Flasher](https://tomtombombadil.github.io/CYD-Classic-Games/)**
 (Chrome or Edge on a computer).
 
-> **Status:** early, growing. Five games so far: **Sudoku** (from
+> **Status:** growing, built and tested on the PC preview; hardware testing
+> under way. Ten games so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
-> **Light Switch**, **Sliding Tiles**, **FourConnect** and **Tic-Tac-Toe**.
+> **Light Switch**, **Sliding Tiles**, **FourConnect**, **Tic-Tac-Toe**,
+> **Reversi**, **Checkers**, **Chess**, **CYD-dle** and **Yaht-CYD**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
 
 ## Screenshots
 
-**2.8" and 3.2" boards (240×320)**: the game picker, the Puzzles page,
-Sudoku (light, and Digit 1st with notes in dark), FourConnect against the
-computer, Tic-Tac-Toe pass-and-play, Sliding Tiles, Light Switch, Settings,
-and a custom theme being made and used.
+**2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
+page, Sudoku and its menu, Chess (and a long-press showing where a piece can
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
+Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
 <img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
-<img src="docs/screenshots/small_puzzles.png" width="240" alt="Puzzle Games page">
-<img src="docs/screenshots/small_sudoku_light.png" width="240" alt="Sudoku in progress, light theme">
-<img src="docs/screenshots/small_sudoku_notes_dark.png" width="240" alt="Sudoku, Digit 1st mode with notes, dark theme">
+<img src="docs/screenshots/small_strategy.png" width="240" alt="Strategy Games page">
+<img src="docs/screenshots/small_sudoku_light.png" width="240" alt="Sudoku in progress">
+<img src="docs/screenshots/small_sudoku_menu.png" width="240" alt="Sudoku menu with Exit Menu and Exit Game">
+<img src="docs/screenshots/small_chess.png" width="240" alt="Chess against the computer">
+<img src="docs/screenshots/small_chess_peek.png" width="240" alt="Chess: long-press shows where a piece can move">
+<img src="docs/screenshots/small_checkers.png" width="240" alt="Checkers">
+<img src="docs/screenshots/small_reversi.png" width="240" alt="Reversi with legal moves shown as dots">
 <img src="docs/screenshots/small_fourconnect.png" width="240" alt="FourConnect against the computer">
-<img src="docs/screenshots/small_tictactoe.png" width="240" alt="Tic-Tac-Toe, X wins">
+<img src="docs/screenshots/small_tictactoe.png" width="240" alt="Tic-Tac-Toe">
+<img src="docs/screenshots/small_cyddle.png" width="240" alt="CYD-dle word game">
+<img src="docs/screenshots/small_yahtcyd.png" width="240" alt="Yaht-CYD dice game">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
 <img src="docs/screenshots/small_settings_dark.png" width="240" alt="Settings, dark theme">
 <img src="docs/screenshots/small_theme_editor.png" width="240" alt="Custom theme editor">
-<img src="docs/screenshots/small_theme_palette.png" width="240" alt="Picking a color from the palette">
-<img src="docs/screenshots/small_sudoku_custom.png" width="240" alt="Sudoku in a custom theme">
 </p>
 
-**3.5" and 4.0" boards (320×480)**: the picker, the Strategy page, Sudoku,
-FourConnect (dark theme), the two-player menu and FourConnect stats.
+**3.5" and 4.0" boards (320×480)**: the picker, Chess, CYD-dle and Yaht-CYD
+(dark theme), the two-player menu and Reversi.
 
 <p>
 <img src="docs/screenshots/large_picker_light.png" width="320" alt="Game picker on a 320x480 board">
-<img src="docs/screenshots/large_strategy.png" width="320" alt="Strategy Games page">
-<img src="docs/screenshots/large_sudoku_light.png" width="320" alt="Sudoku in progress on a 320x480 board">
-<img src="docs/screenshots/large_fourconnect_dark.png" width="320" alt="FourConnect, dark theme">
+<img src="docs/screenshots/large_chess_dark.png" width="320" alt="Chess, dark theme">
+<img src="docs/screenshots/large_cyddle_dark.png" width="320" alt="CYD-dle solved, dark theme">
+<img src="docs/screenshots/large_yahtcyd_dark.png" width="320" alt="Yaht-CYD, dark theme">
 <img src="docs/screenshots/large_twoplayer_menu.png" width="320" alt="Two-player menu: computer levels, pass and play">
-<img src="docs/screenshots/large_fourconnect_stats.png" width="320" alt="FourConnect stats">
+<img src="docs/screenshots/large_reversi_dark.png" width="320" alt="Reversi, dark theme">
 </p>
 
 ## Games
@@ -57,12 +63,18 @@ FourConnect (dark theme), the two-player menu and FourConnect stats.
 | Sudoku | Puzzle Games | Solo, four levels graded by solving technique |
 | Light Switch | Puzzle Games | Solo, Easy / Medium / Hard, with par and hints |
 | Sliding Tiles | Puzzle Games | Solo, 3x3, 4x4 (the 15-Puzzle) or 5x5 |
+| Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
+| Checkers | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
+| Reversi | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | FourConnect | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Tic-Tac-Toe | Strategy Games | vs computer (Hard never loses) or pass-and-play |
+| CYD-dle | Word Games | Solo, guess the five-letter word: Easy / Normal / Hard |
+| Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
-greyed out, until it's built). Coming next: Reversi, Checkers and Chess, then
-more puzzles, word and dice games. The plan is in [docs/SPEC.md](docs/SPEC.md).
+greyed out, until it's built). Coming next: wireless play, then more
+puzzles (Minesweeper, MasterCYD, ...). The plan is in
+[docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
 
@@ -76,7 +88,9 @@ starts). Tap anywhere to go on to the game picker.
   games as icons, and tap a game to play. The **<** key in the top bar goes
   back. Categories without games yet say "soon".
 - **☰ menu:** Settings, shared by every game.
-- Inside a game, **☰ → All games** saves the game and comes back here.
+- Every game's ☰ menu ends with two keys side by side: **Exit Menu**
+  (bottom left) closes the menu and goes back to the game; **Exit Game**
+  (bottom right) saves the game and comes back here.
 
 Every game saves itself and keeps its own stats. Theme, sound, brightness
 and touch calibration are shared.
@@ -93,25 +107,65 @@ and touch calibration are shared.
   Dark** starts the theme over from Light or Dark.
 - **Sound: On / Off.** Short beeps for taps, moves, mistakes and wins,
   through a speaker on the board's speaker connector. Off = silent play.
-- **Brightness**, **Invert colors**, **Swap red/blue**, **Recalibrate** and
-  **Touch test** (see below).
+- **Brightness**, **Invert Colors**, **Swap Red/Blue**, **Recalibrate** and
+  **Touch Test** (see below).
 
 ## Two-player games
 
-FourConnect and Tic-Tac-Toe share one menu: **New game vs computer** (Easy,
-Medium, Hard), **Pass and play** (two people share one board and take
-turns), and Wireless (coming). Against the computer you and the computer
-take turns going first, game by game. The computer thinks on the board's
-second processor core, so the screen never freezes. Its levels look ahead
-fewer or more moves; it never throws a game on purpose. Leaving a started
-game against the computer for a new one counts as a loss.
+Chess, Checkers, Reversi, FourConnect and Tic-Tac-Toe share one menu:
+**New Game vs Computer** (Easy, Medium, Hard), **Pass and Play** (two people
+share one board and take turns), and Wireless (coming). Against the computer
+you and the computer take turns going first, game by game. The computer
+thinks on the board's second processor core, so the screen never freezes.
+Its levels look ahead fewer or more moves (and think longer); it never
+throws a game on purpose. Leaving a started game against the computer for a
+new one counts as a loss.
 
+- **Chess:** tap one of your pieces (dots show where it can go), then tap
+  the square. Castling, en passant and promotion are all there; a pawn
+  reaching the far side asks what it becomes. Checkmate, stalemate,
+  threefold repetition, the 50-move rule and too little material all end
+  the game. Easy looks 2 moves ahead, Medium 3 (up to 2 seconds), Hard up to
+  6 (up to 6 seconds a move).
+- **Checkers:** tap a piece, then where it lands. Jumps are compulsory, so
+  when one is possible only the pieces that can jump respond. A double or
+  triple jump is tapped one landing at a time. A piece reaching the far row
+  is crowned and moves both ways.
+- **Reversi:** your legal moves show as dots; tap one. If you have no move
+  your turn passes. Hard plays the last 10 squares perfectly.
 - **FourConnect:** tap anywhere in a column to drop a disc there. Four in a
-  row (across, up or diagonal) wins; the four get a green ring. A dot marks
-  the last disc played.
+  row (across, up or diagonal) wins; the four get a ring. A dot marks the
+  last disc played.
 - **Tic-Tac-Toe:** tap a square. Hard plays perfectly: the best you can do
   is a draw.
-- **Play again** appears when a game ends.
+- **Long-press** (Chess and Checkers): hold a piece, yours or the other
+  side's, to see where it could move. The next tap clears it.
+- **Play Again** appears when a game ends.
+
+## CYD-dle
+
+Guess the five-letter word. Type a guess on the keyboard and tap ✓. Each
+letter turns green (right letter, right spot), gold (in the word, wrong
+spot) or grey (not in the word); the keyboard keeps track of every letter.
+**Easy** gives 7 guesses, **Normal** 6, and **Hard** 6 where every green
+and gold letter must be used in the next guesses. Guesses must be real
+words. When the game is over, ✓ starts a new word. Stats keep your solves
+and guess counts per level.
+
+## Yaht-CYD
+
+Five dice, 13 turns. Tap **Roll**, tap dice to hold them (held dice turn
+gold) and roll again, up to three rolls. Then tap an empty box on the score
+card: after each roll the empty boxes show what they would score.
+
+- Upper boxes (Ones to Sixes) score the matching dice; 63 or more there
+  earns a 35 bonus.
+- 3 / 4 of a Kind (sum of all dice), Full House 25, Run of 4 30, Run of 5
+  40, **Yaht-CYD** (five alike) 50, Chance (sum of all dice).
+- Every extra Yaht-CYD after a scored 50 is worth 100 more and is a joker
+  (it goes in its number's upper box if that's empty, otherwise anywhere,
+  and Full House and the runs count in full).
+- Stats keep every game's score, your best and your average.
 
 ## Light Switch
 
@@ -160,9 +214,9 @@ the tool row (**Undo**, **Notes**, input mode, **Hint**); the digits 1-9.
   stops while a menu is open.
 - **Solving** flashes the screen (colors invert a few times) and leaves the
   finished board on screen. Open the ☰ menu when you're ready for a new game.
-- **☰ menu:** new game (Easy, Medium, Hard, Expert), restart, **Stats**,
-  **All games**, and **Settings**. Buttons act on the first tap;
-  nothing asks "are you sure".
+- **☰ menu:** new game (Easy, Medium, Hard, Expert), **Restart This
+  Puzzle**, **Stats**, **Settings**, then **Exit Menu** | **Exit Game**.
+  Buttons act on the first tap; nothing asks "are you sure".
 
 ### Difficulty
 
@@ -190,10 +244,11 @@ progress, stats, touch calibration, color fixes and settings carry over.
 Each game keeps its own history. For Sudoku: every solved puzzle with its
 difficulty, time and hints used, and every puzzle you leave for a new game
 after playing it (marked "Gave up"). The Stats screen shows solves, average
-and best time per difficulty, and your most recent games. **Delete last**
-removes the most recent entry and **Clear all** wipes that game's history.
+and best time per difficulty, and your most recent games. **Delete Last**
+removes the most recent entry and **Clear All** wipes that game's history.
 The puzzles record level, moves and time (best time and fewest moves per
-level). Two-player games record wins, losses and draws against each
+level). CYD-dle records guesses per level and Yaht-CYD every
+score. Two-player games record wins, losses and draws against each
 computer level, and who won each pass-and-play game.
 
 - **With a microSD card** (3.2", 3.5" and 4.0" boards): saved to
@@ -256,7 +311,7 @@ to flash and reused. To redo it: **☰ → Settings → Recalibrate**.
 ## Colors look wrong?
 
 Panels vary between production runs. Open **☰ → Settings**: use
-**Invert colors** if colors look like a photo negative, and **Swap red/blue**
+**Invert Colors** if colors look like a photo negative, and **Swap Red/Blue**
 if blue shows as red. The fix is saved on the board.
 For a dark screen on purpose, use **Theme: Dark** instead.
 

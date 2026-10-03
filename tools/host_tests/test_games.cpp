@@ -11,6 +11,7 @@
 #include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
+#include "../../src/games/yahtcyd/yahtcyd_core.h"
 #include <chrono>
 #include <cstdio>
 #include <cstring>
@@ -478,6 +479,65 @@ static void test_cyddle()
     CHECK(back.deserialize(buf, sizeof buf) && back.answer == g.answer && back.rows == 2 && back.solved());
 }
 
+static void test_yahtcyd()
+{
+    using namespace yahtcyd;
+    Game g;
+    auto set = [&](int a, int b, int c, int d, int e) {
+        g.dice[0] = a; g.dice[1] = b; g.dice[2] = c; g.dice[3] = d; g.dice[4] = e;
+        g.rolls = 1;
+    };
+    CHECK(!g.can_score(Chance));                      // must roll first
+    set(3, 3, 3, 5, 5);
+    CHECK(g.potential(Threes) == 9 && g.potential(FullHouse) == 25 && g.potential(ThreeKind) == 19);
+    CHECK(g.potential(FourKind) == 0 && g.potential(SmallStraight) == 0);
+    set(2, 3, 4, 5, 2);
+    CHECK(g.potential(SmallStraight) == 30 && g.potential(LargeStraight) == 0);
+    set(6, 2, 3, 4, 5);
+    CHECK(g.potential(LargeStraight) == 40 && g.potential(SmallStraight) == 30);
+    set(4, 4, 4, 4, 4);
+    CHECK(g.potential(YahtCyd) == 50 && g.potential(FullHouse) == 0);
+    CHECK(g.score_box(YahtCyd) && g.score[YahtCyd] == 50 && g.rolls == 0);
+    // A second Yaht-CYD: +100, must go in Fours while Fours is empty
+    set(4, 4, 4, 4, 4);
+    CHECK(!g.can_score(Chance) && g.can_score(Fours));
+    CHECK(g.score_box(Fours) && g.extra == 1 && g.score[Fours] == 20);
+    // A third, of sixes, with Sixes filled: joker scores Full House in full
+    g.score[Sixes] = 18;
+    set(6, 6, 6, 6, 6);
+    CHECK(g.can_score(FullHouse) && g.potential(FullHouse) == 25);
+    // Holding: only between rolls; held dice keep their value
+    Game h;
+    Rng rng(4);
+    h.roll(rng);
+    const uint8_t keep = h.dice[2];
+    h.toggle_hold(2);
+    h.roll(rng); h.roll(rng);
+    CHECK(h.dice[2] == keep && !h.can_roll());
+    // A whole game, always scoring the best box, ends with a total
+    Game w;
+    Rng r2(77);
+    while (!w.over()) {
+        w.roll(r2);
+        int best = -1, bv = -1;
+        for (int b = 0; b < kBoxes; ++b) if (w.can_score(b) && w.potential(b) > bv) { bv = w.potential(b); best = b; }
+        CHECK(w.score_box(best));
+    }
+    CHECK(w.total() > 0 && w.turn() == kBoxes);
+    uint8_t buf[Game::kSaveBytes];
+    CHECK(w.serialize(buf, sizeof buf));
+    Game back;
+    CHECK(back.deserialize(buf, sizeof buf) && back.total() == w.total());
+    // History line
+    Record rec; rec.score = 245; rec.upper = 68; rec.bonus = 35; rec.yahts = 1; rec.seconds = 742;
+    char line[96], full[100];
+    CHECK(format_body(line, sizeof line, rec));
+    CHECK(strcmp(line, "245,68,35,1,742,12:22\n") == 0);
+    snprintf(full, sizeof full, "7,%s", line);
+    Record rb;
+    CHECK(parse_line(full, rb) && rb.score == 245 && rb.yahts == 1 && !parse_line(kCsvHeader, rb));
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -521,6 +581,7 @@ int main()
     test_checkers();
     test_chess();
     test_cyddle();
+    test_yahtcyd();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

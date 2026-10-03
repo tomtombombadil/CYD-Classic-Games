@@ -57,7 +57,10 @@ struct MenuHandlers {
 void menu_two_player(const char* title, const MenuHandlers& h);
 // Solo puzzle: "New Game:" three levels, Restart, Stats | Settings, and at
 // the bottom Exit Menu | Exit Game.
-void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h);
+// levels == nullptr: one "New Game" key (id kLevel0). restart = false hides
+// "Restart This Game".
+void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h,
+               bool restart = true);
 
 // ---- Stats --------------------------------------------------------------------------------
 void stats_two_player(const char* game_id, const twoplayer::Sides& sides, void (*back)());

@@ -12,24 +12,28 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 SHOTS = {
     # 240x320 boards (2.8" and 3.2")
     "s_light_0_picker": "small_picker_light",
-    "s_light_11_puzzles": "small_puzzles",
+    "s_light_12_strategy": "small_strategy",
     "s_light_1_select": "small_sudoku_light",
-    "s_dark_3_digit_first_notes": "small_sudoku_notes_dark",
+    "s_light_5_menu": "small_sudoku_menu",
+    "s_light_26_chess": "small_chess",
+    "s_light_28_chess_peek": "small_chess_peek",
+    "s_light_24_checkers": "small_checkers",
+    "s_light_23_reversi": "small_reversi",
     "s_light_17_fourconnect": "small_fourconnect",
     "s_light_19_tictactoe": "small_tictactoe",
+    "s_light_29_cyddle": "small_cyddle",
+    "s_light_30_yahtcyd": "small_yahtcyd",
     "s_light_13_sliding": "small_sliding",
     "s_light_15_lightswitch": "small_lightswitch",
     "s_dark_0_settings": "small_settings_dark",
     "s_custom_0_editor": "small_theme_editor",
-    "s_custom_0_palette": "small_theme_palette",
-    "s_custom_1_sudoku": "small_sudoku_custom",
     # 320x480 boards (3.5" and 4.0")
     "l_light_0_picker": "large_picker_light",
-    "l_light_12_strategy": "large_strategy",
-    "l_light_1_select": "large_sudoku_light",
-    "l_dark_17_fourconnect": "large_fourconnect_dark",
+    "l_dark_26_chess": "large_chess_dark",
+    "l_dark_29_cyddle_solved": "large_cyddle_dark",
+    "l_dark_30_yahtcyd": "large_yahtcyd_dark",
     "l_light_18_twoplayer_menu": "large_twoplayer_menu",
-    "l_light_21_fourconnect_stats": "large_fourconnect_stats",
+    "l_dark_23_reversi": "large_reversi_dark",
 }
 
 src = pathlib.Path(sys.argv[1])

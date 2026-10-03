@@ -20,6 +20,7 @@
 #include "games/checkers/checkers_core.h"
 #include "games/chess/chess_core.h"
 #include "games/cyddle/cyddle_core.h"
+#include "games/yahtcyd/yahtcyd_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -557,6 +558,33 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Dark);
         ui::app_open_game_now(games::find("cyddle"));
         shot(out + "_dark_29_cyddle_solved.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Yaht-CYD: turn 7, two rolls in, two dice held
+        yahtcyd::Game g;
+        yahtcyd::Rng rng(5);
+        for (int t = 0; t < 6; ++t) {
+            g.roll(rng);
+            int best = -1, bv = -1;
+            for (int b = 0; b < yahtcyd::kBoxes; ++b) if (g.can_score(b) && g.potential(b) > bv) { bv = g.potential(b); best = b; }
+            g.score_box(best);
+        }
+        g.roll(rng); g.toggle_hold(0); g.toggle_hold(3); g.roll(rng);
+        std::vector<uint8_t> buf(yahtcyd::Game::kSaveBytes + 6, 0);
+        g.serialize(buf.data(), buf.size());
+        buf[yahtcyd::Game::kSaveBytes + 2] = 0x2C; buf[yahtcyd::Game::kSaveBytes + 3] = 1;   // 5:00
+        save_game("yahtcyd", buf.data(), buf.size());
+        ui::app_open_game_now(games::find("yahtcyd"));
+        shot(out + "_light_30_yahtcyd.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("yahtcyd"));
+        shot(out + "_dark_30_yahtcyd.ppm");
+        kit_preview_menu();
+        shot(out + "_dark_31_yahtcyd_menu.ppm");
+        ui::close_overlays();
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
     }

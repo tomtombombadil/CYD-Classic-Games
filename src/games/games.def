@@ -19,3 +19,4 @@ GAME(reversi, "Reversi", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Outfl
 GAME(checkers, "Checkers", Strategy, kVsComputer | kPassAndPlay | kNetwork, "American checkers: compulsory jumps, multi-jumps tapped step by step, kings")
 GAME(chess, "Chess", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Full rules; tap a piece, then its square; long-press any piece to see its moves")
 GAME(cyddle, "CYD-dle", Word, kSolo, "Guess the five-letter word in six tries; green, gold and grey hints")
+GAME(yahtcyd, "Yaht-CYD", Dice, kSolo, "Five dice, three rolls, thirteen boxes; chase the upper bonus and Yaht-CYDs")

@@ -228,14 +228,18 @@ void menu_two_player(const char* title, const MenuHandlers& h)
     menu_tail();
 }
 
-void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h)
+void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h, bool restart)
 {
     handlers = h;
     overlay_begin(title);
-    overlay_text("New Game:", false);
-    lv_obj_t* r1 = row(menu_btn_h());
-    for (int l = 0; l < 3; ++l) row_key(r1, levels[l], l);
-    overlay_button(overlay(), "Restart This Game", menu_cb, kRestart);
+    if (levels) {
+        overlay_text("New Game:", false);
+        lv_obj_t* r1 = row(menu_btn_h());
+        for (int l = 0; l < 3; ++l) row_key(r1, levels[l], l);
+    } else {
+        overlay_button(overlay(), "New Game", menu_cb, kLevel0);
+    }
+    if (restart) overlay_button(overlay(), "Restart This Game", menu_cb, kRestart);
     menu_tail();
 }
 
