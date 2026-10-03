@@ -38,8 +38,8 @@ Budget (CYD-Sudoku v1.0.0 as the baseline):
   sized for 240x320 or 320x480), "press anywhere to play": a tap goes on
   to the picker.
 - **Game picker**: "Continue <last game>" at the top, then the categories
-  as a text list: Puzzle Games, Strategy Games, Word Games, Dice Games,
-  Other Games. A category opens a page of game icons (paged if needed).
+  as a text list: Puzzle Games, Strategy Games, Card Games, Word Games, Dice Games
+  (no Other Games - Tom, 2026-10-03). A category opens a page of game icons (paged if needed).
 - Inside a game, the ☰ menu has: new game, restart, stats, Settings,
   All games.
 - **Settings** is shared: Theme, Volume slider (50 % default, far left = muted), brightness,
@@ -104,6 +104,7 @@ Candidates, grouped. Order of building is in section 6.
 |---|---|
 | Yaht-CYD | Yahtzee by a non-trademarked name |
 | Farkle | Push-your-luck |
+| RPG Dice | Dice roller (Tom, 2026-10-03): every RPG die drawn as rolled, presets, history. *Built.* |
 
 **Maybe later / poor fit:** Go 9x9 (weak AI), Solitaire/Klondike/FreeCell/Blackjack/Poker (cards too small on 2.8" perhaps if the card only shows the number and a symbol of the suit),
 Chinese checkers, Dots and Boxes (thin tap targets).

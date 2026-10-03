@@ -22,7 +22,7 @@ int        cat_open = -1;                // category page shown, -1 = category l
 // ---- Picker layout ------------------------------------------------------------
 // First screen: title bar with the ☰ menu, a "Continue <last game>" card,
 // then the categories as a text list (Tom's choice: Puzzle, Strategy, Word,
-// Dice, Other Games), each with its game count. A category opens its own
+// Dice Games), each with its game count. A category opens its own
 // page: back key, the category name, and its games as tiles, 2 per row (so
 // titles like "Minesweeper" fit on a 240-px screen without breaking).
 // Tiles that don't fit go on further pages, switched with big < > keys at

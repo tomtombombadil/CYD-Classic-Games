@@ -72,7 +72,9 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
     `common/help_common.*`. Each page must fit a 240x320 screen with no
     scrolling; the preview renders every page at both sizes and prints
     `HELP OVERFLOW` if text runs into the keys. Keep it current when a
-    game's rules or controls change.
+    game's rules or controls change. The texts live in
+    `tools/make_help.py` (run it to regenerate every `<id>_help.cpp`):
+    edit there, not in the .cpp.
   - `<id>_app.cpp` - the registry entry (`games::GameOps <id>_ops`: open,
     close, save, tick, restyle, summary for "Continue", icon) and the
     save/stats glue through the shell.
@@ -209,9 +211,24 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   for finished games or games that reached 2048; tile colors are a ramp
   over palette roles so custom themes recolor them), Yaht-CYD (official joker rules; boxes "Run of 4"/"Run of 5" so
   the card fits; used boxes filled solid `frame` blue - Tom: tell them
-  from open ones at a glance). Computer ties between equal moves are broken by a random
+  from open ones at a glance), RPG Dice (id `rpgdice`, Dice category -
+  Tom, 2026-10-03: "not a game but fits"; Coin d4 d6 d8 d10 d12 d20 d100;
+  tap die keys to build a pool + one modifier (-1/+1), Roll repeats it,
+  the next die tap after a roll starts a new pool; the tray (felt) draws
+  each die as its shape with its number - d4 triangle, d6 with pips, d8
+  diamond, d10 kite, d12 pentagon, d20 hexagon with a light front face,
+  d100 = two d10s (tens "40" + ones), coin H/T - and the total; natural
+  20 gold ring + Trill, natural 1 red ring + "aww"; Presets: 8 slots,
+  each a name (on-screen keyboard, auto-capitalised words) and up to 4
+  lines of label (Roll/Hit/Damage/Save/Check/Init/Heal) + pool + modifier,
+  rolled with one tap, one tray row per line; a sample "Fighter Attacks"
+  preset on first open; History: 40 rolls as text, newest first, paged;
+  save "RPD1" ~5 KB, written 15 s after a change and on close). Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
-  view: tap, long-press peek, target dots). board8 taps (Tom, 2026-10-03:
+  view: tap, long-press peek, target dots). Checkers: when a jump is
+  compulsory (American rules - yes, a jump must be taken; Tom checked and
+  it was right) the pieces that can jump light up (warn tint) with the
+  "A jump must be taken" note. board8 taps (Tom, 2026-10-03:
   Chess taps were "very bad"): a tap acts on release (CLICKED, any
   length) at the square where the stylus came DOWN (lift-off readings
   drift); long-press = own 750 ms timer (LVGL's 400 ms turned firm taps
@@ -225,7 +242,7 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   (Settings), a "Continue <last game>" card (icon, title, the game's
   summary line), then the categories as a text list (Tom, 2026-10-02):
   Puzzle Games, Strategy Games, Card Games (added 2026-10-03 for the card
-  games), Word Games, Dice Games, Other Games, each
+  games), Word Games, Dice Games (Other Games dropped - Tom, 2026-10-03), each
   with its game count. A category opens its own page of icon tiles, 2 per
   row, with a back key in the top bar. Extra tiles go on pages switched
   with big < > keys (no scrolling). `preview_paging` renders a long fake

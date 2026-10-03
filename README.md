@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Twenty-two games so far: **Sudoku** (from
+> under way. Twenty-two games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **CYD-dle** and **Yaht-CYD**.
+> **Reversi**, **Checkers**, **Chess**, **CYD-dle**, **Yaht-CYD** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -23,7 +23,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a long-press showing where a piece can
 go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
-Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
+RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
 <img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
@@ -38,6 +38,8 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire 
 <img src="docs/screenshots/small_tictactoe.png" width="240" alt="Tic-Tac-Toe">
 <img src="docs/screenshots/small_cyddle.png" width="240" alt="CYD-dle word game">
 <img src="docs/screenshots/small_yahtcyd.png" width="240" alt="Yaht-CYD dice game">
+<img src="docs/screenshots/small_rpgdice.png" width="240" alt="RPG Dice: one of every die rolled">
+<img src="docs/screenshots/small_rpgdice_preset.png" width="240" alt="RPG Dice: a fighter's two attacks rolled from a preset">
 <img src="docs/screenshots/small_minesweeper.png" width="240" alt="Minesweeper with flags">
 <img src="docs/screenshots/small_mastercyd.png" width="240" alt="MasterCYD, guess 5 of 10">
 <img src="docs/screenshots/small_2048.png" width="240" alt="2048 in progress">
@@ -97,6 +99,7 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire 
 | Blackjack | Card Games | You against the dealer: hit, stand, double, split; 3 to 2 blackjacks |
 | CYD-dle | Word Games | Solo, guess the five-letter word: Easy / Normal / Hard |
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
+| RPG Dice | Dice Games | Every role-playing die, each shown as rolled; presets and history |
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
 greyed out, until it's built). Coming next: Video Poker and Texas
@@ -111,7 +114,7 @@ starts). Tap anywhere to go on to the game picker.
 - **Continue** (the yellow card) reopens the last game you played, where you
   left off, in one tap. It shows how far along that game is.
 - Below it, the categories: **Puzzle Games, Strategy Games, Card Games,
-  Word Games, Dice Games, Other Games**, each with how many games it has. Tap one to see its
+  Word Games, Dice Games**, each with how many games it has. Tap one to see its
   games as icons, and tap a game to play. The **<** key in the top bar goes
   back. Categories without games yet say "soon".
 - **☰ menu:** Settings, shared by every game.
@@ -188,6 +191,21 @@ spot) or grey (not in the word); the keyboard keeps track of every letter.
 and gold letter must be used in the next guesses. Guesses must be real
 words. When the game is over, ✓ starts a new word. Stats keep your solves
 and guess counts per level.
+
+## RPG Dice
+
+A dice roller for tabletop role-playing games: **Coin, d4, d6, d8, d10, d12,
+d20 and d100**. Tap die keys to build a roll (three taps on d6 = 3d6),
+**-1 / +1** for a modifier, then **Roll**. The roll is drawn as dice - a d4
+triangle, d6 with pips, d8 diamond, d10 kite, d12 pentagon, d20 hexagon,
+d100 as two d10s - each showing its number, with the total. A natural 20
+glows gold, a natural 1 red. **Roll** again repeats it.
+
+**Presets** roll up to four lines at once, each with a label (Hit,
+Damage, Save...), dice and a modifier - for example a fighter's two
+attacks: Hit d20+7, Damage d8+5, Hit d20+4, Damage d6+5 (that one is there
+to start with). **Edit Presets** changes names, lines, dice and modifiers.
+**History** keeps the last 40 rolls, newest first.
 
 ## Yaht-CYD
 

@@ -26,6 +26,7 @@
 #include "../../src/games/twenty48/twenty48_core.h"
 #include "../../src/games/yahtcyd/yahtcyd_core.h"
 #include "../../src/ui/log_pack.h"
+#include "../../src/games/rpgdice/rpgdice_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -1431,6 +1432,72 @@ static void test_log_pack()
     CHECK(logpack::base43(raw, 5, enc, 8) == 0);   // too small
 }
 
+// ---- RPG Dice --------------------------------------------------------------------------------
+static void test_rpgdice()
+{
+    using namespace rpgdice;
+    Pool p;
+    CHECK(p.empty());
+    p.add(D6); p.add(D6); p.add(D8); p.bump_mod(3);
+    char t[64];
+    p.format(t, sizeof t);
+    CHECK(strcmp(t, "2d6 + 1d8 + 3") == 0);
+    Pool q; q.add(D20); q.bump_mod(-2); q.format(t, sizeof t);
+    CHECK(strcmp(t, "1d20 - 2") == 0);
+    Pool full; for (int k = 0; k < kMaxDice; ++k) CHECK(full.add(D4));
+    CHECK(!full.add(D4));
+    for (int k = 0; k < 300; ++k) full.bump_mod(1);
+    CHECK(full.mod == kMaxMod);
+    // Every die lands in range and each face comes up
+    Rng rng(12345);
+    for (int d = 0; d < kDieTypes; ++d) {
+        Pool one; one.add(d);
+        bool seen[101] = {};
+        for (int k = 0; k < 20000; ++k) {
+            Rolled r; roll(one, rng, r);
+            CHECK(r.n == 1 && r.value[0] >= 1 && r.value[0] <= kSides[d] && r.total == r.value[0]);
+            seen[r.value[0]] = true;
+        }
+        for (int v = 1; v <= kSides[d]; ++v) CHECK(seen[v]);
+    }
+    // Totals add up with the modifier; history text
+    State* s = new State();
+    s->pool = p;
+    s->roll_pool(rng);
+    const Rolled& r = s->last[0];
+    CHECK(r.n == 3 && r.total == r.value[0] + r.value[1] + r.value[2] + 3);
+    CHECK(s->history(0) && strstr(s->history(0), "2d6+1d8+3:") == s->history(0));
+    // A preset: four lines rolled together
+    Preset& pr = s->presets[2];
+    snprintf(pr.name, sizeof pr.name, "Fighter");
+    pr.lines = 2;
+    pr.pool[0].add(D20); pr.pool[0].mod = 7; pr.pool[0].label = 1;
+    pr.pool[1].add(D8);  pr.pool[1].mod = 5; pr.pool[1].label = 2;
+    s->roll_preset(2, rng);
+    CHECK(s->shown == 2 && s->preset == 2);
+    CHECK(s->last[0].total >= 8 && s->last[0].total <= 27 && s->last[1].total >= 6 && s->last[1].total <= 13);
+    CHECK(strncmp(s->history(0), "Fighter: Hit ", 13) == 0);
+    CHECK(s->hist_n == 2);
+    // History ring keeps the newest kHistory
+    for (int k = 0; k < kHistory + 5; ++k) s->roll_pool(rng);
+    CHECK(s->hist_n == kHistory && s->history(kHistory) == nullptr);
+    // Save and load
+    std::vector<uint8_t> buf(State::kSaveBytes);
+    const size_t n = s->serialize(buf.data(), buf.size());
+    State* b = new State();
+    CHECK(n > 0 && b->deserialize(buf.data(), n));
+    CHECK(strcmp(b->presets[2].name, "Fighter") == 0 && b->presets[2].lines == 2 && b->presets[2].pool[1].mod == 5);
+    CHECK(b->hist_n == kHistory && strcmp(b->history(0), s->history(0)) == 0);
+    CHECK(b->last[0].total == s->last[0].total && b->shown == s->shown);
+    CHECK(!b->deserialize(buf.data(), 100));
+    // Coin alone reads Heads / Tails
+    Rolled c{}; c.n = 1; c.die[0] = Coin; c.value[0] = 2; c.total = 2;
+    format_rolled(c, t, sizeof t, false);
+    CHECK(strcmp(t, "Coin: Heads") == 0);
+    delete s;
+    delete b;
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -1495,6 +1562,7 @@ int main()
     test_freecell();
     test_blackjack();
     test_log_pack();
+    test_rpgdice();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

@@ -22,6 +22,17 @@
 #include "games/chess/chess_core.h"
 #include "games/cyddle/cyddle_core.h"
 #include "games/yahtcyd/yahtcyd_core.h"
+#include "games/rpgdice/rpgdice_core.h"
+namespace rpgdice_preview {
+void set_pool(const int* counts, int mod);
+void roll_pool(uint32_t seed);
+void roll_preset(int i, uint32_t seed);
+void presets();
+void history();
+void editor(int slot);
+void line_editor(int slot, int line);
+void keyboard(int slot);
+}
 #include "games/twenty48/twenty48_core.h"
 #include "games/mastercyd/mastercyd_core.h"
 #include "games/pegs/pegs_core.h"
@@ -686,6 +697,56 @@ int main(int argc, char** argv)
         shot(out + "_dark_30_yahtcyd.ppm");
         kit_preview_menu();
         shot(out + "_dark_31_yahtcyd_menu.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // RPG Dice: the sample preset, a big pool, every die once, the screens
+        ui::app_open_game_now(games::find("rpgdice"));
+        shot(out + "_light_52_rpgdice_new.ppm");
+        const int every[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+        rpgdice_preview::set_pool(every, 0);
+        rpgdice_preview::roll_pool(11);
+        shot(out + "_light_52_rpgdice_every.ppm");
+        const int sixd6[8] = {0, 0, 6, 0, 0, 0, 0, 0};
+        rpgdice_preview::set_pool(sixd6, 0);
+        rpgdice_preview::roll_pool(5);
+        shot(out + "_light_52_rpgdice_6d6.ppm");
+        const int one12[8] = {0, 0, 0, 0, 0, 1, 0, 0};
+        rpgdice_preview::set_pool(one12, 0);
+        rpgdice_preview::roll_pool(3);
+        shot(out + "_light_52_rpgdice_d12.ppm");
+        const int mix[8] = {0, 0, 2, 1, 0, 0, 1, 0};
+        rpgdice_preview::set_pool(mix, 3);
+        shot(out + "_light_52_rpgdice_pool.ppm");
+        for (uint32_t seed = 1; seed < 400; ++seed) {           // a roll with a natural 20
+            rpgdice_preview::roll_preset(0, seed);
+            if (seed == 399) break;
+        }
+        rpgdice_preview::roll_preset(0, 77);
+        shot(out + "_light_52_rpgdice_preset.ppm");
+        rpgdice_preview::presets();
+        shot(out + "_light_53_rpgdice_presets.ppm");
+        rpgdice_preview::editor(0);
+        shot(out + "_light_53_rpgdice_editor.ppm");
+        rpgdice_preview::line_editor(0, 1);
+        shot(out + "_light_53_rpgdice_line.ppm");
+        rpgdice_preview::keyboard(0);
+        shot(out + "_light_53_rpgdice_keyboard.ppm");
+        rpgdice_preview::history();
+        shot(out + "_light_53_rpgdice_history.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("rpgdice"));
+        shot(out + "_dark_52_rpgdice.ppm");
+        const int big[8] = {0, 2, 3, 2, 2, 2, 2, 1};
+        rpgdice_preview::set_pool(big, -1);
+        rpgdice_preview::roll_pool(9);
+        shot(out + "_dark_52_rpgdice_many.ppm");
+        kit_preview_menu();
+        shot(out + "_dark_53_rpgdice_menu.ppm");
         ui::close_overlays();
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);

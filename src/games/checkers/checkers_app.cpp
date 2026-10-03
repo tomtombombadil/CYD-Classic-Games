@@ -36,6 +36,7 @@ int     peek_sel = -1, peek_path_n = 0;
 uint8_t peek_path[kMaxPath];
 bool peek = false;                     // long-press view on screen
 char note_text[40] = "";
+uint64_t must_jump = 0;                // pieces that can jump, lit while the note shows
 
 // ---- Rules for the match controller ----------------------------------------------
 int  result() { return G->result(); }
@@ -49,7 +50,7 @@ void play(int index)
     sel = -1;
     path_n = 0;
     peek = false;
-    note_text[0] = 0;
+    note_text[0] = 0; must_jump = 0;
     redraw();
 }
 int  think(int level, uint32_t seed, volatile bool* stop) { return best_move(*G, level, seed, stop); }
@@ -105,6 +106,7 @@ void redraw()
     if (!G) return;
     board8::Marks m;
     if (G->last_from >= 0) m.last = board8::bit(G->last_from) | board8::bit(G->last_to);
+    m.warn = must_jump;                     // "A jump must be taken": these can
     if (sel >= 0) {
         MoveList l;
         if (peek) {
@@ -169,11 +171,13 @@ void on_tap(int sq)
         if (has) {
             sel = sq;
             path_n = 0;
-            note_text[0] = 0;
+            note_text[0] = 0; must_jump = 0;
         } else {
             clear_pick();
             if (l.n && l.m[0].jump()) {
                 snprintf(note_text, sizeof note_text, "A jump must be taken");
+                must_jump = 0;
+                for (int k = 0; k < l.n; ++k) must_jump |= board8::bit(l.m[k].from);
                 ui::sound(ui::Sound::Error);
                 match::refresh();                    // show the note
             }
@@ -262,7 +266,7 @@ void open()
     if (!G) { ui::app_go_home(); return; }
     if (!load(*G, match::state())) { *G = Game{}; match::state() = match::State{}; }
     clear_pick();
-    note_text[0] = 0;
+    note_text[0] = 0; must_jump = 0;
     saved_plies = G->plies;
     build();
 }

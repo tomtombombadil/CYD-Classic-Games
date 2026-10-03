@@ -23,6 +23,8 @@ SHOTS = {
     "s_light_19_tictactoe": "small_tictactoe",
     "s_light_29_cyddle": "small_cyddle",
     "s_light_30_yahtcyd": "small_yahtcyd",
+    "s_light_52_rpgdice_every": "small_rpgdice",
+    "s_light_52_rpgdice_preset": "small_rpgdice_preset",
     "s_light_13_sliding": "small_sliding",
     "s_light_32_minesweeper": "small_minesweeper",
     "s_light_36_mastercyd": "small_mastercyd",

@@ -6,7 +6,7 @@
 //   id        folder src/games/<id>/, save /games/<id>.bin, stats <id>.csv;
 //             the game defines `extern const games::GameOps <id>_ops`
 //             and its How To Play pages `games::Help <id>_help`
-//   Category  Puzzles, Strategy, Cards, Word, Dice or Other
+//   Category  Puzzles, Strategy, Cards, Word or Dice
 //   modes     kSolo, kVsComputer, kPassAndPlay, kNetwork (or-ed)
 //
 // Keep each entry on one line (make_site.py reads it with a regex).
@@ -33,3 +33,4 @@ GAME(pyramid, "Pyramid", Cards, kSolo, "Pair up cards that add to 13 and take th
 GAME(golf, "Golf", Cards, kSolo, "Clear seven columns onto the waste, one rank up or down at a time")
 GAME(cyddle, "CYD-dle", Word, kSolo, "Guess the five-letter word in six tries; green, gold and grey hints")
 GAME(yahtcyd, "Yaht-CYD", Dice, kSolo, "Five dice, three rolls, thirteen boxes; chase the upper bonus and Yaht-CYDs")
+GAME(rpgdice, "RPG Dice", Dice, kSolo, "Every role-playing die from coin to d100: build a roll, see each die, save presets like a fighter's attacks")
