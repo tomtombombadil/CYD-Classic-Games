@@ -197,6 +197,8 @@ void restart_view()
     update_status();
 }
 
+void refresh() { update_status(); }
+
 void detach()
 {
     ai_stop();
@@ -231,7 +233,7 @@ void tick(uint32_t now)
         think.seed = shell().random_seed ? shell().random_seed() : now;
         think.done = false;
         think.move = -1;
-        thinking = ai_start(ai_job, &think);
+        thinking = ai_start(ai_job, &think, G.ai_stack);
         update_status();
     }
     if (thinking && think.done) {

@@ -10,6 +10,6 @@ void sudoku_stock_loop() {}
 // Computer moves run straight away on the PC.
 #include "games/common/ai_task.h"
 namespace { bool stop_never = false; }
-bool ai_start(AiJob job, void* ctx) { job(ctx, &stop_never); return true; }
+bool ai_start(AiJob job, void* ctx, uint32_t) { job(ctx, &stop_never); return true; }
 bool ai_busy() { return false; }
 void ai_stop() {}

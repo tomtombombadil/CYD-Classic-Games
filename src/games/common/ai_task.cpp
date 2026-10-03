@@ -20,15 +20,15 @@ void runner(void*)
 
 } // namespace
 
-bool ai_start(AiJob job, void* ctx)
+bool ai_start(AiJob job, void* ctx, uint32_t stack_bytes)
 {
     if (busy) return false;
     job_fn = job;
     job_ctx = ctx;
     stop_flag = false;
     busy = true;
-    // 8 KB stack: searches recurse a few dozen levels with small frames
-    if (xTaskCreatePinnedToCore(runner, "ai", 8192, nullptr, 1, nullptr, 0) != pdPASS) {
+    // The stack is allocated for this job only and freed when it ends
+    if (xTaskCreatePinnedToCore(runner, "ai", stack_bytes, nullptr, 1, nullptr, 0) != pdPASS) {
         busy = false;
         return false;
     }

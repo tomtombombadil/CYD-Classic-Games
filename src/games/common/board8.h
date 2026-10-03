@@ -38,6 +38,7 @@ void      set_flipped(bool flipped);
 void      redraw();
 void      forget();                     // the screen was cleaned
 int       cell_size();
+bool      square_center(int sq, int* x, int* y);   // screen point (preview taps)
 
 inline uint64_t bit(int sq) { return 1ull << sq; }
 

@@ -105,4 +105,16 @@ void redraw()                  { if (obj) lv_obj_invalidate(obj); }
 void forget()                  { obj = nullptr; }
 int  cell_size()               { return cell; }
 
+bool square_center(int sq, int* x, int* y)
+{
+    if (!obj) return false;
+    lv_area_t a;
+    lv_obj_get_coords(obj, &a);
+    const int rank = sq / 8, file = sq % 8;
+    const int row = C.flipped ? rank : 7 - rank, col = C.flipped ? 7 - file : file;
+    *x = a.x1 + col * cell + cell / 2;
+    *y = a.y1 + row * cell + cell / 2;
+    return true;
+}
+
 } // namespace board8

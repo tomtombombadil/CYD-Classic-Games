@@ -9,6 +9,7 @@
 
 using AiJob = void (*)(void* ctx, volatile bool* stop);
 
-bool ai_start(AiJob job, void* ctx);   // false if a job is still running
+// false if a job is still running. stack_bytes: the search's needs.
+bool ai_start(AiJob job, void* ctx, uint32_t stack_bytes = 8192);
 bool ai_busy();
 void ai_stop();                        // ask the job to stop, wait until it has

@@ -3,6 +3,7 @@
 // Light Switch, two_player.*, puzzle_stats.*.
 #include "../../src/games/common/puzzle_stats.h"
 #include "../../src/games/common/two_player.h"
+#include "../../src/games/checkers/checkers_core.h"
 #include "../../src/games/fourconnect/fourconnect_core.h"
 #include "../../src/games/lightswitch/lightswitch_core.h"
 #include "../../src/games/reversi/reversi_core.h"
@@ -244,6 +245,51 @@ static void test_reversi()
     CHECK(passes > 0);
 }
 
+static void test_checkers()
+{
+    using namespace checkers;
+    Game g;
+    MoveList l;
+    g.legal(l);
+    CHECK(l.n == 7 && !l.m[0].jump());
+    CHECK(__builtin_popcountll(g.pos.pieces(0)) == 12 && __builtin_popcountll(g.pos.pieces(1)) == 12);
+    // Hand-made position: a black man on c3 (sq 18) can double-jump
+    // d4 (27) and f6 (45), landing on e5 (36) then g7 (54).
+    Position p{};
+    p.men[0] = 1ull << 18;
+    p.men[1] = (1ull << 27) | (1ull << 45) | (1ull << 9);   // b2 white man can't be jumped backward
+    generate(p, 0, l);
+    CHECK(l.n == 1 && l.m[0].n == 2 && l.m[0].path[0] == 36 && l.m[0].path[1] == 54);
+    CHECK(__builtin_popcountll(l.m[0].captured) == 2);
+    // Jumping is compulsory: no plain moves offered alongside
+    for (int k = 0; k < l.n; ++k) CHECK(l.m[k].jump());
+    // Crowning ends the move: a black man jumping onto rank 7 stops there
+    Position c{};
+    c.men[0] = 1ull << 45;                                  // f6
+    c.men[1] = (1ull << 52) | (1ull << 53);                 // e7 and f7
+    generate(c, 0, l);
+    bool crowned_stop = false;
+    for (int k = 0; k < l.n; ++k) if (l.m[k].to() / 8 == 7) crowned_stop = l.m[k].n == 1;
+    CHECK(crowned_stop);
+    Position after = c;
+    for (int k = 0; k < l.n; ++k) if (l.m[k].to() / 8 == 7) { after.apply(l.m[k]); break; }
+    CHECK(__builtin_popcountll(after.kings[0]) == 1);
+    // Whole games end, saves replay, Hard beats Easy
+    int hard = 0;
+    for (int n = 0; n < 6; ++n) {
+        Game q;
+        const int hs = n & 1;
+        while (q.result() == -1) q.play(best_move(q, q.turn() == hs ? 2 : 0, 31 + n * 7 + q.plies));
+        hard += q.result() == hs;
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(q.serialize(buf, sizeof buf));
+        Game back;
+        CHECK(back.deserialize(buf, sizeof buf) && back.pos.men[0] == q.pos.men[0] && back.pos.kings[1] == q.pos.kings[1]);
+    }
+    printf("checkers hard vs easy: %d/6\n", hard);
+    CHECK(hard >= 5);
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -284,6 +330,7 @@ int main()
     test_sliding();
     test_lightswitch();
     test_reversi();
+    test_checkers();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

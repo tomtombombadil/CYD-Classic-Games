@@ -17,11 +17,13 @@
 #include "games/common/two_player.h"
 #include "games/lightswitch/lightswitch_core.h"
 #include "games/registry.h"
+#include "games/checkers/checkers_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
 #include "games/sudoku/sudoku_screen.h"
 #include "games/sudoku/sudoku_stats.h"
+#include "games/common/board8.h"
 #include "games/common/game_kit.h"
 #include "ui/shell.h"
 #include "ui/widgets.h"
@@ -33,6 +35,16 @@ static void flush(lv_display_t* d, const lv_area_t*, uint8_t*) { lv_display_flus
 static std::vector<uint16_t> fb;
 static int W, H;
 static unsigned peak_used = 0;
+
+// A fake stylus for staging taps
+static bool    touch_down = false;
+static int16_t touch_x = 0, touch_y = 0;
+static void touch_read(lv_indev_t*, lv_indev_data_t* d)
+{
+    d->point.x = touch_x;
+    d->point.y = touch_y;
+    d->state = touch_down ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+}
 
 static void run(int ms)
 {
@@ -153,6 +165,20 @@ static bool fake_touch(int16_t* x, int16_t* y)
 // A Medium puzzle part-way through: some right digits, two empty cells kept
 // free for staging, notes in a few cells, 2:05 on the clock.
 static int first_empty = -1, second_empty = -1;
+// Tap (or long-press) a point with the fake stylus
+static void preview_press(int x, int y, int hold_ms)
+{
+    touch_x = static_cast<int16_t>(x); touch_y = static_cast<int16_t>(y);
+    touch_down = true;
+    run(hold_ms);
+    touch_down = false;
+    run(80);
+}
+static void preview_tap_square(int sq, int hold_ms = 80)
+{
+    int x, y;
+    if (board8::square_center(sq, &x, &y)) preview_press(x, y, hold_ms);
+}
 static const char* const kSlideLevels[3] = {"3x3", "4x4", "5x5"};
 // The solo menu of whatever game is open: its ☰ key is on the screen; tap it
 [[maybe_unused]] static void kit_preview_menu()
@@ -207,6 +233,9 @@ int main(int argc, char** argv)
     lv_display_set_color_format(d, LV_COLOR_FORMAT_RGB565);
     lv_display_set_flush_cb(d, flush);
     lv_display_set_buffers(d, fb.data(), nullptr, W * H * 2, LV_DISPLAY_RENDER_MODE_DIRECT);
+    lv_indev_t* stylus = lv_indev_create();
+    lv_indev_set_type(stylus, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(stylus, touch_read);
 
     ui::Shell sh{};
     sh.random_seed = seed;
@@ -441,6 +470,30 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Dark);
         ui::app_open_game_now(games::find("reversi"));
         shot(out + "_dark_23_reversi.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Checkers vs the computer: player is White (board turned), mid-game,
+        // then a long-press view and a picked piece
+        checkers::Game g;
+        for (int k = 0; k < 17; ++k) g.play(checkers::best_move(g, 1, 300 + k));
+        std::vector<uint8_t> buf(checkers::Game::kSaveBytes + match::kStateBytes);
+        g.serialize(buf.data(), buf.size());
+        match::State st; st.human_side = g.turn(); st.seconds = 401;
+        { match::State keep = match::state(); match::state() = st;
+          match::save_state(buf.data() + checkers::Game::kSaveBytes, match::kStateBytes);
+          match::state() = keep; }
+        save_game("checkers", buf.data(), buf.size());
+        ui::app_open_game_now(games::find("checkers"));
+        shot(out + "_light_24_checkers.ppm");
+        checkers::MoveList l; g.legal(l);
+        preview_tap_square(l.m[0].from);
+        shot(out + "_light_25_checkers_pick.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("checkers"));
+        shot(out + "_dark_24_checkers.ppm");
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
     }

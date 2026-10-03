@@ -35,6 +35,7 @@ struct Game {
     void (*score)(char* buf, size_t cap) = nullptr;
     // Optional: a note after the last move, e.g. "White had no move" (or "")
     void (*note)(char* buf, size_t cap) = nullptr;
+    uint32_t ai_stack = 8192;      // the computer's task stack (bytes)
 };
 
 // Call when the game opens (after its board was loaded) and on restyle.
@@ -51,6 +52,7 @@ void tick(uint32_t now_ms);
 void open_menu();
 void summary(char* buf, size_t cap);         // the attached game, for "Continue"
 void restart_view();               // after attach + build: show state, maybe start the computer
+void refresh();                    // redraw the status and info lines (e.g. a new note)
 
 // How the game is being played (saved after the board)
 struct State {
