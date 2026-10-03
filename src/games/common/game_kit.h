@@ -61,9 +61,10 @@ void menu_two_player(const char* title, const MenuHandlers& h);
 // the bottom Exit Menu | Exit Game.
 // levels == nullptr: one "New Game" key (id kLevel0). restart = false hides
 // "Restart This Game".
-// options = true adds an "Options" key (id kOptions) below Restart.
+// options: label of an extra key (id kOptions) below Restart, e.g.
+// "Options" or "Card Back"; nullptr = none.
 void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h,
-               bool restart = true, bool options = false);
+               bool restart = true, const char* options = nullptr);
 
 // ---- How To Play ----------------------------------------------------------------------
 // The open game's help pages (games.def / <id>_help.cpp), one per screen:

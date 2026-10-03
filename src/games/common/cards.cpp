@@ -9,7 +9,7 @@
 #include "ui/widgets.h"
 
 extern "C" {
-extern const lv_font_t card_font_12, card_font_16, card_font_20, card_font_26, card_font_34, card_font_46;
+extern const lv_font_t card_font_10, card_font_12, card_font_16, card_font_20, card_font_26, card_font_34, card_font_46;
 extern const lv_font_t card_b_font_16, card_b_font_22, card_b_font_30, card_b_font_40, card_b_font_54, card_b_font_70;
 }
 
@@ -17,7 +17,7 @@ namespace cards {
 
 namespace {
 
-const lv_font_t* const kFonts[] = {&card_font_12, &card_font_16, &card_font_20,
+const lv_font_t* const kFonts[] = {&card_font_10, &card_font_12, &card_font_16, &card_font_20,
                                    &card_font_26, &card_font_34, &card_font_46};
 constexpr int kFontCount = sizeof kFonts / sizeof kFonts[0];
 
@@ -187,7 +187,7 @@ void draw_face(lv_layer_t* layer, int x, int y, int w, int h, uint8_t card, bool
     const uint32_t sc = kSuitCode[suit];
 
     // Index strip: rank, then a small suit, ink filling ~70 % of the strip
-    const int pad = w >= 40 ? 4 : 2, sh = index_h(w, h);
+    const int pad = w >= 40 ? 4 : w >= 26 ? 2 : 1, sh = index_h(w, h);   // narrow (Spider) cards: tight
     const int ink_h = sh * 72 / 100;
     const int avail_w = w - 2 * pad - 1;
     const lv_font_t* rf = kFonts[0];
@@ -364,8 +364,8 @@ struct Show {
     lv_obj_t*   obj = nullptr;
     void      (*done)() = nullptr;
     // piles already emptied: their position and what they show now
-    int16_t     px[8] = {}, py[8] = {};
-    uint8_t     shown[8] = {};
+    int16_t     px[32] = {}, py[32] = {};
+    uint8_t     shown[32] = {};
     int         piles = 0;
 };
 Show* show = nullptr;
@@ -383,6 +383,7 @@ void show_draw_cb(lv_event_t* e)
     if (!show) return;
     lv_layer_t* layer = lv_event_get_layer(e);
     for (int k = 0; k < show->piles; ++k) {
+        if (show->shown[k] == 0xFE) continue;
         if (show->shown[k] == 0xFF) draw_slot(layer, show->px[k], show->py[k], show->cw, show->ch);
         else draw_face(layer, show->px[k], show->py[k], show->cw, show->ch, show->shown[k]);
     }
@@ -403,8 +404,8 @@ void show_timer_cb(lv_timer_t*)
         // the pile now shows the card under it
         int k = 0;
         while (k < s.piles && (s.px[k] != L.x || s.py[k] != L.y)) ++k;
-        if (k == s.piles && k < 8) { s.px[k] = L.x; s.py[k] = L.y; ++s.piles; }
-        if (k < 8) s.shown[k] = L.under;
+        if (k == s.piles && k < 32) { s.px[k] = L.x; s.py[k] = L.y; ++s.piles; }
+        if (k < 32) s.shown[k] = L.under;
         invalidate(L.x, L.y, s.cw, s.ch);
         return;
     }

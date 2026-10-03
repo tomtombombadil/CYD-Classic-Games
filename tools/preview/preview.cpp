@@ -28,6 +28,9 @@
 #include "games/memory/memory_core.h"
 #include "games/nonogram/nonogram_core.h"
 #include "games/solitaire/solitaire_core.h"
+#include "games/golf/golf_core.h"
+#include "games/pyramid/pyramid_core.h"
+#include "games/spider/spider_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -901,6 +904,58 @@ int main(int argc, char** argv)
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
         delete g; delete w;
+    }
+
+    {   // Golf and Pyramid part-way (light), Pyramid with a pick (dark)
+        {
+            using namespace golf;
+            Game g; g.deal(4242);
+            for (int k = 0; k < 9; ++k) { const int h = g.hint(); if (h < 0) break; if (h == 7) g.draw(); else g.play(h); }
+            std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+            g.serialize(buf.data(), buf.size());
+            buf[Game::kSaveBytes + 1] = 140;
+            save_game("golf", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("golf"));
+            shot(out + "_light_46_golf.ppm");
+            ui::app_go_home_now();
+        }
+        {
+            using namespace pyramid;
+            Game g; g.deal(31337);
+            for (int k = 0; k < 6; ++k) { int a, b; if (!g.hint(&a, &b)) break; if (a == -2) g.draw(); else g.pair(a, b); }
+            std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+            g.serialize(buf.data(), buf.size());
+            buf[Game::kSaveBytes + 1] = 95;
+            save_game("pyramid", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("pyramid"));
+            shot(out + "_light_47_pyramid.ppm");
+            ui::app_go_home_now();
+            ui::app_set_theme(ui::Theme::Dark);
+            ui::app_open_game_now(games::find("pyramid"));
+            shot(out + "_dark_47_pyramid.ppm");
+            ui::app_go_home_now();
+            ui::app_set_theme(ui::Theme::Light);
+        }
+    }
+
+    {   // Spider: 2 suits part-way (light), 4 suits (dark)
+        using namespace spider;
+        Game* g = new Game();
+        for (int lv : {1, 2}) {
+            g->deal(lv == 1 ? 777 : 2027, lv);
+            for (int k = 0; k < 10; ++k) { int f, i, to; if (!g->hint(&f, &i, &to) || f < 0) break; g->move(f, i, to); }
+            g->deal_row();
+            std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+            g->serialize(buf.data(), buf.size());
+            buf[Game::kSaveBytes + 1] = 200;
+            save_game("spider", buf.data(), buf.size());
+            if (lv == 2) ui::app_set_theme(ui::Theme::Dark);
+            ui::app_open_game_now(games::find("spider"));
+            shot(out + (lv == 2 ? "_dark" : "_light") + "_48_spider.ppm");
+            ui::app_go_home_now();
+        }
+        ui::app_set_theme(ui::Theme::Light);
+        delete g;
     }
 
     {   // Card games: mockups of the shared card graphics (not games yet)

@@ -525,7 +525,7 @@ void open_menu()
 {
     clear_pick();
     kit::MenuHandlers h{menu_pick, menu_stats, menu_back, open_menu};
-    kit::menu_solo("Solitaire", nullptr, h, true, true);
+    kit::menu_solo("Solitaire", nullptr, h, true, "Options");
 }
 
 // ---- Registry entry -----------------------------------------------------------------------------

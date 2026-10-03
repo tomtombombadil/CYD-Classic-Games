@@ -10,9 +10,9 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Seventeen games so far: **Sudoku** (from
+> under way. Twenty games so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
-> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **FourConnect**, **Tic-Tac-Toe**,
+> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FourConnect**, **Tic-Tac-Toe**,
 > **Reversi**, **Checkers**, **Chess**, **CYD-dle** and **Yaht-CYD**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
@@ -23,7 +23,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a long-press showing where a piece can
 go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
-Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
+Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
 <img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
@@ -46,6 +46,9 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire 
 <img src="docs/screenshots/small_nonogram.png" width="240" alt="Nonograms 10x10 part-way">
 <img src="docs/screenshots/small_solitaire.png" width="240" alt="Solitaire">
 <img src="docs/screenshots/small_solitaire_win.png" width="240" alt="Solitaire win: cards bouncing off the table">
+<img src="docs/screenshots/small_spider.png" width="240" alt="Spider, two suits">
+<img src="docs/screenshots/small_pyramid.png" width="240" alt="Pyramid">
+<img src="docs/screenshots/small_golf.png" width="240" alt="Golf">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -85,12 +88,15 @@ Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire 
 | FourConnect | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Tic-Tac-Toe | Strategy Games | vs computer (Hard never loses) or pass-and-play |
 | Solitaire | Card Games | Klondike: Draw 1 or 3, Standard / Vegas / no scoring, undo, hints |
+| Spider | Card Games | 1, 2 or 4 suits, Windows scoring, undo, hints |
+| Pyramid | Card Games | Pairs that make 13, three passes through the stock |
+| Golf | Card Games | Clear the columns one rank up or down |
 | CYD-dle | Word Games | Solo, guess the five-letter word: Easy / Normal / Hard |
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
-greyed out, until it's built). Coming next: the card games (Klondike,
-FreeCell, Blackjack, Poker), then wireless play. The plan is in
+greyed out, until it's built). Coming next: FreeCell, Blackjack, Video
+Poker and Texas Hold'em, then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -251,6 +257,21 @@ like the old Windows Solitaire (tap to stop).
 scoring (a deal costs $52, each foundation card pays $5, the balance
 carries over) or none, and the **Card Back** (12 designs, shared by every
 card game).
+
+## Spider, Pyramid and Golf
+
+- **Spider:** two decks in ten columns. Build King-to-Ace runs in one suit;
+  a full run comes off by itself, take off all eight to win. Any card goes
+  on one a rank higher, but only same-suit runs move together. Tap the
+  stock to deal a row (every column needs a card). Levels: 1, 2 or 4 suits.
+- **Pyramid:** remove pairs of uncovered cards that add up to 13 (Ace 1,
+  Jack 11, Queen 12; a King goes alone). The waste's top card pairs too;
+  three passes through the stock.
+- **Golf:** play a column's top card onto the waste if it's one rank higher
+  or lower (no wrapping, nothing on a King); turn the stock when stuck.
+
+All three have **Undo** and **Hint**, the bouncing-cards win show, and a
+**Card Back** key in their menu (the back is shared with every card game).
 
 ## Nonograms
 

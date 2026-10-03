@@ -148,7 +148,15 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   menu key -> Draw 1 / Draw 3 (default 3), Standard / Vegas (balance
   carries over) / None scoring, Card Back; tap card then destination, tap
   the picked card again = best target; auto-finish; Undo + Hint keys;
-  stats per draw mode, an unfinished deal = Lost; the win show), 2048 (id `twenty48` - C names can't start
+  stats per draw mode, an unfinished deal = Lost; the win show), Spider
+  (1 / 2 / 4 suits; 10 columns of 21 px cards on 240 wide - card_font_10;
+  Windows scoring 500 -1/move +100/run; no deal with an empty column),
+  Pyramid (pairs to 13, Kings alone, waste top pairs too, 3 passes),
+  Golf (no wrap, nothing on a King; Hint; cards left = score). Card
+  games keep their undo history only while open (not in the save). A
+  stuck deal is recorded as Lost only when the next deal starts (Undo can
+  still save it). Golf/Pyramid/Spider menus: "Card Back" key -> the
+  shared back screen, 2048 (id `twenty48` - C names can't start
   with a digit; 4x4, 2 or 4 (10 %) after each slide, play on after 2048;
   one custom-drawn object below the top bar = board + 4 diagonal tap
   zones; preview checks each zone against the rules engine; stats only

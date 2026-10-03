@@ -11,7 +11,7 @@
 // cream in every theme (cards are paper); the table is the theme's felt.
 //
 // Rank and suit glyphs: DejaVu Sans Condensed Bold / DejaVu Sans via
-// lv_font_conv, card_font_{12,16,20,26,34,46}.c; the back's "B" is DejaVu
+// lv_font_conv, card_font_{10,12,16,20,26,34,46}.c; the back's "B" is DejaVu
 // Serif Bold, card_b_font_*.c (THIRD_PARTY_NOTICES.md).
 #pragma once
 
@@ -65,7 +65,8 @@ void back_screen(void (*back)());
 struct Launch {
     int16_t x, y;              // where the card starts (its pile)
     uint8_t card;              // the card that flies
-    uint8_t under;             // what that pile shows once it has left (0xFF = empty)
+    uint8_t under;             // what that pile shows once it has left (0xFF = an empty
+                               // pile outline, 0xFE = nothing: bare table)
 };
 void celebrate(const Launch* list, int n, int cw, int ch, void (*done)());
 void celebrate_stop();         // end it without calling `done` (game closing)

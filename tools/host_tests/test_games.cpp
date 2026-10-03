@@ -7,14 +7,17 @@
 #include "../../src/games/chess/chess_core.h"
 #include "../../src/games/cyddle/cyddle_core.h"
 #include "../../src/games/fourconnect/fourconnect_core.h"
+#include "../../src/games/golf/golf_core.h"
 #include "../../src/games/lightswitch/lightswitch_core.h"
 #include "../../src/games/mastercyd/mastercyd_core.h"
 #include "../../src/games/memory/memory_core.h"
 #include "../../src/games/minesweeper/minesweeper_core.h"
 #include "../../src/games/nonogram/nonogram_core.h"
 #include "../../src/games/pegs/pegs_core.h"
+#include "../../src/games/pyramid/pyramid_core.h"
 #include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
+#include "../../src/games/spider/spider_core.h"
 #include "../../src/games/solitaire/solitaire_core.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
 #include "../../src/games/twenty48/twenty48_core.h"
@@ -1035,6 +1038,144 @@ static void test_solitaire()
     delete gp;
 }
 
+static void test_golf()
+{
+    using namespace golf;
+    int wins = 0, best = 99;
+    for (uint32_t s = 1; s <= 200; ++s) {
+        Game g; g.deal(s * 977);
+        CHECK(g.left() == 35 && g.stock_n == 16 && g.waste_n == 1);
+        // greedy: play while possible (longest look: prefer a card whose
+        // column has another follow-up), else turn the stock
+        while (!g.won() && !g.stuck()) {
+            const int h = g.hint();
+            CHECK(h >= 0);
+            if (h == 7) CHECK(g.draw()); else CHECK(g.play(h));
+            int total = g.stock_n + g.waste_n + g.left();
+            CHECK(total == 52);
+        }
+        wins += g.won();
+        if (g.left() < best) best = g.left();
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf, sizeof buf) && h.left() == g.left() && h.log_n == g.log_n);
+        while (h.undo()) {}
+        Game f; f.deal(s * 977);
+        CHECK(memcmp(f.col, h.col, sizeof f.col) == 0 && h.stock_n == 16 && h.waste_n == 1);
+    }
+    // a King takes nothing; ranks don't wrap
+    Game k; k.deal(1);
+    k.waste[0] = 12;                                  // King of spades
+    k.col[0][4] = 0;                                  // Ace on top of column 0
+    k.col[1][4] = 11;                                 // Queen
+    CHECK(!k.can_play(0) && !k.can_play(1));
+    k.waste[0] = 0;                                   // an Ace on the waste
+    k.col[0][4] = 12;                                 // King
+    CHECK(!k.can_play(0));
+    k.col[2][4] = 1;                                  // a 2
+    CHECK(k.can_play(2));
+    printf("golf: greedy won %d of 200, best %d left\n", wins, best);
+}
+
+static void test_pyramid()
+{
+    using namespace pyramid;
+    CHECK(row_of(0) == 0 && row_of(1) == 1 && row_of(2) == 1 && row_of(27) == 6 && row_of(21) == 6);
+    int wins = 0;
+    for (uint32_t s = 1; s <= 200; ++s) {
+        Game g; g.deal(s * 7919);
+        CHECK(g.free(21) && g.free(27) && !g.free(0) && !g.free(15));
+        int guard = 0;
+        while (!g.won() && !g.stuck() && guard++ < 500) {
+            int a, b;
+            CHECK(g.hint(&a, &b));
+            if (a == -2) CHECK(g.draw()); else CHECK(g.pair(a, b));
+        }
+        wins += g.won();
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf, sizeof buf) && h.gone == g.gone && h.waste_n == g.waste_n);
+        if (g.log_n < kLog) {
+            while (g.undo()) {}
+            Game f; f.deal(s * 7919);
+            CHECK(g.gone == 0 && g.stock_n == 24 && g.waste_n == 0 && g.passes == 1 && memcmp(g.stock, f.stock, 24) == 0);
+        }
+    }
+    printf("pyramid: hint player won %d of 200\n", wins);
+}
+
+static int spider_count(const spider::Game& g)
+{
+    int t = g.stock_n + 13 * g.done;
+    for (int c = 0; c < spider::kCols; ++c) t += g.n[c];
+    return t;
+}
+
+static void test_spider()
+{
+    using namespace spider;
+    Game* gp = new Game();
+    Game& g = *gp;
+    g.deal(99, 0);
+    CHECK(spider_count(g) == 104 && g.stock_n == 50 && g.n[0] == 6 && g.n[9] == 5 && g.first_up(0) == 5);
+    // One suit: every card a spade
+    for (int c = 0; c < kCols; ++c) for (int i = 0; i < g.n[c]; ++i) CHECK(suit(g.col[c][i]) == 0);
+    // Four suits: 8 of each rank, 26 of each suit
+    g.deal(99, 2);
+    int per_suit[4] = {};
+    for (int c = 0; c < kCols; ++c) for (int i = 0; i < g.n[c]; ++i) ++per_suit[suit(g.col[c][i])];
+    for (int i = 0; i < g.stock_n; ++i) ++per_suit[suit(g.stock[i])];
+    CHECK(per_suit[0] == 26 && per_suit[1] == 26 && per_suit[2] == 26 && per_suit[3] == 26);
+    // A full run comes off by itself, and undo puts it back
+    g.deal(5, 0);
+    for (int c = 0; c < kCols; ++c) g.n[c] = 0;
+    g.col[0][0] = uint8_t(0 | kDown); g.col[0][1] = 3; g.n[0] = 2;               // hidden A, then a 4
+    for (int r = 13; r >= 2; --r) g.col[1][g.n[1]++] = uint8_t(r - 1);          // K..2 of spades
+    g.col[2][0] = 0; g.n[2] = 1;                                                 // an Ace
+    for (int c = 3; c < kCols; ++c) { g.col[c][0] = 5; g.n[c] = 1; }
+    g.stock_n = 0;
+    const int score0 = g.score;
+    CHECK(g.can_move(2, 0, 1) && g.move(2, 0, 1));
+    CHECK(g.done == 1 && g.n[1] == 0 && g.score == score0 - 1 + 100);
+    CHECK(g.undo() && g.done == 0 && g.n[1] == 12 && g.n[2] == 1 && g.score == score0);
+    // can't deal with an empty column; moving the 4 turns up the Ace
+    g.n[2] = 0;
+    g.stock_n = 10;
+    CHECK(!g.can_deal());
+    CHECK(g.move(0, 1, 2) && up(g.col[0][0]) && g.undo() && !up(g.col[0][0]));
+    // Many deals with the hint player: no card lost, undo all the way back
+    int won = 0;
+    for (uint32_t s = 1; s <= 30; ++s) {
+        g.deal(s * 2246822519u, 0);
+        for (int step = 0; step < 400 && !g.won(); ++step) {
+            int f, i, to;
+            if (!g.hint(&f, &i, &to)) break;
+            if (f < 0) CHECK(g.deal_row()); else CHECK(g.move(f, i, to));
+            CHECK(spider_count(g) == 104);
+        }
+        won += g.won();
+        uint8_t* buf = new uint8_t[Game::kSaveBytes];
+        CHECK(g.serialize(buf, Game::kSaveBytes) == Game::kSaveBytes);
+        Game* r = new Game();
+        CHECK(r->deserialize(buf, Game::kSaveBytes) && r->done == g.done && r->score == g.score && r->stock_n == g.stock_n);
+        delete r;
+        delete[] buf;
+        if (g.log_n < kLog) {
+            while (g.undo()) {}
+            Game* f = new Game();
+            f->deal(g.seed, 0);
+            bool same = f->stock_n == g.stock_n && g.score == 500 && g.done == 0;
+            for (int c = 0; c < kCols; ++c) same &= f->n[c] == g.n[c] && memcmp(f->col[c], g.col[c], g.n[c]) == 0;
+            CHECK(same);
+            delete f;
+        }
+    }
+    printf("spider: hint player won %d of 30 one-suit deals\n", won);
+    delete gp;
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -1093,6 +1234,9 @@ int main()
     test_memory();
     test_nonogram();
     test_solitaire();
+    test_golf();
+    test_pyramid();
+    test_spider();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;
