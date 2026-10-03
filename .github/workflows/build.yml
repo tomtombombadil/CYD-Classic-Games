@@ -1,0 +1,163 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  # "Run workflow" button on the Actions tab. Fill in a tag (e.g. v0.2.0)
+  # to publish a release from the current main; leave empty for a plain build.
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to create, e.g. v0.2.0 (hyphen = pre-release). Leave empty to just build.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  # Board list comes from platformio.ini: every env with custom_firmware_name.
+  boards:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import configparser, json
+          c = configparser.ConfigParser(interpolation=None, strict=False)
+          c.read("platformio.ini", encoding="utf-8")
+          inc = [{"env": s[4:], "name": c[s]["custom_firmware_name"]}
+                 for s in c.sections()
+                 if s.startswith("env:") and c[s].get("custom_firmware_name")]
+          print("matrix=" + json.dumps({"include": inc}))
+          EOF
+      - id: ver
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          if [[ -n "$RELEASE_TAG" ]]; then
+            if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "::error::release_tag must look like v1.2.3 or v1.2.3-beta.1"; exit 1
+            fi
+            echo "version=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=dev-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Game rules, generators and AI, compiled and run on the CI machine
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sudoku
+        run: |
+          S=src/games/sudoku
+          g++ -std=c++17 -O1 -Wall -Werror -fsanitize=address,undefined -o test_sudoku tools/host_tests/test_sudoku.cpp $S/sudoku_core.cpp $S/sudoku_grader.cpp
+          g++ -std=c++17 -O1 -Wall -Werror -fsanitize=address,undefined -o test_game tools/host_tests/test_game.cpp $S/sudoku_game.cpp $S/sudoku_core.cpp $S/sudoku_grader.cpp
+          g++ -std=c++17 -O1 -Wall -Werror -fsanitize=address,undefined -o test_stats tools/host_tests/test_stats.cpp $S/sudoku_stats.cpp $S/sudoku_core.cpp $S/sudoku_grader.cpp
+          ./test_sudoku
+          ./test_game
+          ./test_stats
+
+  build:
+    needs: [boards, tests]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.boards.outputs.matrix) }}
+    name: build (${{ matrix.name }})
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-${{ hashFiles('platformio.ini') }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PlatformIO
+        run: python -m pip install --upgrade platformio
+
+      - name: Build
+        env:
+          PLATFORMIO_BUILD_SRC_FLAGS: -D CYD_GAMES_VERSION=\"${{ needs.boards.outputs.version }}\"
+        run: pio run -e ${{ matrix.env }}
+
+      - name: Name firmware
+        run: |
+          mkdir -p out
+          cp .pio/build/${{ matrix.env }}/firmware.factory.bin "out/${{ matrix.name }}.bin"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fw-${{ matrix.env }}
+          path: out/*.bin
+
+  # Tag pushes, or "Run workflow" with a release_tag, become a GitHub
+  # release. Tags with a hyphen (v0.1.0-alpha.1) are marked pre-release.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
+    needs: [boards, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          # Creates the tag on this commit when started from "Run workflow"
+          tag_name: ${{ needs.boards.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          files: out/*.bin
+          prerelease: ${{ contains(needs.boards.outputs.version, '-') }}
+          generate_release_notes: true
+          body: |
+            **Easiest install:** https://tomtombombadil.github.io/CYD-Classic-Games/ (Chrome or Edge).
+
+            Or download the `.bin` for your board and flash it at address **0x0**.
+            Files are named by screen size, display driver and touch type.
+
+  # Web flasher on GitHub Pages: every push to main and every release.
+  # Tom tests new builds by flashing them from here (his choice).
+  pages:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [boards, build]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: bins
+          merge-multiple: true
+      - name: Assemble site
+        run: python3 tools/make_site.py --bins bins --version "${{ needs.boards.outputs.version }}" --out _site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4

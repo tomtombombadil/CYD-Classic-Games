@@ -1,0 +1,13 @@
+// The game list. One line per game, in picker order within its category.
+// Read by src/games/registry.cpp (C++) and tools/make_site.py (web page),
+// so nothing else hard-codes the list.
+//
+// GAME(id, "Title", Category, modes, "one-line description")
+//   id        folder src/games/<id>/, save /games/<id>.bin, stats <id>.csv;
+//             the game defines `extern const games::GameOps <id>_ops`
+//   Category  Puzzles, Strategy, Word or Dice
+//   modes     kSolo, kVsComputer, kPassAndPlay, kNetwork (or-ed)
+//
+// Keep each entry on one line (make_site.py reads it with a regex).
+
+GAME(sudoku, "Sudoku", Puzzles, kSolo, "9x9 with notes and hints; four levels graded by solving technique")

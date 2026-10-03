@@ -1,0 +1,15 @@
+// Preview only: a long game list to check picker paging. Entries other than
+// sudoku reuse Sudoku's ops (see paging_ops.cpp); nothing here ships.
+GAME(sudoku, "Sudoku", Puzzles, kSolo, "")
+GAME(fake_a, "Minesweeper", Puzzles, kSolo, "")
+GAME(fake_b, "Lights Out", Puzzles, kSolo, "")
+GAME(fake_c, "Sliding Tiles", Puzzles, kSolo, "")
+GAME(fake_d, "Peg Solitaire", Puzzles, kSolo, "")
+GAME(fake_e, "Chess", Strategy, kVsComputer, "")
+GAME(fake_f, "Checkers", Strategy, kVsComputer, "")
+GAME(fake_g, "Othello", Strategy, kVsComputer, "")
+GAME(fake_h, "Four in a Row", Strategy, kVsComputer, "")
+GAME(fake_i, "Nine Men's Morris", Strategy, kVsComputer, "")
+GAME(fake_j, "Word Guess", Word, kSolo, "")
+GAME(fake_k, "Five Dice", Dice, kSolo, "")
+GAME(fake_l, "Farkle", Dice, kSolo, "")

@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CYD Classic Games – Install</title>
+<meta name="description" content="Install CYD Classic Games on an ESP32 Cheap Yellow Display straight from your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;700&display=swap" rel="stylesheet">
+<script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
+<style>
+  :root {
+    --mask:   #E3B53A;   /* solder-mask yellow */
+    --mask-d: #C99A1F;
+    --copper: #A8642A;
+    --ink:    #222833;
+    --muted:  #5B6472;
+    --paper:  #F4F5F2;
+    --card:   #FFFFFF;
+    --line:   #D4D8DD;
+    --ok:     #2F7A4B;
+    --warn-bg:#FFF1CC;
+    --focus:  #1F5FBF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:    #E9EBEE;
+      --muted:  #A3ABB7;
+      --paper:  #1A1F27;
+      --card:   #222833;
+      --line:   #384050;
+      --copper: #D08A4B;
+      --ok:     #6CC48F;
+      --warn-bg:#3A3220;
+      --focus:  #8AB4F8;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 17px/1.55 "Barlow", system-ui, sans-serif;
+  }
+  a { color: var(--copper); text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---- Hero: the yellow board ---- */
+  header.hero {
+    background: var(--mask);
+    color: #1E1B12;
+    border-bottom: 6px solid var(--mask-d);
+  }
+  .hero .wrap {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 28px;
+    align-items: center;
+    padding-top: 44px;
+    padding-bottom: 40px;
+  }
+  .hero h1 {
+    font: 700 clamp(2.4rem, 7vw, 3.6rem)/0.98 "Barlow Condensed", sans-serif;
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+  .hero p { margin: 0; max-width: 34ch; font-size: 1.08rem; }
+  .hero .ver { margin-top: 14px; font-size: 0.92rem; opacity: 0.8; max-width: none; }
+
+  /* A 3x3 Sudoku box (the first game): given digits in ink, one pencil-mark cell in copper */
+  .box {
+    display: grid;
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(3, 44px);
+    border: 3px solid #1E1B12;
+    background: #FFFDF5;
+    width: max-content;
+    justify-self: start;
+  }
+  .box span {
+    display: grid; place-items: center;
+    border: 1px solid #B9AE8C;
+    font: 600 1.45rem "Barlow Condensed", sans-serif;
+    color: #1E1B12;
+  }
+  .box .sel { background: #FBE7A6; }
+  .box .notes {
+    font: 500 0.62rem/1 "Barlow", sans-serif;
+    color: #8A5320;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 5px;
+    gap: 1px;
+    place-items: center;
+  }
+  @media (max-width: 560px) {
+    .hero .wrap { grid-template-columns: 1fr; }
+    .box { grid-template-columns: repeat(3, 34px); grid-template-rows: repeat(3, 34px); }
+    .box span { font-size: 1.15rem; }
+  }
+
+  main { padding: 36px 0 56px; }
+  h2 {
+    font: 700 1.9rem/1.1 "Barlow Condensed", sans-serif;
+    margin: 44px 0 14px;
+  }
+  h2:first-child { margin-top: 0; }
+
+  /* ---- Steps: a real sequence, so numbered ---- */
+  ol.steps { list-style: none; padding: 0; margin: 0; counter-reset: s; }
+  ol.steps > li {
+    counter-increment: s;
+    position: relative;
+    padding: 0 0 18px 46px;
+  }
+  ol.steps > li::before {
+    content: counter(s);
+    position: absolute; left: 0; top: 0;
+    width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--ink); color: var(--paper);
+    font: 700 1rem "Barlow Condensed", sans-serif;
+  }
+  ol.steps strong { font-weight: 600; }
+
+  .notice {
+    background: var(--warn-bg);
+    border-left: 4px solid var(--mask-d);
+    padding: 12px 16px;
+    margin: 0 0 22px;
+  }
+  .notice[hidden] { display: none; }
+
+  /* ---- Board list: size numeral is the anchor of each row ---- */
+  .boards { border-top: 2px solid var(--ink); }
+  .board {
+    display: grid;
+    grid-template-columns: 5.2rem 1fr auto;
+    gap: 6px 18px;
+    align-items: start;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .size {
+    font: 700 2.6rem/0.9 "Barlow Condensed", sans-serif;
+    color: var(--copper);
+  }
+  .board h3 { margin: 0; font: 600 1.15rem/1.3 "Barlow", sans-serif; }
+  .board .hint { margin: 4px 0 0; color: var(--muted); font-size: 0.97rem; }
+  .board .untested {
+    display: table; margin: 6px 0 0; padding: 2px 8px;
+    border: 1px solid var(--copper); border-radius: 4px;
+    color: var(--copper); font-size: 0.9rem;
+  }
+  .board .dl { font-size: 0.9rem; margin-top: 6px; display: inline-block; }
+  .actions { align-self: center; }
+
+  .install {
+    appearance: none;
+    border: 0;
+    border-radius: 6px;
+    background: var(--mask);
+    color: #1E1B12;
+    font: 600 1rem "Barlow", sans-serif;
+    padding: 12px 20px;
+    min-height: 46px;
+    cursor: pointer;
+    box-shadow: inset 0 -3px 0 var(--mask-d);
+  }
+  .install:hover { background: #EBC24E; }
+  .unsupported { color: var(--muted); font-size: 0.9rem; max-width: 14ch; display: block; }
+
+  @media (max-width: 560px) {
+    .board { grid-template-columns: 4rem 1fr; }
+    .actions { grid-column: 1 / -1; }
+    .install { width: 100%; }
+  }
+
+  .after li { margin-bottom: 8px; }
+
+  /* ---- Game list ---- */
+  ul.games { list-style: none; padding: 0; margin: 0; border-top: 2px solid var(--ink); }
+  ul.games li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  ul.games strong { font: 700 1.3rem/1.2 "Barlow Condensed", sans-serif; }
+  ul.games .cat {
+    justify-self: start; align-self: center;
+    padding: 1px 8px; border-radius: 4px;
+    background: var(--mask); color: #1E1B12; font-size: 0.85rem;
+  }
+  ul.games .blurb { grid-column: 1 / -1; color: var(--muted); }
+  footer { color: var(--muted); font-size: 0.92rem; padding: 0 0 40px; }
+  .loading { color: var(--muted); padding: 18px 0; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Classic games for your Cheap Yellow Display</h1>
+      <p>Install CYD Classic Games on an ESP32 display board straight from this page. No software to set up.</p>
+      <p class="ver" id="ver">&nbsp;</p>
+    </div>
+    <div class="box" aria-hidden="true">
+      <span>5</span><span></span><span>9</span>
+      <span></span><span class="sel">7</span><span class="notes"><i>1</i><i></i><i>3</i><i></i><i></i><i>6</i><i></i><i>8</i><i></i></span>
+      <span>2</span><span></span><span>4</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <h2>Install</h2>
+  <p class="notice" id="no-serial" hidden>
+    This browser can't talk to USB devices. Open this page in <strong>Chrome</strong> or <strong>Edge</strong> on a computer to install.
+  </p>
+  <ol class="steps">
+    <li><strong>Plug the board into your computer</strong> with a USB cable that carries data (some charge-only cables don't).</li>
+    <li><strong>Find your board below and click Install.</strong> Pick the serial port that appears. If none appears on Windows, install the <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html" target="_blank" rel="noopener">CH340 USB driver</a> and try again.</li>
+    <li><strong>Wait for "Installation complete",</strong> then press the board's reset button (or unplug and replug it).</li>
+  </ol>
+
+  <h2>Games</h2>
+  <p>Pick a game on the board's start screen; it reopens your last game in one tap.</p>
+  <ul class="games" id="games"><li class="loading">Loading games…</li></ul>
+
+  <h2>Choose your board</h2>
+  <p>Boards are identified by screen size, display driver and touch type. Check the text printed on the back of the board.</p>
+  <div class="boards" id="boards"><p class="loading">Loading boards…</p></div>
+
+  <h2>After installing</h2>
+  <ul class="after">
+    <li><strong>Touch calibration</strong> runs on first start: tap the tip of each corner arrow. To redo it later, hold the <strong>BOOT</strong> button while powering on.</li>
+    <li><strong>Colors look wrong?</strong> Tap <strong>Invert</strong> if the background is light or colors look like a negative, and <strong>Swap R/B</strong> if the red and blue bars are swapped. The board remembers the fix.</li>
+    <li><strong>Blank or garbled screen on a 2.8" board?</strong> It probably has the other display driver. Install the other 2.8" version.</li>
+  </ul>
+</main>
+
+<footer class="wrap">
+  <p>CYD Classic Games is open source under the MIT license. <a href="https://github.com/tomtombombadil/CYD-Classic-Games">Source code</a> and <a href="https://github.com/tomtombombadil/CYD-Classic-Games/releases">all releases</a> are on GitHub.</p>
+</footer>
+
+<script>
+  if (!("serial" in navigator)) document.getElementById("no-serial").hidden = false;
+
+  function el(tag, attrs = {}, ...kids) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === "class") e.className = v; else e.setAttribute(k, v);
+    }
+    for (const k of kids) e.append(k);
+    return e;
+  }
+
+  function row(b) {
+    // "3.2\" ST7789 Resistive" -> size "3.2", rest "ST7789 Resistive"
+    const m = b.title.match(/^([\d.]+)"\s*(.*)$/);
+    const size = m ? m[1] : "";
+    const rest = m ? m[2] : b.title;
+
+    const btn = el("esp-web-install-button", { manifest: `manifests/${b.name}.json` });
+    const activate = el("button", { class: "install", slot: "activate", type: "button" }, "Install");
+    const unsup = el("span", { class: "unsupported", slot: "unsupported" }, "Needs Chrome or Edge");
+    const notAllowed = el("span", { class: "unsupported", slot: "not-allowed" }, "Needs a secure (https) page");
+    btn.append(activate, unsup, notAllowed);
+
+    const kb = Math.round(b.size / 1024);
+    return el("div", { class: "board" },
+      el("div", { class: "size", "aria-hidden": "true" }, size),
+      el("div", {},
+        el("h3", {}, `${size}" ${rest}`),
+        el("p", { class: "hint" }, b.hint),
+        ...(b.tested === false
+          ? [el("p", { class: "untested" }, "Not yet tested on this board. Please ",
+                el("a", { href: "https://github.com/tomtombombadil/CYD-Classic-Games/issues" }, "tell us"),
+                " if it works or not.")]
+          : []),
+        el("a", { class: "dl", href: `firmware/${b.file}`, download: b.file }, `Download ${b.file} (${kb} KB, flash at 0x0)`)),
+      el("div", { class: "actions" }, btn));
+  }
+
+  fetch("boards.json", { cache: "no-store" })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(data => {
+      document.getElementById("ver").textContent = `Firmware ${data.version}, built ${data.built}`;
+      const list = document.getElementById("boards");
+      list.replaceChildren(...data.boards.map(row));
+      const games = data.games || [];
+      document.getElementById("games").replaceChildren(...games.map(g =>
+        el("li", {}, el("strong", {}, g.title), el("span", { class: "cat" }, g.category), el("span", { class: "blurb" }, g.blurb))));
+    })
+    .catch(() => {
+      document.getElementById("games").replaceChildren();
+      document.getElementById("boards").replaceChildren(
+        el("p", { class: "loading" }, "The board list didn't load. Refresh the page; if it still fails, download firmware from the releases page below."));
+    });
+</script>
+</body>
+</html>
