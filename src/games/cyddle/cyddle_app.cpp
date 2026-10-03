@@ -126,11 +126,12 @@ void update_status()
     kit::top_bar_status(bar, s);
 }
 
-void record(bool solved)
+void record(bool solved, bool lost = false)
 {
     puzzle::Record r;
     r.level = S->g.level;
     r.solved = solved;
+    r.lost = lost;
     r.moves = S->g.rows;
     r.seconds = S->seconds;
     kit::record_solo(kId, r, kLevels);
@@ -168,7 +169,7 @@ void key(char c)
             case Submit::Ok:
                 if (g.over() && !S->recorded) {
                     S->recorded = 1;
-                    record(g.solved());
+                    record(g.solved(), !g.solved());   // out of guesses = Lost
                     if (g.solved()) { sound(Sound::Win); kit::flash(); }
                     else sound(Sound::Lose);
                 } else {

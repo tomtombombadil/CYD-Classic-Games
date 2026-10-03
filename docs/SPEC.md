@@ -134,7 +134,7 @@ Chinese checkers, Dots and Boxes (thin tap targets).
    square" board UI, AI task on core 0, pass-and-play. Then CYD-dle and
    Yaht-CYD (from stage 6). *Built 2026-10-02, waiting for hardware
    testing.*
-4. **More puzzles:** Minesweeper, Nonograms, MasterCYD, Memory Match,
+4. **More puzzles:** Minesweeper (*built 2026-10-03*), Nonograms, MasterCYD, Memory Match,
    2048, Peg Solitaire. (Tom, 2026-10-02: more games before wireless.)
 5. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,
    Checkers, Chess.

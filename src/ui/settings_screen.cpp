@@ -24,9 +24,11 @@ void brightness_cb(lv_event_t* e)
     if (lv_event_get_code(e) == LV_EVENT_RELEASED) save_settings();
 }
 
-// Volume: 0..100 %, 0 = silent ("Muted"). A tap left of the track lands on
-// 0. On release it plays one sound at the new level and saves.
+// Volume: 0..100 %, 0 = silent ("Muted"). A tap anywhere left of the track
+// (the "Volume" label included) lands on 0. On release it plays one sound at
+// the new level and saves.
 lv_obj_t* volume_label = nullptr;
+lv_obj_t* volume_slider = nullptr;
 
 void volume_text() { if (volume_label) lv_label_set_text(volume_label, settings().volume ? "Volume" : "Muted"); }
 
@@ -39,6 +41,14 @@ void volume_cb(lv_event_t* e)
         save_settings();
         sound(Sound::Place);
     }
+}
+
+void volume_mute_cb(lv_event_t*)
+{
+    settings().volume = 0;
+    if (volume_slider) lv_slider_set_value(volume_slider, 0, LV_ANIM_OFF);
+    volume_text();
+    save_settings();
 }
 
 // One row: label (fixed width, so the sliders line up) and a slider
@@ -210,7 +220,7 @@ void settings_reopen() { settings_open(back_fn); }
 
 void settings_open(void (*back)())
 {
-    volume_label = nullptr;
+    volume_label = volume_slider = nullptr;
     back_fn = back;
     const Shell& H = shell();
     const UiSettings& S = settings();
@@ -221,7 +231,9 @@ void settings_open(void (*back)())
     lv_point_t sz;
     lv_text_get_size(&sz, "Brightness", menu_font(), 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
     slider_row("Brightness", sz.x, kMinBrightness, 255, S.brightness, brightness_cb, nullptr);
-    slider_row("Volume", sz.x, 0, 100, S.volume, volume_cb, &volume_label);
+    volume_slider = slider_row("Volume", sz.x, 0, 100, S.volume, volume_cb, &volume_label);
+    lv_obj_set_clickable(volume_label, true);   // tap the label = mute
+    lv_obj_add_event_cb(volume_label, volume_mute_cb, LV_EVENT_CLICKED, nullptr);
     volume_text();
 
     // Full width: "Swap Red/Blue" doesn't fit half a row at the menu font.

@@ -64,7 +64,10 @@ void menu_solo(const char* title, const char* const levels[3], const MenuHandler
 
 // ---- Stats --------------------------------------------------------------------------------
 void stats_two_player(const char* game_id, const twoplayer::Sides& sides, void (*back)());
-void stats_solo(const char* game_id, const char* const levels[3], void (*back)());
+// win_loss: columns Level | Won | Lost | Best time (games you can lose, like
+// Minesweeper) instead of Level | Solved | Best | Moves.
+void stats_solo(const char* game_id, const char* const levels[3], void (*back)(),
+                bool win_loss = false);
 
 // Record a finished game through the shell's stats store
 void record_two_player(const char* game_id, const twoplayer::Record& r, const twoplayer::Sides& s);

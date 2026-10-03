@@ -99,7 +99,11 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   outline), CYD-dle (word lists built by `tools/make_words.py` from
   `assets/words/`: ENABLE2K guesses, SCOWL-35 answers minus
   `blocklist.txt`/`answers_exclude.txt`; Easy 7 / Normal 6 / Hard must use
-  hints), Yaht-CYD (official joker rules; boxes "Run of 4"/"Run of 5" so
+  hints; out of guesses = "Lost" in stats), Minesweeper (8x10/10,
+  9x11/15, 10x11/20; mines placed on the first tap; generator retries until
+  a logic solver clears the board - never a guess; long-press flags; no
+  Restart; stats Won/Lost via `stats_solo(..., win_loss)`; puzzle CSV
+  result "Lost" added), Yaht-CYD (official joker rules; boxes "Run of 4"/"Run of 5" so
   the card fits). Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
   view: tap, long-press peek, target dots).
@@ -176,7 +180,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 - Sound: the CYD speaker connector (GPIO26 via the board's amp) plays short
   tones through `ui::sound()` (`src/ui/sound.h`, device driver
   `src/hal/speaker.*`). Settings has a **Volume slider** like Brightness
-  (Tom, 2026-10-02): 0-100 %, tapping left of the track = 0 % = muted
+  (Tom, 2026-10-02): 0-100 %, tapping left of the track or the "Volume" label
+  = 0 % = muted
   (label shows "Muted"), **default 50 %** (100 % distorts tiny speakers).
   Volume = PWM duty (amplitude (v/100)^2, 100 % = 50 % duty). Stored in
   UIS2 byte 8 as volume+1; 0 = unset -> 50 %, old "sound off" 1 -> 0 %.

@@ -81,6 +81,7 @@ void (*stats_back)() = nullptr;
 void (*stats_reopen)() = nullptr;
 twoplayer::Sides stats_sides{};
 const char* const* stats_levels = nullptr;
+bool stats_win_loss = false;
 
 void stats_back_cb(lv_event_t*) { if (stats_back) stats_back(); }
 
@@ -131,7 +132,7 @@ void pz_line(const char* line, void* ctx)
 }
 
 void reopen_two_player() { stats_two_player(stats_id, stats_sides, stats_back); }
-void reopen_solo()       { stats_solo(stats_id, stats_levels, stats_back); }
+void reopen_solo()       { stats_solo(stats_id, stats_levels, stats_back, stats_win_loss); }
 
 } // namespace
 
@@ -292,9 +293,10 @@ void stats_two_player(const char* game_id, const twoplayer::Sides& sides, void (
     stats_bottom(ok && sum.total > 0);
 }
 
-void stats_solo(const char* game_id, const char* const levels[3], void (*back)())
+void stats_solo(const char* game_id, const char* const levels[3], void (*back)(), bool win_loss)
 {
     stats_id = game_id;
+    stats_win_loss = win_loss;
     stats_levels = levels;
     stats_back = back;
     stats_reopen = reopen_solo;
@@ -309,7 +311,7 @@ void stats_solo(const char* game_id, const char* const levels[3], void (*back)()
     static const int8_t pct[4] = {24, 24, 28, 24};
     static const int8_t pct_recent[4] = {27, 23, 22, 28};
     if (!ok || sum.total == 0) {
-        overlay_text("No games recorded yet. Solved games, and games you leave "
+        overlay_text("No games recorded yet. Finished games, and games you leave "
                      "for a new one, are listed here.", false);
     } else {
         static Table t;
@@ -319,9 +321,17 @@ void stats_solo(const char* game_id, const char* const levels[3], void (*back)()
             snprintf(n, sizeof n, "%lu", (unsigned long)sum.solved[l]);
             if (sum.best_s[l]) twoplayer::format_time(bt, sizeof bt, sum.best_s[l]);
             if (sum.best_moves[l]) snprintf(bm, sizeof bm, "%lu", (unsigned long)sum.best_moves[l]);
-            table_add(t, levels[l], n, bt, bm);
+            if (win_loss) {
+                char lo[12];
+                snprintf(lo, sizeof lo, "%lu", (unsigned long)sum.lost[l]);
+                table_add(t, levels[l], n, lo, bt);
+            } else {
+                table_add(t, levels[l], n, bt, bm);
+            }
         }
-        const char* const head[4] = {"Level", "Solved", "Best", "Moves"};
+        const char* const head_wl[4] = {"Level", "Won", "Lost", "Best"};
+        const char* const head_sm[4] = {"Level", "Solved", "Best", "Moves"};
+        const char* const* head = win_loss ? head_wl : head_sm;
         table_show(t, head, pct, hf, bf);
 
         static Table rt;
@@ -332,7 +342,7 @@ void stats_solo(const char* game_id, const char* const levels[3], void (*back)()
             char tm[16], mv[12];
             twoplayer::format_time(tm, sizeof tm, r.seconds);
             snprintf(mv, sizeof mv, "%u", (unsigned)r.moves);
-            table_add(rt, levels[r.level < 3 ? r.level : 0], tm, mv, r.solved ? "Solved" : "Gave Up");
+            table_add(rt, levels[r.level < 3 ? r.level : 0], tm, mv, r.solved ? (win_loss ? "Won" : "Solved") : r.lost ? "Lost" : "Gave Up");
         }
         const char* const head2[4] = {"Recent", "Time", "Moves", ""};
         table_show(rt, head2, pct_recent, hf, hf);

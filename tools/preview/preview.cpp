@@ -16,6 +16,7 @@
 #include "games/common/puzzle_stats.h"
 #include "games/common/two_player.h"
 #include "games/lightswitch/lightswitch_core.h"
+#include "games/minesweeper/minesweeper_core.h"
 #include "games/registry.h"
 #include "games/checkers/checkers_core.h"
 #include "games/chess/chess_core.h"
@@ -587,6 +588,55 @@ int main(int argc, char** argv)
         ui::close_overlays();
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Minesweeper: Medium in progress (light), Hard lost (dark), Easy cleared
+        auto stage = [&](int level, int first, int stop_after, bool flags, bool lose, uint16_t secs) {
+            mines::Board b; b.start(level);
+            mines::Rng rng(17);
+            b.open(first, rng);
+            int opened = 0;
+            for (int i = 0; i < b.cells() && (stop_after < 0 || opened < stop_after); ++i)
+                if (!b.mine[i] && b.cell[i] == mines::Cell::Hidden) {
+                    int nb[8]; const int n = b.neighbors(i, nb);
+                    bool frontier = false;
+                    for (int k = 0; k < n; ++k) frontier |= b.cell[nb[k]] == mines::Cell::Open;
+                    if (frontier || stop_after < 0) { b.open(i, rng); ++opened; }
+                }
+            int flagged = 0, wrong = 0;
+            for (int i = 0; i < b.cells() && flags; ++i) {
+                if (b.cell[i] != mines::Cell::Hidden) continue;
+                int nb[8]; const int n = b.neighbors(i, nb);
+                bool frontier = false;
+                for (int k = 0; k < n; ++k) frontier |= b.cell[nb[k]] == mines::Cell::Open;
+                if (!frontier) continue;
+                if (b.mine[i] && flagged < 4) { b.toggle_flag(i); ++flagged; }
+                else if (!b.mine[i] && lose && wrong < 1) { b.toggle_flag(i); ++wrong; }
+            }
+            if (lose)
+                for (int i = 0; i < b.cells(); ++i)
+                    if (b.mine[i] && b.cell[i] == mines::Cell::Hidden) { b.open(i, rng); break; }
+            std::vector<uint8_t> buf(mines::Board::kSaveBytes + 6, 0);
+            b.serialize(buf.data(), buf.size());
+            buf[mines::Board::kSaveBytes + 1] = 1;                     // recorded
+            buf[mines::Board::kSaveBytes + 2] = uint8_t(secs); buf[mines::Board::kSaveBytes + 3] = uint8_t(secs >> 8);
+            save_game("minesweeper", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("minesweeper"));
+        };
+        stage(1, 45, 18, true, false, 107);
+        shot(out + "_light_32_minesweeper.ppm");
+        kit_preview_menu();
+        shot(out + "_light_33_minesweeper_menu.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        stage(2, 60, 12, true, true, 95);
+        shot(out + "_dark_32_minesweeper_lost.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        stage(0, 30, -1, false, false, 64);
+        shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
     }
 
     // 5. "All games": back to the picker, which now offers the last game

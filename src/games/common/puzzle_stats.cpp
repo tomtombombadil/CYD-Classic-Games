@@ -13,7 +13,7 @@ size_t format_body(char* buf, size_t cap, const Record& r, const char* const nam
     char t[16];
     twoplayer::format_time(t, sizeof t, r.seconds);
     const int n = snprintf(buf, cap, "%s,%s,%u,%lu,%s,%u\n", names[r.level < kLevels ? r.level : 0],
-                           r.solved ? "Solved" : "Gave up", (unsigned)r.moves,
+                           r.solved ? "Solved" : r.lost ? "Lost" : "Gave up", (unsigned)r.moves,
                            (unsigned long)r.seconds, t, (unsigned)r.par);
     return (n > 0 && size_t(n) < cap) ? size_t(n) : 0;
 }
@@ -32,6 +32,7 @@ bool parse_line(const char* line, Record& out, const char* const names[kLevels])
     Record r;
     if (strcmp(res, "Solved") == 0) r.solved = true;
     else if (strcmp(res, "Gave up") == 0) r.solved = false;
+    else if (strcmp(res, "Lost") == 0) { r.solved = false; r.lost = true; }
     else return false;
     r.level = static_cast<uint8_t>(l);
     r.moves = static_cast<uint16_t>(moves);
@@ -49,6 +50,8 @@ void Summary::add(const Record& r)
             ++solved[r.level];
             if (!best_s[r.level] || r.seconds < best_s[r.level]) best_s[r.level] = r.seconds;
             if (!best_moves[r.level] || r.moves < best_moves[r.level]) best_moves[r.level] = r.moves;
+        } else if (r.lost) {
+            ++lost[r.level];
         } else {
             ++gave_up[r.level];
         }

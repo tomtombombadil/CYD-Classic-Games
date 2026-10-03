@@ -8,6 +8,7 @@
 #include "../../src/games/cyddle/cyddle_core.h"
 #include "../../src/games/fourconnect/fourconnect_core.h"
 #include "../../src/games/lightswitch/lightswitch_core.h"
+#include "../../src/games/minesweeper/minesweeper_core.h"
 #include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
@@ -538,6 +539,83 @@ static void test_yahtcyd()
     CHECK(parse_line(full, rb) && rb.score == 245 && rb.yahts == 1 && !parse_line(kCsvHeader, rb));
 }
 
+static void test_minesweeper()
+{
+    using namespace mines;
+    // Every level: first tap opens an area, the board is logic-solvable, and
+    // a solver-driven play wins it.
+    int failed_boards = 0;
+    double worst_ms = 0;
+    for (int level = 0; level < kLevels; ++level) {
+        for (uint32_t seed = 1; seed <= 60; ++seed) {
+            Board b;
+            b.start(level);
+            Rng rng(seed * 7919u);
+            const int first = int(seed % uint32_t(b.cells()));
+            const auto t0 = std::chrono::steady_clock::now();
+            CHECK(b.open(first, rng));
+            const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+            if (ms > worst_ms) worst_ms = ms;
+            int count = 0;
+            for (int i = 0; i < b.cells(); ++i) count += b.mine[i];
+            CHECK(count == b.mines);
+            CHECK(!b.mine[first] && b.near[first] == 0);
+            CHECK(b.status == Status::Playing);
+            if (!solvable(b, first)) ++failed_boards;
+            // Win by opening every safe cell
+            for (int i = 0; i < b.cells(); ++i) if (!b.mine[i]) b.open(i, rng);
+            CHECK(b.status == Status::Won);
+            CHECK(b.mines_left() == 0);          // mines flagged on a win
+        }
+    }
+    printf("minesweeper: %d of 180 boards needed a guess, worst generate %.1f ms\n", failed_boards, worst_ms);
+    CHECK(failed_boards == 0);
+
+    // Hitting a mine loses; flags block taps; chord opens the rest
+    Board b;
+    b.start(0);
+    Rng rng(42);
+    CHECK(b.open(0, rng));
+    int mine_at = -1;
+    for (int i = 0; i < b.cells(); ++i) if (b.mine[i] && b.cell[i] == Cell::Hidden) { mine_at = i; break; }
+    CHECK(mine_at >= 0);
+    b.toggle_flag(mine_at);
+    CHECK(b.cell[mine_at] == Cell::Flag && b.mines_left() == b.mines - 1);
+    CHECK(!b.open(mine_at, rng));            // flagged: nothing happens
+    // Save / load round trip mid-game
+    uint8_t buf[Board::kSaveBytes];
+    CHECK(b.serialize(buf, sizeof buf) == Board::kSaveBytes);
+    Board c;
+    CHECK(c.deserialize(buf, sizeof buf));
+    CHECK(c.level == 0 && c.cell[mine_at] == Cell::Flag && c.moves == b.moves);
+    CHECK(memcmp(c.near, b.near, sizeof b.near) == 0);
+    buf[0] = 'X';
+    CHECK(!c.deserialize(buf, sizeof buf));
+    b.toggle_flag(mine_at);
+    CHECK(b.open(mine_at, rng));
+    CHECK(b.status == Status::Lost && b.boom == mine_at);
+
+    // Chord: flag all mines around an open number, tap it
+    Board d;
+    d.start(1);
+    Rng r2(5);
+    d.open(40, r2);
+    bool chorded = false;
+    int nb[8];
+    for (int i = 0; i < d.cells() && !chorded; ++i) {
+        if (d.cell[i] != Cell::Open || !d.near[i]) continue;
+        const int n = d.neighbors(i, nb);
+        int hidden_safe = 0;
+        for (int k = 0; k < n; ++k) hidden_safe += !d.mine[nb[k]] && d.cell[nb[k]] == Cell::Hidden;
+        if (!hidden_safe) continue;
+        for (int k = 0; k < n; ++k) if (d.mine[nb[k]] && d.cell[nb[k]] == Cell::Hidden) d.toggle_flag(nb[k]);
+        CHECK(d.open(i, r2));
+        for (int k = 0; k < n; ++k) CHECK(d.mine[nb[k]] ? d.cell[nb[k]] == Cell::Flag : d.cell[nb[k]] == Cell::Open);
+        chorded = true;
+    }
+    CHECK(chorded);
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -569,6 +647,13 @@ static void test_stats()
     CHECK(puzzle::parse_line(full, qb, names) && qb.level == 1 && qb.moves == 112 && qb.solved);
     puzzle::Summary ps; ps.add(q);
     CHECK(ps.solved[1] == 1 && ps.best_s[1] == 185 && ps.newest(0).moves == 112);
+    puzzle::Record lr; lr.level = 2; lr.solved = false; lr.lost = true; lr.moves = 7; lr.seconds = 40;
+    CHECK(puzzle::format_body(line, sizeof line, lr, names));
+    CHECK(strcmp(line, "5x5,Lost,7,40,0:40,0\n") == 0);
+    snprintf(full, sizeof full, "4,%s", line);
+    CHECK(puzzle::parse_line(full, qb, names) && !qb.solved && qb.lost);
+    ps.add(qb);
+    CHECK(ps.lost[2] == 1 && ps.gave_up[2] == 0);
 }
 
 int main()
@@ -582,6 +667,7 @@ int main()
     test_chess();
     test_cyddle();
     test_yahtcyd();
+    test_minesweeper();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

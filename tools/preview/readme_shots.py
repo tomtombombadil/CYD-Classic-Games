@@ -24,6 +24,7 @@ SHOTS = {
     "s_light_29_cyddle": "small_cyddle",
     "s_light_30_yahtcyd": "small_yahtcyd",
     "s_light_13_sliding": "small_sliding",
+    "s_light_32_minesweeper": "small_minesweeper",
     "s_light_15_lightswitch": "small_lightswitch",
     "s_dark_0_settings": "small_settings_dark",
     "s_custom_0_editor": "small_theme_editor",
@@ -34,6 +35,7 @@ SHOTS = {
     "l_dark_30_yahtcyd": "large_yahtcyd_dark",
     "l_light_18_twoplayer_menu": "large_twoplayer_menu",
     "l_dark_23_reversi": "large_reversi_dark",
+    "l_dark_32_minesweeper_lost": "large_minesweeper_dark",
 }
 
 src = pathlib.Path(sys.argv[1])

@@ -10,9 +10,9 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Ten games so far: **Sudoku** (from
+> under way. Eleven games so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
-> **Light Switch**, **Sliding Tiles**, **FourConnect**, **Tic-Tac-Toe**,
+> **Light Switch**, **Sliding Tiles**, **Minesweeper**, **FourConnect**, **Tic-Tac-Toe**,
 > **Reversi**, **Checkers**, **Chess**, **CYD-dle** and **Yaht-CYD**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
@@ -23,7 +23,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a long-press showing where a piece can
 go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, CYD-dle, Yaht-CYD,
-Sliding Tiles, Light Switch, Settings and the custom theme editor.
+Minesweeper, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
 <img src="docs/screenshots/small_picker_light.png" width="240" alt="Game picker: Continue card and categories">
@@ -38,6 +38,7 @@ Sliding Tiles, Light Switch, Settings and the custom theme editor.
 <img src="docs/screenshots/small_tictactoe.png" width="240" alt="Tic-Tac-Toe">
 <img src="docs/screenshots/small_cyddle.png" width="240" alt="CYD-dle word game">
 <img src="docs/screenshots/small_yahtcyd.png" width="240" alt="Yaht-CYD dice game">
+<img src="docs/screenshots/small_minesweeper.png" width="240" alt="Minesweeper with flags">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
 <img src="docs/screenshots/small_settings_dark.png" width="240" alt="Settings, dark theme">
@@ -45,7 +46,7 @@ Sliding Tiles, Light Switch, Settings and the custom theme editor.
 </p>
 
 **3.5" and 4.0" boards (320×480)**: the picker, Chess, CYD-dle and Yaht-CYD
-(dark theme), the two-player menu and Reversi.
+(dark theme), the two-player menu, Reversi and a lost Minesweeper board.
 
 <p>
 <img src="docs/screenshots/large_picker_light.png" width="320" alt="Game picker on a 320x480 board">
@@ -54,6 +55,7 @@ Sliding Tiles, Light Switch, Settings and the custom theme editor.
 <img src="docs/screenshots/large_yahtcyd_dark.png" width="320" alt="Yaht-CYD, dark theme">
 <img src="docs/screenshots/large_twoplayer_menu.png" width="320" alt="Two-player menu: computer levels, pass and play">
 <img src="docs/screenshots/large_reversi_dark.png" width="320" alt="Reversi, dark theme">
+<img src="docs/screenshots/large_minesweeper_dark.png" width="320" alt="Minesweeper after a mine, dark theme">
 </p>
 
 ## Games
@@ -63,6 +65,7 @@ Sliding Tiles, Light Switch, Settings and the custom theme editor.
 | Sudoku | Puzzle Games | Solo, four levels graded by solving technique |
 | Light Switch | Puzzle Games | Solo, Easy / Medium / Hard, with par and hints |
 | Sliding Tiles | Puzzle Games | Solo, 3x3, 4x4 (the 15-Puzzle) or 5x5 |
+| Minesweeper | Puzzle Games | Solo, Easy / Medium / Hard, never needs a guess |
 | Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Checkers | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Reversi | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -72,8 +75,8 @@ Sliding Tiles, Light Switch, Settings and the custom theme editor.
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
-greyed out, until it's built). Coming next: more games (Minesweeper,
-MasterCYD, ...), then wireless play. The plan is in
+greyed out, until it's built). Coming next: more games (MasterCYD,
+Nonograms, ...), then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -106,7 +109,8 @@ and touch calibration are shared.
   once, in every game. **Default** puts a color back; **Reset: Light /
   Dark** starts the theme over from Light or Dark.
 - **Volume:** a slider, like Brightness. It starts at 50 % (tiny speakers
-  distort near the top). Tap left of the slider for **Muted**, silent
+  distort near the top). Tap the word **Volume** (or just left
+  of the slider) for **Muted**, silent
   play. A sound plays at the new level when you let go. Sounds come
   through a speaker on the board's speaker connector, and only for what
   matters in a game: moves, the computer's reply, mistakes, hints and the
@@ -170,6 +174,23 @@ card: after each roll the empty boxes show what they would score.
   (it goes in its number's upper box if that's empty, otherwise anywhere,
   and Full House and the runs count in full).
 - Stats keep every game's score, your best and your average.
+
+## Minesweeper
+
+Open every cell that isn't a mine. A number tells how many of the 8 cells
+around it hide mines. Your first tap always opens an area, and every board
+can be cleared by logic alone: you never have to guess.
+
+- **Dig | Flag** under the board picks what a tap does: open a cell, or put
+  a flag on a cell you know is a mine (tap again to take it off).
+  **Long-press** a hidden cell to flag or unflag it in either mode.
+- Tap a number whose mines are all flagged to open the rest of the cells
+  around it.
+- The top bar counts mines left (mines minus flags). Hitting a mine ends
+  the game and shows where the mines were; a crossed-out flag was wrong.
+- Easy 8x10 with 10 mines, Medium 9x11 with 15, Hard 10x11 with 20: sized so
+  every cell is big enough for a stylus on the 2.8" boards.
+- Stats: games won and lost per level, and your best time.
 
 ## Light Switch
 
@@ -251,7 +272,7 @@ after playing it (marked "Gave up"). The Stats screen shows solves, average
 and best time per difficulty, and your most recent games. **Delete Last**
 removes the most recent entry and **Clear All** wipes that game's history.
 The puzzles record level, moves and time (best time and fewest moves per
-level). CYD-dle records guesses per level and Yaht-CYD every
+level). Minesweeper records wins, losses and best times, CYD-dle guesses per level and Yaht-CYD every
 score. Two-player games record wins, losses and draws against each
 computer level, and who won each pass-and-play game.
 
