@@ -19,6 +19,7 @@
 #include "games/registry.h"
 #include "games/checkers/checkers_core.h"
 #include "games/chess/chess_core.h"
+#include "games/cyddle/cyddle_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -530,6 +531,34 @@ int main(int argc, char** argv)
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
         delete g;
+    }
+
+    {   // CYD-dle, Normal: two guesses in, a third being typed; then solved
+        cyddle::Game g;
+        cyddle::Rng rng(21);
+        g.start(1, rng);
+        char a[5]; cyddle::answer_word(g.answer, a);
+        auto put = [&](const char* w) { for (int k = 0; k < 5; ++k) g.type(w[k]); g.submit(); };
+        put(memcmp(a, "slate", 5) ? "slate" : "crane");
+        put(memcmp(a, "round", 5) ? "round" : "pithy");
+        g.type(a[0]); g.type(a[1]);
+        std::vector<uint8_t> buf(cyddle::Game::kSaveBytes + 5, 0);
+        g.serialize(buf.data(), buf.size());
+        buf[cyddle::Game::kSaveBytes + 1] = 74;
+        save_game("cyddle", buf.data(), buf.size());
+        ui::app_open_game_now(games::find("cyddle"));
+        shot(out + "_light_29_cyddle.ppm");
+        ui::app_go_home_now();
+        g.typed = 0;
+        put(a);
+        g.serialize(buf.data(), buf.size());
+        buf[cyddle::Game::kSaveBytes] = 1;                  // already recorded
+        save_game("cyddle", buf.data(), buf.size());
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("cyddle"));
+        shot(out + "_dark_29_cyddle_solved.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
     }
 
     // 5. "All games": back to the picker, which now offers the last game

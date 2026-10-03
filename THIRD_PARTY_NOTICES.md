@@ -25,6 +25,26 @@ The Arduino core is LGPL-2.1. Because this project's full source is public,
 anyone can rebuild the firmware against a modified core, which satisfies the
 LGPL for the binaries published in Releases.
 
+## Game data
+
+| Data | Use | License |
+|---|---|---|
+| [ENABLE2K](https://github.com/dolph/dictionary) word list (five-letter words, `assets/words/enable_5.txt`) | CYD-dle: accepted guesses | Public domain |
+| [ESDB / SCOWL](https://github.com/en-wl/wordlist) by Kevin Atkinson, size 35 five-letter words (`assets/words/scowl35_5.txt`) | CYD-dle: answers (common words) | Permissive; notice below and in `assets/words/SCOWL-Copyright.txt` |
+
+CYD-dle never uses the words in `assets/words/blocklist.txt` and never
+picks those in `assets/words/answers_exclude.txt` as answers.
+
+> Copyright 2000-2026 by Kevin Atkinson
+>
+> Permission to use, copy, modify, distribute, and sell any part of the English
+> Speller Database (ESDB, previously known as SCOWLv2), or word lists created
+> from it, is hereby granted without fee, provided that the above copyright
+> notice appears in all copies and that both the above copyright notice and
+> this notice appear in supporting documentation. Kevin Atkinson makes no
+> representations about the suitability of this database for any purpose. It
+> is provided "as is" without express or implied warranty.
+
 ## Art
 
 | Item | Use | License |

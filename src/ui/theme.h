@@ -54,6 +54,7 @@ struct Palette {
     lv_color_t felt;               // Reversi table
     lv_color_t stone_dark, stone_light;   // Reversi discs, checkers, chess men
     lv_color_t target;             // dots: where the picked piece may go
+    lv_color_t absent;             // word games: a letter not in the word
 };
 
 // ---- Custom themes -------------------------------------------------------------

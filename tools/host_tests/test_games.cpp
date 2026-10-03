@@ -5,6 +5,7 @@
 #include "../../src/games/common/two_player.h"
 #include "../../src/games/checkers/checkers_core.h"
 #include "../../src/games/chess/chess_core.h"
+#include "../../src/games/cyddle/cyddle_core.h"
 #include "../../src/games/fourconnect/fourconnect_core.h"
 #include "../../src/games/lightswitch/lightswitch_core.h"
 #include "../../src/games/reversi/reversi_core.h"
@@ -424,6 +425,59 @@ static void test_chess()
     CHECK(hard == 2);
 }
 
+static void test_cyddle()
+{
+    using namespace cyddle;
+    Mark m[kLen];
+    score("speed", "abide", m);                // one e present (the answer has one)
+    CHECK(m[0] == Absent && m[2] == Present && m[3] == Absent && m[4] == Present);
+    score("eerie", "there", m);                // green e last; one spare e, so only the first e is gold
+    CHECK(m[0] == Present && m[1] == Absent && m[2] == Present && m[3] == Absent && m[4] == Correct);
+    CHECK(is_word("crane") && is_word("zebra") && is_word("aahed") && !is_word("xqzzt") && !is_word("whore"));
+    CHECK(answer_count() > 1500);
+    // Every answer is accepted as a guess
+    for (int k = 0; k < answer_count(); ++k) { char w[kLen]; answer_word(k, w); CHECK(is_word(w)); }
+    Game g;
+    Rng rng(9);
+    g.start(1, rng);
+    char a[kLen];
+    answer_word(g.answer, a);
+    g.type('x');
+    g.type('q');
+    CHECK(g.submit() == Submit::TooShort);
+    g.back(); g.back();
+    const char* wrong = memcmp(a, "crane", 5) ? "crane" : "slate";
+    for (int k = 0; k < kLen; ++k) g.type(wrong[k]);
+    CHECK(g.submit() == Submit::Ok && g.rows == 1 && !g.over());
+    for (int k = 0; k < kLen; ++k) g.type(a[k]);
+    CHECK(g.submit() == Submit::Ok && g.solved() && g.over());
+    // Hard mode: with the answer "crane", "slate" shows a green e; then
+    // "think" (no e at the end) is refused and "shade" is allowed
+    Game h;
+    for (int k = 0; k < answer_count(); ++k) { char w[kLen]; answer_word(k, w); if (!memcmp(w, "crane", 5)) h.answer = k; }
+    h.level = 2;
+    auto put = [&](const char* w) { for (int k = 0; k < kLen; ++k) h.type(w[k]); return h.submit(); };
+    CHECK(put("slate") == Submit::Ok);
+    CHECK(put("think") == Submit::MustUseHints);
+    h.typed = 0;
+    CHECK(put("shade") == Submit::Ok);
+    // Words never repeat until all were played
+    Game r;
+    Rng rr(3);
+    bool repeat = false;
+    uint8_t seen[(2048 + 7) / 8] = {};
+    for (int k = 0; k < 300; ++k) {
+        r.start(1, rr);
+        if ((seen[r.answer / 8] >> (r.answer % 8)) & 1) repeat = true;
+        seen[r.answer / 8] |= 1u << (r.answer % 8);
+    }
+    CHECK(!repeat);
+    uint8_t buf[Game::kSaveBytes];
+    CHECK(g.serialize(buf, sizeof buf));
+    Game back;
+    CHECK(back.deserialize(buf, sizeof buf) && back.answer == g.answer && back.rows == 2 && back.solved());
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -466,6 +520,7 @@ int main()
     test_reversi();
     test_checkers();
     test_chess();
+    test_cyddle();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

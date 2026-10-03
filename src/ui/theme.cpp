@@ -55,6 +55,7 @@ void build()
     l.stone_dark   = lv_color_hex(0x1B2233);
     l.stone_light  = lv_color_hex(0xF7F2E4);
     l.target       = lv_color_hex(0x2C7A5E);   // where a picked piece may go
+    l.absent       = lv_color_hex(0x8F897B);   // warm grey
 
     Palette& d = p_dark;
     d.screen       = lv_color_hex(0x0E1A33);   // night sky
@@ -90,6 +91,7 @@ void build()
     d.stone_dark   = lv_color_hex(0x10151F);
     d.stone_light  = lv_color_hex(0xF3EEDF);
     d.target       = lv_color_hex(0x79CFAE);
+    d.absent       = lv_color_hex(0x58607A);
 }
 
 uint32_t hex_of(lv_color_t c) { return (uint32_t(c.red) << 16) | (uint32_t(c.green) << 8) | c.blue; }
