@@ -3,6 +3,7 @@
 // Light Switch, two_player.*, puzzle_stats.*.
 #include "../../src/games/common/puzzle_stats.h"
 #include "../../src/games/common/two_player.h"
+#include "../../src/games/blackjack/blackjack_core.h"
 #include "../../src/games/checkers/checkers_core.h"
 #include "../../src/games/chess/chess_core.h"
 #include "../../src/games/cyddle/cyddle_core.h"
@@ -1274,6 +1275,83 @@ static void test_freecell()
     delete gp;
 }
 
+static void test_blackjack()
+{
+    using namespace blackjack;
+    auto H = [](std::initializer_list<int> ranks) {
+        Hand h;
+        for (int r : ranks) h.c[h.n++] = uint8_t(r - 1);     // spades
+        return h;
+    };
+    bool soft = false;
+    CHECK(H({1, 6}).value(&soft) == 17 && soft);
+    CHECK(H({1, 6, 10}).value(&soft) == 17 && !soft);
+    CHECK(H({1, 1, 9}).value() == 21 && H({13, 12, 2}).value() == 22);
+    CHECK(H({1, 13}).blackjack() && !H({1, 5, 5}).blackjack());
+    // Rig a shoe: player A, dealer 9, player K, dealer 7 -> blackjack pays 3:2
+    Game* gp = new Game();
+    Game& g = *gp;
+    g.new_shoe(1);
+    const uint8_t rig[] = {0, 8, 12, 6};
+    memcpy(g.shoe, rig, 4);
+    g.bet = 20;
+    CHECK(g.deal() && g.phase == Phase::Done && g.result[0] == Result::Blackjack && g.chips == 530 && g.net == 30);
+    // Player 10+6 hits a 5 (21: done), dealer 10+7 stands: win
+    g.new_shoe(2);
+    const uint8_t rig2[] = {9, 9, 5, 6, 4};
+    memcpy(g.shoe, rig2, 5);
+    g.chips = 500; g.bet = 10;
+    CHECK(g.deal() && g.phase == Phase::Playing && g.can_hit() && g.can_double() && !g.can_split());
+    CHECK(g.hit() && g.phase == Phase::Done && g.result[0] == Result::Win && g.chips == 510);
+    // Split 8s, double the first
+    g.new_shoe(3);
+    const uint8_t rig3[] = {7, 9, 20, 8, 2, 9, 12, 12};   // P 8s, D 10+9; then 3, 10 for the hands; 13 for the double
+    memcpy(g.shoe, rig3, 8);
+    g.chips = 500; g.bet = 10;
+    CHECK(g.deal() && g.can_split() && g.split() && g.hands == 2 && g.chips == 480);
+    CHECK(g.hand[0].value() == 11 && g.can_double() && g.double_down());
+    CHECK(g.active == 1 && g.stand() && g.phase == Phase::Done);
+    // hand 0: 8+3+K = 21 vs 19 win (bet 20 -> +20), hand 1: 8+10 = 18 lose (-10)
+    CHECK(g.result[0] == Result::Win && g.result[1] == Result::Lose && g.net == 10 && g.chips == 510);
+    // Random rounds: chips never negative, stake bookkeeping balances
+    g.new_shoe(77);
+    g.chips = 500;
+    int32_t net_total = 0;
+    for (int r = 0; r < 3000; ++r) {
+        if (g.chips < 10) g.refill();          // (broke() only below the 5 minimum)
+        g.bet = 10;
+        const int32_t before = g.chips;
+        CHECK(g.deal());
+        while (g.phase == Phase::Playing) {
+            const int v = g.hand[g.active].value();
+            if (g.can_split() && points(g.hand[0].c[0]) == 8) g.split();
+            else if (v == 11 && g.can_double()) g.double_down();
+            else if (v < 17) g.hit();
+            else g.stand();
+        }
+        CHECK(g.chips == before + g.net && g.chips >= 0);
+        net_total += g.net;
+    }
+    uint8_t* buf = new uint8_t[Game::kSaveBytes];
+    CHECK(g.serialize(buf, Game::kSaveBytes) == Game::kSaveBytes);
+    Game* h = new Game();
+    CHECK(h->deserialize(buf, Game::kSaveBytes) && h->chips == g.chips && h->pos == g.pos && h->dealer.n == g.dealer.n);
+    delete h;
+    delete[] buf;
+    // History
+    Record rec{20, Result::Blackjack, 30, 560};
+    char body[64];
+    CHECK(format_body(body, sizeof body, rec) && strcmp(body, "20,Blackjack,30,560\n") == 0);
+    char line[80];
+    snprintf(line, sizeof line, "12,%s", body);
+    Record back;
+    CHECK(parse_line(line, back) && back.result == Result::Blackjack && back.net == 30 && back.chips == 560);
+    Summary s; s.add(back);
+    CHECK(s.hands == 1 && s.wins == 1 && s.blackjacks == 1 && s.best_chips == 560);
+    printf("blackjack: basic-ish play over 3000 rounds of 10: net %ld\n", long(net_total));
+    delete gp;
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -1336,6 +1414,7 @@ int main()
     test_pyramid();
     test_spider();
     test_freecell();
+    test_blackjack();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

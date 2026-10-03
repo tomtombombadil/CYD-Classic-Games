@@ -32,6 +32,7 @@
 #include "games/pyramid/pyramid_core.h"
 #include "games/spider/spider_core.h"
 #include "games/freecell/freecell_core.h"
+#include "games/blackjack/blackjack_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sliding/sliding_core.h"
 #include "games/sudoku/sudoku_game.h"
@@ -976,6 +977,38 @@ int main(int argc, char** argv)
         ui::app_open_game_now(games::find("freecell"));
         shot(out + "_dark_49_freecell.ppm");
         ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        delete g;
+    }
+
+    {   // Blackjack: betting, a hand in play, a won round, a split (dark)
+        using namespace blackjack;
+        auto stage = [&](const Game& g, const char* name) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 1, 0);
+            g.serialize(buf.data(), buf.size());
+            buf[Game::kSaveBytes] = 1;
+            save_game("blackjack", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("blackjack"));
+            shot(out + name);
+            ui::app_go_home_now();
+        };
+        Game* g = new Game();
+        g->new_shoe(5); g->bet = 25; g->chips = 480;
+        stage(*g, "_light_51_blackjack_bet.ppm");
+        const uint8_t rig1[] = {9, 5, 5 + 13, 12 + 26};     // you 10+6, dealer 6 + hole K
+        memcpy(g->shoe, rig1, 4);
+        g->deal();
+        stage(*g, "_light_51_blackjack.ppm");
+        g->hit();                                           // a card from the shoe
+        if (g->phase == Phase::Playing) g->stand();
+        stage(*g, "_light_51_blackjack_done.ppm");
+        ui::app_set_theme(ui::Theme::Dark);
+        g->new_shoe(9);
+        const uint8_t rig2[] = {7, 9 + 13, 7 + 26, 6 + 39, 2, 12};   // a pair of 8s; dealer 10 + 7
+        memcpy(g->shoe, rig2, 6);
+        g->chips = 500; g->bet = 20;
+        g->deal(); g->split();
+        stage(*g, "_dark_51_blackjack_split.ppm");
         ui::app_set_theme(ui::Theme::Light);
         delete g;
     }

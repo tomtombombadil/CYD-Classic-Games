@@ -167,7 +167,15 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   Golf (no wrap, nothing on a King; Hint; cards left = score), FreeCell
   (supermoves (cells+1) x 2^empty, safe cards go up by themselves with
   exact undo, foundations S H C D, free-cell row / foundation row are
-  whole-row drop targets; random deals - nearly all winnable). Card
+  whole-row drop targets; random deals - nearly all winnable), Blackjack
+  (you vs the house only; 6-deck shoe reshuffled at 3/4, dealer stands on
+  all 17s and peeks, 3:2, double any two, one split, split Aces one card;
+  500 chips, New Chips +500 when broke; stats per hand CSV
+  "#,Bet,Result,Net,Chips"; dealer's cards revealed one at a time;
+  Fanfare on a blackjack). Landscape (Tom asked 2026-10-03 to look at it):
+  mockup `card_mockups` case 5 - bigger cards (42 vs 31 px) but about 3
+  card-heights of column room instead of 5; needs the runtime rotation
+  switch first. Waiting for Tom's call. Card
   games keep their undo history only while open (not in the save). A
   stuck deal is recorded as Lost only when the next deal starts (Undo can
   still save it). Golf/Pyramid/Spider menus: "Card Back" key -> the
