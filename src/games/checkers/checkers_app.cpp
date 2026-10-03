@@ -31,6 +31,9 @@ Game* G = nullptr;
 int  sel = -1;                         // picked piece
 int  path_n = 0;                       // landings tapped so far
 uint8_t path[kMaxPath];
+// The pick a long-press peek covers, restored when it ends
+int     peek_sel = -1, peek_path_n = 0;
+uint8_t peek_path[kMaxPath];
 bool peek = false;                     // long-press view on screen
 char note_text[40] = "";
 
@@ -127,11 +130,20 @@ void clear_pick()
     peek = false;
 }
 
+// Back to the pick from before the long-press
+void on_long_end_quiet()
+{
+    sel = peek_sel;
+    path_n = peek_path_n;
+    memcpy(path, peek_path, sizeof path);
+    peek = false;
+}
+
 void on_tap(int sq)
 {
     if (!G) return;
-    if (peek) { clear_pick(); redraw(); return; }
-    if (!match::human_may_move()) return;
+    if (peek) on_long_end_quiet();               // (press lost mid-peek)
+    if (!match::human_may_move()) { redraw(); return; }
     MoveList l;
     G->legal(l);
     if (sel >= 0) {
@@ -175,9 +187,21 @@ void on_tap(int sq)
 void on_long(int sq)
 {
     if (!G || G->pos.cell(sq) < 0) return;
+    if (!peek) {
+        peek_sel = sel;
+        peek_path_n = path_n;
+        memcpy(peek_path, path, sizeof path);
+    }
     sel = sq;
     path_n = 0;
     peek = true;
+    redraw();
+}
+
+void on_long_end()
+{
+    if (!peek) return;
+    on_long_end_quiet();
     redraw();
 }
 
@@ -225,6 +249,7 @@ void build()
     cfg.draw_piece = draw_piece;
     cfg.on_tap = on_tap;
     cfg.on_long_press = on_long;
+    cfg.on_long_end = on_long_end;
     board8::create(lv_screen_active(), margin, top, m.w - 2 * margin, bottom - top, cfg);
     match::restart_view();
     redraw();

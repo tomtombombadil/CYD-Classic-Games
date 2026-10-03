@@ -218,7 +218,22 @@ int title_bar(const char* title, bool back, const PickerGeom& g)
         tx = bw + (m.large ? 10 : 6);
     }
     lv_obj_t* t = label(scr, title, title_font(), pal().ink);
-    lv_obj_set_pos(t, tx, y + (g.top_h - lv_font_get_line_height(title_font())) / 2);
+    const int ty = y + (g.top_h - lv_font_get_line_height(title_font())) / 2;
+    lv_obj_set_pos(t, tx, ty);
+    if (!back && H.firmware_version) {
+        // "Classic Games v1.2.0": the version in small type after the title,
+        // on the same baseline, in the largest size that clears the ☰ key
+        const int vx = tx + text_width(title, title_font()) + (m.large ? 8 : 5);
+        const int room = m.w - (m.large ? 2 : 1) - g.top_h * 3 / 2 - 4 - vx;
+        const lv_font_t* const sizes[3] = {menu_font(), &lv_font_montserrat_14, &lv_font_montserrat_12};
+        const lv_font_t* vf = sizes[2];
+        for (const lv_font_t* f : sizes)
+            if (text_width(H.firmware_version, f) <= room) { vf = f; break; }
+        lv_obj_t* v = label(scr, H.firmware_version, vf, pal().muted);
+        lv_obj_set_pos(v, vx,
+                       ty + (lv_font_get_line_height(title_font()) - title_font()->base_line)
+                          - (lv_font_get_line_height(vf) - vf->base_line));
+    }
     const int hb_w = g.top_h * 3 / 2;
     lv_obj_t* hb = make_hamburger(scr, hb_w, g.top_h, menu_cb, 0);
     lv_obj_set_pos(hb, m.w - (m.large ? 2 : 1) - hb_w, y);

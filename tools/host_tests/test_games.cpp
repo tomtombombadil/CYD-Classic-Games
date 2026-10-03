@@ -25,7 +25,10 @@
 #include "../../src/games/tictactoe/tictactoe_core.h"
 #include "../../src/games/twenty48/twenty48_core.h"
 #include "../../src/games/yahtcyd/yahtcyd_core.h"
+#include "../../src/ui/log_pack.h"
 #include <chrono>
+#include <string>
+#include <vector>
 #include <unordered_set>
 #include <cstdio>
 #include <cstring>
@@ -1352,6 +1355,82 @@ static void test_blackjack()
     delete gp;
 }
 
+
+// ---- Log packing (Send Log QR code) ------------------------------------------------------
+// A small inflater for fixed-Huffman DEFLATE blocks, enough to check ours
+static bool inflate_fixed(const uint8_t* in, size_t n, std::string& out)
+{
+    size_t pos = 0; int bit = 0;
+    auto get = [&](int count) -> int {
+        int v = 0;
+        for (int k = 0; k < count; ++k) {
+            if (pos >= n) return -1;
+            v |= ((in[pos] >> bit) & 1) << k;
+            if (++bit == 8) { bit = 0; ++pos; }
+        }
+        return v;
+    };
+    auto code = [&](int len) { int v = 0; for (int k = 0; k < len; ++k) { int b = get(1); if (b < 0) return -1; v = v << 1 | b; } return v; };
+    static const int lb[29] = {3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258};
+    static const int le[29] = {0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0};
+    static const int db[30] = {1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577};
+    static const int de[30] = {0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13};
+    if (get(1) != 1 || get(2) != 1) return false;
+    for (;;) {
+        int v = code(7), sym;
+        if (v < 0) return false;
+        if (v <= 0x17) sym = 256 + v;
+        else {
+            v = v << 1 | get(1);
+            if (v >= 0x30 && v <= 0xBF) sym = v - 0x30;
+            else if (v >= 0xC0 && v <= 0xC7) sym = 280 + v - 0xC0;
+            else { v = v << 1 | get(1); if (v < 0x190 || v > 0x1FF) return false; sym = 144 + v - 0x190; }
+        }
+        if (sym < 256) { out += char(sym); continue; }
+        if (sym == 256) return true;
+        const int li = sym - 257;
+        const int len = lb[li] + get(le[li]);
+        const int dc = code(5);
+        if (dc < 0 || dc > 29) return false;
+        const int dist = db[dc] + get(de[dc]);
+        if (dist > int(out.size())) return false;
+        for (int k = 0; k < len; ++k) out += out[out.size() - dist];
+    }
+}
+
+static void test_log_pack()
+{
+    std::string text;
+    for (int boot = 0; boot < 30; ++boot) {
+        text += "0:00:00 === Boot: firmware v0.9.0 (1a2b3c4), 2.8\" ST7789 Resistive\n0:00:00 Last reset: power on\n";
+        char line[64];
+        for (int k = 0; k < 5; ++k) { snprintf(line, sizeof line, "0:%02d:%02d Open game%d\n", k * 7 % 60, (boot * 13 + k) % 60, (boot + k) % 9); text += line; }
+    }
+    text += "0:00:00 Crash: Task watchdog got triggered.\n0:00:00 Backtrace: 400d8f3c 400d9122 400da410\n";
+    std::vector<uint8_t> z(text.size() + 64);
+    const size_t zn = logpack::deflate(reinterpret_cast<const uint8_t*>(text.data()), text.size(), z.data(), z.size());
+    CHECK(zn > 0 && zn * 4 < text.size());          // logs shrink a lot
+    std::string back;
+    CHECK(inflate_fixed(z.data(), zn, back) && back == text);
+    // Edge cases
+    for (const char* t : {"", "a", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "abcabcabcabcx"}) {
+        uint8_t o[256]; std::string b;
+        const size_t on = logpack::deflate(reinterpret_cast<const uint8_t*>(t), strlen(t), o, sizeof o);
+        CHECK(on > 0 && inflate_fixed(o, on, b) && b == t);
+    }
+    // Base43: 2 bytes -> 3 characters, only QR alphanumeric ones, no space or %
+    const uint8_t raw[5] = {0xFF, 0xFF, 0x00, 0x01, 0x80};
+    char enc[16];
+    CHECK(logpack::base43(raw, 5, enc, sizeof enc) == 8);
+    for (const char* c = enc; *c; ++c) CHECK(strchr(logpack::kAlphabet, *c) && *c != ' ' && *c != '%');
+    uint8_t dec[5]; int dn = 0;
+    auto val = [](char c) { return int(strchr(logpack::kAlphabet, c) - logpack::kAlphabet); };
+    for (int k = 0; k + 2 < 8; k += 3) { const int v = val(enc[k]) + 43 * val(enc[k + 1]) + 1849 * val(enc[k + 2]); dec[dn++] = uint8_t(v >> 8); dec[dn++] = uint8_t(v); }
+    dec[dn++] = uint8_t(val(enc[6]) + 43 * val(enc[7]));
+    CHECK(dn == 5 && memcmp(dec, raw, 5) == 0);
+    CHECK(logpack::base43(raw, 5, enc, 8) == 0);   // too small
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -1415,6 +1494,7 @@ int main()
     test_spider();
     test_freecell();
     test_blackjack();
+    test_log_pack();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

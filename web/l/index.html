@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CYD Classic Games – Send Log</title>
+<meta name="description" content="Send a CYD Classic Games board's log to the developer: from the board's QR code, or over USB.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --mask:   #E3B53A;
+    --mask-d: #C99A1F;
+    --copper: #A8642A;
+    --ink:    #222833;
+    --muted:  #5B6472;
+    --paper:  #F4F5F2;
+    --card:   #FFFFFF;
+    --line:   #D4D8DD;
+    --ok:     #2F7A4B;
+    --warn-bg:#FFF1CC;
+    --focus:  #1F5FBF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:    #E9EBEE;
+      --muted:  #A3ABB7;
+      --paper:  #1A1F27;
+      --card:   #222833;
+      --line:   #384050;
+      --copper: #D08A4B;
+      --ok:     #6CC48F;
+      --warn-bg:#3A3220;
+      --focus:  #8AB4F8;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 17px/1.55 "Barlow", system-ui, sans-serif;
+  }
+  a { color: var(--copper); text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  header.hero { background: var(--mask); color: #1E1B12; border-bottom: 6px solid var(--mask-d); }
+  .hero .wrap { padding-top: 30px; padding-bottom: 26px; }
+  .hero h1 { font: 700 clamp(2rem, 6vw, 2.8rem)/1 "Barlow Condensed", sans-serif; margin: 0 0 8px; }
+  .hero p { margin: 0; max-width: 46ch; }
+  main { padding: 30px 0 50px; }
+  h2 { font: 700 1.7rem/1.1 "Barlow Condensed", sans-serif; margin: 36px 0 12px; }
+  h2:first-child { margin-top: 0; }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+  button, .btn {
+    appearance: none; border: 0; border-radius: 6px;
+    background: var(--mask); color: #1E1B12;
+    font: 600 1rem "Barlow", sans-serif; text-decoration: none;
+    padding: 12px 20px; min-height: 46px; cursor: pointer;
+    box-shadow: inset 0 -3px 0 var(--mask-d);
+    display: inline-flex; align-items: center;
+  }
+  button.plain, .btn.plain { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  pre {
+    background: var(--card); border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px 14px; margin: 0; max-height: 50vh; overflow: auto;
+    font: 13px/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  textarea {
+    width: 100%; min-height: 5.5em; padding: 10px 12px; border-radius: 6px;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    font: 400 1rem "Barlow", sans-serif;
+  }
+  label { display: block; font-weight: 600; margin: 18px 0 6px; }
+  .notice { background: var(--warn-bg); border-left: 4px solid var(--mask-d); padding: 12px 16px; margin: 0 0 18px; }
+  .muted { color: var(--muted); }
+  .status { color: var(--muted); min-height: 1.5em; }
+  [hidden] { display: none !important; }
+  ol { padding-left: 1.3em; }
+  ol li { margin-bottom: 6px; }
+  footer { color: var(--muted); font-size: 0.92rem; padding: 0 0 40px; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <h1>Send a board log</h1>
+    <p>Something went wrong on your CYD? Its log tells the developer what happened. Nothing personal is in it: firmware, board, games opened and crash details.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="have" hidden>
+    <h2>Your board's log</h2>
+    <p class="notice" id="bad" hidden>This log couldn't be read. Try scanning the QR code again, a little closer and steadier.</p>
+    <pre id="log"></pre>
+    <label for="what">What were you doing when it happened? (optional)</label>
+    <textarea id="what" placeholder="e.g. Started Solitaire, it said Shuffling…, then the board restarted."></textarea>
+    <div class="btns">
+      <a class="btn" id="email" href="#">Email the Log</a>
+      <button class="plain" id="copy" type="button">Copy</button>
+      <button class="plain" id="save" type="button">Download log.txt</button>
+    </div>
+    <p class="muted" id="emailnote">Opens your email app with the log filled in, addressed to <span id="addr"></span>. If the message comes up empty or cut short, use <strong>Download log.txt</strong> and attach the file instead.</p>
+  </section>
+
+  <section id="how">
+    <h2>Get the log</h2>
+    <p><strong>With a phone:</strong> on the board, open <strong>☰ → Settings → Diagnostics → Send Log</strong> and point your phone's camera at the QR code. This page opens with the log.</p>
+    <p><strong>With a computer (Chrome or Edge):</strong> plug the board in by USB and read the whole log:</p>
+    <p class="notice" id="noserial" hidden>This browser can't talk to USB devices. Use Chrome or Edge on a computer, or the QR code on the board.</p>
+    <div class="btns"><button id="usb" type="button">Read Log Over USB</button></div>
+    <p class="status" id="usbstatus" aria-live="polite"></p>
+    <p class="muted">Pick the board's serial port when asked (the same one used to install). If none appears on Windows, install the <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html" target="_blank" rel="noopener">CH340 USB driver</a>.</p>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p><a href="../">Back to the installer</a> · CYD Classic Games is open source under the MIT license.</p>
+</footer>
+
+<script>
+const ADDRESS = "cyd.classic.games.logs@gmail.com";
+const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$*+-./:";   // src/ui/log_pack.h
+let logText = "";
+
+document.getElementById("addr").textContent = ADDRESS;
+
+// Base43 (2 bytes -> 3 characters) back to bytes
+function base43(s) {
+  const val = c => { const v = ALPHABET.indexOf(c); if (v < 0) throw new Error("bad character"); return v; };
+  const out = [];
+  let k = 0;
+  for (; k + 3 <= s.length; k += 3) {
+    const v = val(s[k]) + 43 * val(s[k + 1]) + 1849 * val(s[k + 2]);
+    if (v > 0xFFFF) throw new Error("bad group");
+    out.push(v >> 8, v & 0xFF);
+  }
+  if (s.length - k === 2) out.push(val(s[k]) + 43 * val(s[k + 1]));
+  else if (s.length !== k) throw new Error("bad length");
+  return new Uint8Array(out);
+}
+
+async function inflate(bytes) {
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return await new Response(stream).text();
+}
+
+function show(text) {
+  logText = text.replace(/\r/g, "");
+  document.getElementById("log").textContent = logText;
+  document.getElementById("have").hidden = false;
+  updateEmail();
+}
+
+function subject() {
+  const board = (logText.match(/^Board: (.*)$/m) || [])[1] || "";
+  const fw = (logText.match(/^Firmware: (.*)$/m) || [])[1] || "";
+  return ("CYD Classic Games log " + fw + " " + board).trim();
+}
+
+function updateEmail() {
+  const what = document.getElementById("what").value.trim();
+  const body = (what ? "What happened: " + what + "\n\n" : "") + logText;
+  document.getElementById("email").href =
+    "mailto:" + ADDRESS + "?subject=" + encodeURIComponent(subject()) + "&body=" + encodeURIComponent(body);
+}
+document.getElementById("what").addEventListener("input", updateEmail);
+
+document.getElementById("copy").addEventListener("click", async () => {
+  const what = document.getElementById("what").value.trim();
+  try {
+    await navigator.clipboard.writeText((what ? "What happened: " + what + "\n\n" : "") + logText);
+    document.getElementById("copy").textContent = "Copied";
+  } catch (e) { document.getElementById("copy").textContent = "Copy failed"; }
+});
+
+document.getElementById("save").addEventListener("click", () => {
+  const what = document.getElementById("what").value.trim();
+  const blob = new Blob([(what ? "What happened: " + what + "\n\n" : "") + logText], {type: "text/plain"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "log.txt";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+// ---- From the QR code: everything after # ----
+async function fromHash() {
+  const data = decodeURIComponent(location.hash.slice(1));
+  if (!data) return;
+  try {
+    const bytes = base43(data);
+    if (bytes[0] !== 1) throw new Error("unknown format " + bytes[0]);
+    show(await inflate(bytes.slice(1)));
+  } catch (e) {
+    document.getElementById("have").hidden = false;
+    document.getElementById("bad").hidden = false;
+    document.getElementById("log").textContent = String(e);
+  }
+}
+fromHash();
+window.addEventListener("hashchange", fromHash);
+
+// ---- Over USB: the firmware answers "log" with the whole log between markers ----
+if (!("serial" in navigator)) {
+  document.getElementById("noserial").hidden = false;
+  document.getElementById("usb").disabled = true;
+}
+
+document.getElementById("usb").addEventListener("click", async () => {
+  const status = document.getElementById("usbstatus");
+  let port;
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({baudRate: 115200});
+    // Both lines released = the board runs normally (they drive reset / boot mode)
+    await port.setSignals({dataTerminalReady: false, requestToSend: false});
+  } catch (e) {
+    status.textContent = "Couldn't open the port: " + e.message;
+    return;
+  }
+  status.textContent = "Reading the log…";
+  const writer = port.writable.getWriter();
+  const reader = port.readable.pipeThrough(new TextDecoderStream()).getReader();
+  const ask = () => writer.write(new TextEncoder().encode("\nlog\n"));
+  let buf = "", done = false;
+  const timer = setInterval(() => { if (!done) ask(); }, 2500);   // again, if the board was still starting
+  const giveUp = setTimeout(() => { if (!done) { done = true; reader.cancel(); } }, 20000);
+  await ask();
+  try {
+    while (!done) {
+      const {value, done: end} = await reader.read();
+      if (end) break;
+      buf += value;
+      const a = buf.indexOf("---- device log ----"), b = buf.indexOf("---- end of log ----", a);
+      if (a >= 0 && b > a) {
+        done = true;
+        show(buf.slice(buf.indexOf("\n", a) + 1, b).trim() + "\n");
+        status.textContent = "Done. You can unplug the board.";
+        location.hash = "";
+        document.getElementById("have").scrollIntoView({behavior: "smooth"});
+      }
+    }
+  } catch (e) { /* cancelled */ }
+  clearInterval(timer);
+  clearTimeout(giveUp);
+  if (!logText) status.textContent = "No answer from the board. Is CYD Classic Games installed and running on it?";
+  try { reader.releaseLock(); writer.releaseLock(); await port.close(); } catch (e) { /* ignore */ }
+});
+</script>
+</body>
+</html>

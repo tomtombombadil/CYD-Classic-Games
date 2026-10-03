@@ -138,8 +138,13 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   root only), Checkers (depth 2/5/7, ply cap 24, ai_stack 40 KB), Chess
   (perft-verified; depth 2 / 3+2 s / 6+6 s; ai_stack 32 KB; position keys
   computed, no static Zobrist tables - static RAM matters; save buffers on
-  the heap; pieces = DejaVu glyphs `chess_font_30/42.c`, solid then
-  outline), CYD-dle (word lists built by `tools/make_words.py` from
+  the heap; pieces = glyphs in `chess_font_33/46.c`, solid then lines:
+  Knight and Rook from DejaVu (Tom likes them), King, Queen, Bishop, Pawn
+  our own from `tools/make_chess_font.py` -> `assets/chess/CYDChessPieces.ttf`
+  (Tom, 2026-10-03: King and Queen must be obvious - King tallest with a
+  cross, Queen a five-ball crown, Bishop mitre + slit, Pawn short); black
+  pieces use thinner light lines (U+E000..) so they read as black; the
+  glyph is centred on its shape, not the line box), CYD-dle (word lists built by `tools/make_words.py` from
   `assets/words/`: ENABLE2K guesses, SCOWL-35 answers minus
   `blocklist.txt`/`answers_exclude.txt`; Easy 7 / Normal 6 / Hard must use
   hints; out of guesses = "Lost" in stats), Minesweeper (8x10/10,
@@ -203,7 +208,12 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   the card fits; used boxes filled solid `frame` blue - Tom: tell them
   from open ones at a glance). Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
-  view: tap, long-press peek, target dots).
+  view: tap, long-press peek, target dots). board8 taps (Tom, 2026-10-03:
+  Chess taps were "very bad"): a tap acts on release (CLICKED, any
+  length) at the square where the stylus came DOWN (lift-off readings
+  drift); long-press = own 750 ms timer (LVGL's 400 ms turned firm taps
+  into peeks, and the old peek then ate the next tap too); the peek shows
+  only while held and the game restores its previous pick on release.
 - Shared UI in `src/ui/`: `widgets.*` (keys, hamburger, overlays, tables,
   screen metrics, `scratch_table()`: two shared heap tables for stats
   screens - never `static Table`, each costs ~1 KB of static RAM), `app_shell.cpp` (picker, game switching),
@@ -304,7 +314,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   [Recalibrate | Diagnostics], Back. Board/firmware line moved to
   Diagnostics (no room).
   Diagnostics (`src/ui/diagnostics_screen.cpp`): [Touch Test | Device
-  Log], board, firmware, free memory, uptime, Back. Device Log: paged
+  Log], [Send Log], board, firmware (version + build commit), free memory,
+  uptime, Back. Device Log: paged
   with < > (opens on the newest page), [Clear Log | Copy To SD], [< Back >].
 - Device log (Tom, 2026-10-03: "we need a way to pull logs"):
   `src/app/device_log.*` (device only). `/log.txt` + `/log.old` on
@@ -317,7 +328,24 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   the shell: `ui::log_event()` (written to the file - rare events: game
   opened, search failed) and `ui::log_step()` (serial + "last step" only -
   frequent events). Other tasks' lines are queued for the main loop.
-  Copy To SD writes `/CYD-Classic-Games/log.txt`. CI keeps each build's
+  Copy To SD writes `/CYD-Classic-Games/log.txt`; boards with a usable SD
+  slot also copy it there at every boot and on Send Log (Tom: always, when
+  a card is in).
+  **Send Log** (Tom, 2026-10-03, "BRILLIANT"): the newest log lines that
+  fit, plus a header (board, firmware), go into one QR code:
+  `log_pack.*` (plain C++, host-tested) = raw DEFLATE (fixed Huffman, 4 KB
+  window, ~6x on logs) + base43 (QR alphanumeric set minus space and %,
+  2 bytes -> 3 chars); QR = byte segment `logpack::kUrl`
+  (`https://tomtombombadil.github.io/CYD-Classic-Games/l/#`) + alphanumeric
+  segment, ECC L, encoder = LVGL's bundled Nayuki qrcodegen
+  (`LV_USE_QRCODE 1`), modules >= 2 px (240 wide: ~150 lines / 5 KB of
+  text; 320 wide: ~380 lines / 12 KB). The page `web/l/index.html` decodes
+  it (DecompressionStream "deflate-raw") and offers Email (mailto to
+  **cyd.classic.games.logs@gmail.com** - Tom's address for logs), Copy,
+  Download log.txt. The same page reads the whole log over USB (Web
+  Serial, Chrome/Edge): it sends "log\n"; the firmware (`serial_commands()`
+  in main.cpp) prints it between "---- device log ----" and
+  "---- end of log ----". The flasher page links to it. CI keeps each build's
   `firmware.elf` (artifact `elf-<env>`, 90 days; releases attach
   `debug-symbols.zip`) to decode backtraces with addr2line.
 - Themes: Light, Dark and 3 Custom slots. A custom theme starts from Light
@@ -412,14 +440,26 @@ Backgammon, most chess engines) are reference only. Update
   Fortune), **Reversi** (Othello). Classic public-domain games (chess,
   checkers, mancala, ...) are fine by name.
 
+## Versions (Tom, 2026-10-03)
+- Semantic versioning, `vX.Y.Z`, from the `VERSION` file (just `0.9.0`).
+  A fix or small change bumps Z, a new feature (game, setting, screen)
+  bumps Y, a major revision bumps X. **Bump VERSION in every push to main
+  that changes the firmware** - each push is a build Tom flashes, so each
+  gets its own number. Started at 0.9.0 (2026-10-03); 1.0.0 is Tom's call.
+- `tools/version.py` (PlatformIO pre-script) defines `CYD_GAMES_VERSION`
+  ("v0.9.0") and `CYD_GAMES_BUILD` (git commit) for every build, local or
+  CI. The picker title shows "Classic Games v0.9.0"; Diagnostics, the
+  log and the flasher show the version (log/Diagnostics add the commit).
+
 ## Releases and web flasher
 - Every push to main: CI runs the host tests, builds every env that has
   `custom_firmware_name`, and redeploys the web flasher (GitHub Pages) with
-  that build (version `dev-<sha>`). This is how Tom gets builds for
+  that build (version = VERSION). This is how Tom gets builds for
   testing - keep it that way.
 - Don't publish a release unless Tom asks for one.
 - Releases: Actions tab -> Build -> "Run workflow" on main with
-  `release_tag` = `vX.Y.Z` (hyphen = pre-release). The workflow creates the
+  `release_tag` = `v` + VERSION (a `-beta.1` style suffix = pre-release;
+  CI refuses any other tag). The workflow creates the
   tag and a GitHub release with the merged factory `.bin` files (flash at
   0x0). Claude's sessions cannot push tags (proxy returns 403), so Claude
   releases via this dispatch (API `workflow_dispatch`), not `git push --tags`.

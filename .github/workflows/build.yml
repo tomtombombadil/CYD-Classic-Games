@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag to create, e.g. v0.2.0 (hyphen = pre-release). Leave empty to just build.'
+        description: 'Release tag to create = v + the VERSION file, e.g. v0.9.0 (hyphen suffix = pre-release). Leave empty to just build.'
         required: false
         default: ''
 
@@ -40,16 +40,23 @@ jobs:
       - id: ver
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
+        # The version is the VERSION file (semantic: fix = Z, feature = Y,
+        # major = X). A release tag must be that version (optionally with a
+        # pre-release suffix such as v1.2.0-beta.1).
         run: |
+          V="v$(tr -d ' \r\n' < VERSION)"
+          if [[ ! "$V" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::VERSION must look like 1.2.3"; exit 1
+          fi
           if [[ -n "$RELEASE_TAG" ]]; then
-            if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
-              echo "::error::release_tag must look like v1.2.3 or v1.2.3-beta.1"; exit 1
+            if [[ ! "$RELEASE_TAG" =~ ^${V//./\\.}(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "::error::release_tag must be $V (or $V-beta.1 etc.) - bump VERSION first"; exit 1
             fi
             echo "version=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
           elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           else
-            echo "version=dev-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+            echo "version=${V}" >> "$GITHUB_OUTPUT"
           fi
 
   # Game rules, generators and AI, compiled and run on the CI machine
@@ -69,7 +76,7 @@ jobs:
       - name: The other games and the shared stats formats
         run: |
           G=src/games
-          g++ -std=c++17 -O1 -Wall -Werror -fsanitize=address,undefined -o test_games tools/host_tests/test_games.cpp $G/common/two_player.cpp $G/common/puzzle_stats.cpp $G/fourconnect/fourconnect_core.cpp $G/tictactoe/tictactoe_core.cpp $G/sliding/sliding_core.cpp $G/lightswitch/lightswitch_core.cpp $G/reversi/reversi_core.cpp $G/checkers/checkers_core.cpp $G/chess/chess_core.cpp $G/cyddle/cyddle_core.cpp $G/yahtcyd/yahtcyd_core.cpp $G/minesweeper/minesweeper_core.cpp $G/twenty48/twenty48_core.cpp $G/mastercyd/mastercyd_core.cpp $G/pegs/pegs_core.cpp $G/memory/memory_core.cpp $G/nonogram/nonogram_core.cpp $G/solitaire/solitaire_core.cpp $G/solitaire/solitaire_solve.cpp $G/golf/golf_core.cpp $G/pyramid/pyramid_core.cpp $G/spider/spider_core.cpp $G/freecell/freecell_core.cpp $G/blackjack/blackjack_core.cpp
+          g++ -std=c++17 -O1 -Wall -Werror -fsanitize=address,undefined -o test_games tools/host_tests/test_games.cpp $G/common/two_player.cpp $G/common/puzzle_stats.cpp $G/fourconnect/fourconnect_core.cpp $G/tictactoe/tictactoe_core.cpp $G/sliding/sliding_core.cpp $G/lightswitch/lightswitch_core.cpp $G/reversi/reversi_core.cpp $G/checkers/checkers_core.cpp $G/chess/chess_core.cpp $G/cyddle/cyddle_core.cpp $G/yahtcyd/yahtcyd_core.cpp $G/minesweeper/minesweeper_core.cpp $G/twenty48/twenty48_core.cpp $G/mastercyd/mastercyd_core.cpp $G/pegs/pegs_core.cpp $G/memory/memory_core.cpp $G/nonogram/nonogram_core.cpp $G/solitaire/solitaire_core.cpp $G/solitaire/solitaire_solve.cpp $G/golf/golf_core.cpp $G/pyramid/pyramid_core.cpp $G/spider/spider_core.cpp $G/freecell/freecell_core.cpp $G/blackjack/blackjack_core.cpp src/ui/log_pack.cpp
           ./test_games
 
   build:
@@ -97,9 +104,7 @@ jobs:
         run: python -m pip install --upgrade platformio
 
       - name: Build
-        env:
-          PLATFORMIO_BUILD_SRC_FLAGS: -D CYD_GAMES_VERSION=\"${{ needs.boards.outputs.version }}\"
-        run: pio run -e ${{ matrix.env }}
+        run: pio run -e ${{ matrix.env }}   # tools/version.py reads VERSION
 
       - name: Name firmware
         run: |

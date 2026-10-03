@@ -18,7 +18,8 @@ support, display/touch glue, tools and the Sudoku game.
 | [LovyanGFX](https://github.com/lovyan03/LovyanGFX) | Display, touch, backlight drivers | MIT and BSD-2-Clause |
 | [LVGL](https://github.com/lvgl/lvgl) 9.x | UI widgets and rendering | MIT |
 | Montserrat font (bundled with LVGL) | All on-screen text | SIL Open Font License 1.1 |
-| [DejaVu Sans](https://dejavu-fonts.github.io/) chess symbols U+2654-265F, converted with [lv_font_conv](https://github.com/lvgl/lv_font_conv) (MIT) to `src/games/chess/chess_font_*.c` | Chess pieces | Bitstream Vera license (permissive; DejaVu changes public domain) |
+| [QR Code generator library](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki, bundled with LVGL (`src/libs/qrcode/qrcodegen.c`) | Send Log QR code | MIT |
+| [DejaVu Sans](https://dejavu-fonts.github.io/) chess Knight and Rook symbols (U+2656, 2658, 265C, 265E), converted with [lv_font_conv](https://github.com/lvgl/lv_font_conv) (MIT) to `src/games/chess/chess_font_*.c` (King, Queen, Bishop and Pawn are this project's own, drawn by `tools/make_chess_font.py`, MIT) | Chess pieces | Bitstream Vera license (permissive; DejaVu changes public domain) |
 | [DejaVu Sans](https://dejavu-fonts.github.io/) suit symbols U+2660/2663/2665/2666 and DejaVu Sans Bold ranks (0-9, A, J, K, Q), converted with [lv_font_conv](https://github.com/lvgl/lv_font_conv) (MIT) to `src/games/common/cards/card_font_*.c` | Playing cards | Bitstream Vera license (permissive; DejaVu changes public domain) |
 | [DejaVu Serif Bold](https://dejavu-fonts.github.io/) letter "B", converted with lv_font_conv to `src/games/common/cards/card_b_font_*.c` | The Bombadil card back | Bitstream Vera license (permissive; DejaVu changes public domain) |
 | [Arduino-ESP32](https://github.com/espressif/arduino-esp32) via [pioarduino](https://github.com/pioarduino/platform-espressif32) | Framework / core | LGPL-2.1 (core), Apache-2.0 (ESP-IDF) |

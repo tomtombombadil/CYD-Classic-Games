@@ -229,7 +229,6 @@ void settings_open(void (*back)())
 {
     volume_label = volume_slider = nullptr;
     back_fn = back;
-    const Shell& H = shell();
     const UiSettings& S = settings();
     overlay_begin("Settings");
     overlay_pair("Theme", action_cb, kTheme, "Invert Colors", action_cb, kInvert);

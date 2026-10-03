@@ -20,8 +20,8 @@
 #include "ui/widgets.h"
 
 extern "C" {
-extern const lv_font_t chess_font_30;
-extern const lv_font_t chess_font_42;
+extern const lv_font_t chess_font_33;
+extern const lv_font_t chess_font_46;
 }
 
 namespace {
@@ -32,11 +32,16 @@ Game* G = nullptr;
 
 int  sel = -1;                         // picked piece
 bool peek = false;                     // long-press view on screen
+int  peek_saved = -1;                  // the selection the peek covers
 int  promo_from = -1, promo_to = -1;   // waiting for the promotion choice
 
-// Solid (U+265A..F) and outline (U+2654..9) symbols, King first
+// Solid (U+265A..F) and outline (U+2654..9) symbols, by piece (Pawn = 1 .. King = 6)
 const char* const kSolid[7]   = {"", "\xE2\x99\x9F", "\xE2\x99\x9E", "\xE2\x99\x9D", "\xE2\x99\x9C", "\xE2\x99\x9B", "\xE2\x99\x9A"};
 const char* const kOutline[7] = {"", "\xE2\x99\x99", "\xE2\x99\x98", "\xE2\x99\x97", "\xE2\x99\x96", "\xE2\x99\x95", "\xE2\x99\x94"};
+// Black King, Queen, Bishop, Pawn (tools/make_chess_font.py): thinner light
+// lines at U+E000.. than the white pieces' outline; Knight and Rook are
+// DejaVu's and use the outline above
+const char* const kBlackLines[7] = {"", "\xEE\x80\x85", nullptr, "\xEE\x80\x83", nullptr, "\xEE\x80\x81", "\xEE\x80\x80"};
 
 uint32_t tick_ms() { return lv_tick_get(); }
 
@@ -69,11 +74,19 @@ match::Game make_game()
 void draw_symbol(lv_layer_t* layer, int piece, int side, int cx, int cy, int size)
 {
     const ui::Palette& P = ui::pal();
-    const lv_font_t* f = size >= 36 ? &chess_font_42 : &chess_font_30;
+    const bool big = size >= 36;
+    const lv_font_t* f = big ? &chess_font_46 : &chess_font_33;
+    const int em = big ? 46 : 33;
     const lv_color_t body = side == 0 ? P.stone_light : P.stone_dark;
     const lv_color_t line = side == 0 ? P.stone_dark : P.stone_light;
-    kit::text(layer, kSolid[piece], f, body, cx - size / 2, cy - size / 2, size, size);
-    kit::text(layer, kOutline[piece], f, line, cx - size / 2, cy - size / 2, size, size);
+    // Centre the piece itself (it stands on the baseline, 0.73 em tall),
+    // not the font's line box
+    const int lh = lv_font_get_line_height(f);
+    const int baseline = cy + em * 365 / 1000;
+    const int top = baseline - (lh - f->base_line);
+    kit::text(layer, kSolid[piece], f, body, cx - size, top, 2 * size, lh);
+    const char* lines = side == 1 && kBlackLines[piece] ? kBlackLines[piece] : kOutline[piece];
+    kit::text(layer, lines, f, line, cx - size, top, 2 * size, lh);
 }
 
 void draw_piece(lv_layer_t* layer, int sq, int cx, int cy, int size)
@@ -140,8 +153,8 @@ void ask_promotion(int from, int to)
 void on_tap(int sq)
 {
     if (!G) return;
-    if (peek) { clear_pick(); redraw(); return; }
-    if (!match::human_may_move()) return;
+    if (peek) { sel = peek_saved; peek = false; }   // (press lost mid-peek)
+    if (!match::human_may_move()) { redraw(); return; }
     MoveList l;
     G->legal(l);
     if (sel >= 0) {
@@ -166,8 +179,18 @@ void on_tap(int sq)
 void on_long(int sq)
 {
     if (!G || !G->pos.sq[sq]) return;
+    if (!peek) peek_saved = sel;
     sel = sq;
     peek = true;
+    redraw();
+}
+
+// Released: back to what was picked before; the tap that follows acts on it
+void on_long_end()
+{
+    if (!peek) return;
+    sel = peek_saved;
+    peek = false;
     redraw();
 }
 
@@ -216,6 +239,7 @@ void build()
     cfg.draw_piece = draw_piece;
     cfg.on_tap = on_tap;
     cfg.on_long_press = on_long;
+    cfg.on_long_end = on_long_end;
     board8::create(lv_screen_active(), margin, top, m.w - 2 * margin, bottom - top, cfg);
     match::restart_view();
     redraw();

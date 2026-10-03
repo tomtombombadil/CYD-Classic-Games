@@ -167,6 +167,7 @@ static bool stats_read(const char* id, void (*fn)(const char*, void*), void* ctx
 }
 static const char* fake_location() { return "SD card"; }
 
+static bool fake_log_big = false;
 // A sample device log: a few boots, then a crash report
 static bool fake_log(void (*line)(const char*, void*), void* ctx)
 {
@@ -190,6 +191,20 @@ static bool fake_log(void (*line)(const char*, void*), void* ctx)
         "0:00:05 Open solitaire",
     };
     for (const char* l : L) line(l, ctx);
+    if (fake_log_big) {                     // a full log: 16 KB of ordinary days
+        static const char* const G[] = {"sudoku", "solitaire", "chess", "spider", "freecell", "minesweeper"};
+        char b[96];
+        for (int boot = 0; boot < 60; ++boot) {
+            line("0:00:00 === Boot: firmware v0.9.0 (1a2b3c4), 2.8\" ST7789 Resistive", ctx);
+            line(boot % 7 == 3 ? "0:00:00 Last reset: CRASH" : "0:00:00 Last reset: power on", ctx);
+            line("0:00:00 Memory: 212 KB free, largest block 108 KB", ctx);
+            for (int k = 0; k < 4; ++k) {
+                const int t = 7 + boot * 97 % 600 + k * 431;
+                snprintf(b, sizeof b, "%d:%02d:%02d Open %s", t / 3600, t / 60 % 60, t % 60, G[(boot * 5 + k) % 6]);
+                line(b, ctx);
+            }
+        }
+    }
     return true;
 }
 static void fake_memory(uint32_t* f, uint32_t* b) { *f = 187 * 1024; *b = 104 * 1024; }
@@ -315,7 +330,8 @@ int main(int argc, char** argv)
     sh.log_copy_sd = [] { return true; };
     sh.memory = fake_memory;
     // Look like a real board so the README screenshots read naturally.
-    sh.firmware_version = "v0.1.0";
+    sh.firmware_version = "v0.9.0";
+    sh.firmware_build = "1a2b3c4";
     sh.board_name = W == 240 ? "3.2\" ST7789 Resistive" : "4.0\" ST7796 Resistive";
 
     static ui::CustomThemes themes;      // slot 0: a green/brown custom theme
@@ -448,6 +464,13 @@ int main(int argc, char** argv)
     shot(out + "_light_9_device_log.ppm");
     ui::device_log_open(0);
     shot(out + "_light_9_device_log_1.ppm");
+    ui::send_log_open();
+    shot(out + "_light_9_send_log.ppm");
+    fake_log_big = true;
+    ui::diagnostics_open();                  // drops the loaded log
+    ui::send_log_open();
+    shot(out + "_light_9_send_log_full.ppm");
+    fake_log_big = false;
     ui::close_overlays();
 
     // 4. The stage-2 games
@@ -592,11 +615,18 @@ int main(int argc, char** argv)
         ui::app_open_game_now(games::find("chess"));
         shot(out + "_light_26_chess.ppm");
         preview_tap_square(57);                                  // b8 knight... moved: c6
-        preview_tap_square(42);
+        preview_tap_square(42, 550);                             // a slow, firm tap still picks
         shot(out + "_light_27_chess_pick.ppm");
-        preview_tap_square(42);
-        preview_tap_square(26, 700);                             // long-press the white bishop on c4
-        shot(out + "_light_28_chess_peek.ppm");
+        {   // long-press the white bishop on c4: its moves show while held
+            int x, y;
+            board8::square_center(26, &x, &y);
+            touch_x = int16_t(x); touch_y = int16_t(y); touch_down = true;
+            run(900);
+            shot(out + "_light_28_chess_peek.ppm");
+            touch_down = false;
+            run(80);
+            shot(out + "_light_28_chess_after_peek.ppm");          // the knight is still picked
+        }
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Dark);
         ui::app_open_game_now(games::find("chess"));

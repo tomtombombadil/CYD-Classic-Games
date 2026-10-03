@@ -1,6 +1,7 @@
 // CYD Classic Games - entry point.
 #include <Arduino.h>
 #include <esp_random.h>
+#include <strings.h>
 #include <lvgl.h>
 #include "app/device_log.h"
 #include "app/legacy_import.h"
@@ -17,7 +18,10 @@
 #include "ui/shell.h"
 
 #ifndef CYD_GAMES_VERSION
-#define CYD_GAMES_VERSION "dev"    // CI sets this from the git tag / commit
+#define CYD_GAMES_VERSION "v?"     // tools/version.py sets it from the VERSION file
+#endif
+#ifndef CYD_GAMES_BUILD
+#define CYD_GAMES_BUILD ""         // git commit, for telling dev builds apart
 #endif
 
 #ifndef CYD_ROTATION
@@ -92,11 +96,15 @@ void recalibrate()
 }
 
 // The Device Log screen reads the log through this; it also goes to the
-// serial port then, for anyone with the Serial Monitor open.
+// serial port then, for anyone with the Serial Monitor open. The web
+// flasher's log page (web/l/) asks for the same dump with "log".
 bool log_read(void (*line)(const char*, void*), void* ctx)
 {
     struct Both { void (*line)(const char*, void*); void* ctx; } both{line, ctx};
     Serial.println("---- device log ----");
+    Serial.println("CYD Classic Games log");
+    Serial.println("Board: " BOARD_NAME);
+    Serial.println("Firmware: " CYD_GAMES_VERSION " (" CYD_GAMES_BUILD ")");
     const bool ok = device_log_read([](const char* text, void* p) {
         Serial.println(text);
         Both* b = static_cast<Both*>(p);
@@ -106,13 +114,30 @@ bool log_read(void (*line)(const char*, void*), void* ctx)
     return ok;
 }
 
+// Commands typed on the serial port (one per line): "log" prints the log
+void serial_commands()
+{
+    static char cmd[16];
+    static size_t n = 0;
+    while (Serial.available() > 0) {
+        const int c = Serial.read();
+        if (c == '\n' || c == '\r') {
+            cmd[n] = 0;
+            if (n && strcasecmp(cmd, "log") == 0) log_read([](const char*, void*) {}, nullptr);
+            n = 0;
+        } else if (n < sizeof cmd - 1) {
+            cmd[n++] = static_cast<char>(c);
+        }
+    }
+}
+
 } // namespace
 
 void setup()
 {
     Serial.begin(115200);
     delay(50);
-    Serial.println("\nCYD Classic Games " CYD_GAMES_VERSION);
+    Serial.println("\nCYD Classic Games " CYD_GAMES_VERSION " (" CYD_GAMES_BUILD ")");
     quiet_peripherals();
 
     if (!lvgl_port_init(CYD_ROTATION)) {
@@ -120,7 +145,10 @@ void setup()
         while (true) delay(1000);
     }
 
-    device_log_begin(CYD_GAMES_VERSION, BOARD_NAME);
+    device_log_begin(CYD_GAMES_VERSION " (" CYD_GAMES_BUILD ")", BOARD_NAME);
+#if BOARD_SD_USABLE
+    device_log_copy_sd();                    // a copy on the SD card whenever one is in
+#endif
     legacy_import();
     speaker_begin();
 
@@ -160,6 +188,7 @@ void setup()
 #endif
     sh.memory            = device_memory;
     sh.firmware_version  = CYD_GAMES_VERSION;
+    sh.firmware_build    = CYD_GAMES_BUILD;
     sh.board_name        = BOARD_NAME;
     ui::app_begin(sh, settings, themes_store_load());
     Serial.printf("[app] picker up, free heap %lu\n", (unsigned long)ESP.getFreeHeap());
@@ -171,5 +200,6 @@ void loop()
     ui::app_tick(millis());
     speaker_loop();
     device_log_loop();
+    serial_commands();
     delay(wait_ms < 5 ? wait_ms : 5);
 }

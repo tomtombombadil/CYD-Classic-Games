@@ -179,7 +179,7 @@ Open:
 
 ## 8. Distribution
 - Web flasher (ESP Web Tools on GitHub Pages), updated on every push to main
-  with a `dev-<sha>` build; releases on request.
+  with a build numbered from the VERSION file (semantic vX.Y.Z, bumped every push); releases on request.
 - GitHub Releases: one merged (factory) `.bin` per board, flashed at 0x0.
 
 ## 9. Licensing

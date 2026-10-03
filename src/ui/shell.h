@@ -56,7 +56,8 @@ struct Shell {
     bool (*log_copy_sd)();
     void (*memory)(uint32_t* free_bytes, uint32_t* largest_block);
 
-    const char* firmware_version;
+    const char* firmware_version;              // "v1.2.3" (VERSION file)
+    const char* firmware_build;                // git commit of the build, may be empty
     const char* board_name;
 };
 
@@ -90,6 +91,7 @@ void settings_open(void (*back)());
 void settings_open_touch_test();               // from Diagnostics
 void diagnostics_open();                       // from Settings
 void device_log_open(int page = -1);           // from Diagnostics; -1 = newest page
+void send_log_open();                          // from Diagnostics: the log as a QR code
 void settings_reopen();                        // Settings again, same Back
 // Theme screens (src/ui/theme_screen.cpp), reached from Settings
 void theme_open();

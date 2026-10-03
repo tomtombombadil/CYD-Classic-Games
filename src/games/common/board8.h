@@ -3,9 +3,12 @@
 // side in chess); `flipped` turns the board so rank 7 is at the bottom
 // (the player sits behind their own pieces).
 //
-// Taps: a short tap reports the square on release (so a long-press doesn't
-// also count as a tap); a long-press reports it separately, for "show this
-// piece's moves" (Tom approved that for Chess and Checkers only).
+// Taps: reported on release, with the square where the stylus came down
+// (the lift-off readings of a resistive panel drift). A hold of 0.75 s is a
+// long-press instead: "this piece's moves" show while held (Tom approved
+// that for Chess and Checkers only) - on_long_press when it starts,
+// on_long_end on release, which is then not a tap. The game keeps its
+// selection across a peek.
 #pragma once
 
 #include <cstdint>
@@ -29,6 +32,7 @@ struct Config {
     void (*draw_piece)(lv_layer_t* layer, int sq, int cx, int cy, int size) = nullptr;
     void (*on_tap)(int sq) = nullptr;
     void (*on_long_press)(int sq) = nullptr;   // nullptr = long-press does nothing
+    void (*on_long_end)() = nullptr;           // the long-press was released
 };
 
 // Creates the board, as large as fits in w x h, centred in that area.

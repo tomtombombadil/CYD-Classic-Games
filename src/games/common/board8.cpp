@@ -68,16 +68,50 @@ int square_from_event(lv_event_t* e)
     return sq_at(row, col);
 }
 
-void tap_cb(lv_event_t* e)
+// A tap counts where the stylus first came down: a resistive panel's last
+// readings as the stylus lifts drift, so the release point can be a
+// neighbouring square. The long-press here waits kLongMs - longer than
+// LVGL's 400 ms, which caught Tom's firm stylus taps and turned them into
+// peeks. A peek shows while held; its release is not a tap.
+constexpr uint32_t kLongMs = 750;
+int      pressed_sq = -1;
+uint32_t pressed_at = 0;
+bool     long_shown = false;
+
+void press_cb(lv_event_t* e)
 {
-    const int sq = square_from_event(e);
+    pressed_sq = square_from_event(e);
+    pressed_at = lv_tick_get();
+    long_shown = false;
+}
+
+void end_long()
+{
+    if (!long_shown) return;
+    long_shown = false;
+    if (C.on_long_end) C.on_long_end();
+}
+
+void tap_cb(lv_event_t*)
+{
+    const int sq = pressed_sq;
+    pressed_sq = -1;
+    if (long_shown) { end_long(); return; }
     if (sq >= 0 && C.on_tap) C.on_tap(sq);
 }
 
-void long_cb(lv_event_t* e)
+void lost_cb(lv_event_t*)
 {
-    const int sq = square_from_event(e);
-    if (sq >= 0 && C.on_long_press) C.on_long_press(sq);
+    end_long();
+    pressed_sq = -1;
+}
+
+void pressing_cb(lv_event_t*)
+{
+    if (long_shown || pressed_sq < 0 || !C.on_long_press) return;
+    if (lv_tick_elaps(pressed_at) < kLongMs) return;
+    long_shown = true;
+    C.on_long_press(pressed_sq);
 }
 
 } // namespace
@@ -94,8 +128,12 @@ lv_obj_t* create(lv_obj_t* parent, int x, int y, int w, int h, const Config& cfg
     lv_obj_set_clickable(obj, true);
     lv_obj_set_scrollable(obj, false);
     lv_obj_add_event_cb(obj, draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
-    lv_obj_add_event_cb(obj, tap_cb, LV_EVENT_SHORT_CLICKED, nullptr);
-    if (cfg.on_long_press) lv_obj_add_event_cb(obj, long_cb, LV_EVENT_LONG_PRESSED, nullptr);
+    lv_obj_add_event_cb(obj, press_cb, LV_EVENT_PRESSED, nullptr);
+    lv_obj_add_event_cb(obj, tap_cb, LV_EVENT_CLICKED, nullptr);
+    lv_obj_add_event_cb(obj, lost_cb, LV_EVENT_PRESS_LOST, nullptr);
+    if (cfg.on_long_press) lv_obj_add_event_cb(obj, pressing_cb, LV_EVENT_PRESSING, nullptr);
+    pressed_sq = -1;
+    long_shown = false;
     return obj;
 }
 

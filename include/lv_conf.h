@@ -62,6 +62,7 @@
 /* ---- Widgets used besides the defaults ----------------------------------- */
 #define LV_USE_BAR    1                   /* needed by the slider */
 #define LV_USE_SLIDER 1                   /* brightness */
+#define LV_USE_QRCODE 1                   /* its encoder (Nayuki qrcodegen, MIT): Send Log */
 
 /* ---- Features not used --------------------------------------------------- */
 #define LV_USE_LOVYAN_GFX 0               /* we use our own glue in lvgl_port.cpp */

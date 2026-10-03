@@ -468,8 +468,19 @@ to flash and reused. To redo it: **☰ → Settings → Recalibrate**.
 The board keeps a small log: each start, why it last restarted (power on,
 crash, watchdog, power dip) and, after a crash, a short crash report. Read
 it on the board under **☰ → Settings → Diagnostics → Device Log** (pages
-with < >; newest at the end). **Copy To SD** saves it as
-`/CYD-Classic-Games/log.txt` on boards with a working SD slot.
+with < >; newest at the end). Boards with a working SD slot also keep a
+copy at `/CYD-Classic-Games/log.txt` whenever a card is in (**Copy To SD**
+does it on demand).
+
+**Sending the log to the developer** - either way opens a page with the log
+and an **Email the Log** button (to cyd.classic.games.logs@gmail.com):
+
+- **Phone:** **☰ → Settings → Diagnostics → Send Log** shows the log
+  (compressed, the newest few hundred lines) as a QR code. Point the phone's
+  camera at it.
+- **Computer (Chrome or Edge):** plug the board in and use **Read Log Over
+  USB** on the [log page](https://tomtombombadil.github.io/CYD-Classic-Games/l/)
+  (linked from the installer page). This reads the whole log.
 
 Or plug the board into a PC and open PlatformIO's **Serial Monitor** (plug
 icon, 115200 baud): every log line shows there as it happens, and opening
