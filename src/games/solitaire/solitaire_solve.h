@@ -22,8 +22,12 @@ enum class Verdict : uint8_t { Win, NoWin, Unknown };
 Verdict check_deal(Game& work, uint32_t seed, int draw, Scoring scoring, uint32_t node_limit,
                    volatile bool* stop = nullptr, uint32_t* nodes = nullptr);
 
+// Gives up after this many candidates and returns the last one unproven
+// (~1 in 12 deals is proven at worst: Vegas, Draw 1).
+constexpr int kMaxTries = 300;
+
 // Try seeds from `seed` on until one checks out as winnable; returns it
-// (and how many were tried). 0 tries = stopped.
+// (and how many were tried). 0 tries = stopped, or no memory to search.
 uint32_t find_winnable(uint32_t seed, int draw, Scoring scoring, uint32_t node_limit,
                        volatile bool* stop = nullptr, int* tries = nullptr);
 

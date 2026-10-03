@@ -7,8 +7,8 @@
 // key presses (picker, menus, Settings, keyboards), picking up a piece and
 // holding a die are silent. Sounds are for moves, the other side's reply,
 // mistakes, hints and the end of a game. Card games (Tom, 2026-10-03) are
-// silent while playing - no tap, move or error sounds - and play Fanfare
-// when won.
+// silent while playing - no tap or move sounds - except Error for a move
+// that isn't allowed, and play Fanfare when won.
 #pragma once
 
 #include <cstdint>
@@ -18,7 +18,7 @@ namespace ui {
 enum class Sound : uint8_t {
     Place,      // a digit, mark or piece put down
     Move,       // a piece moved / tiles slid
-    Error,      // a clash, an illegal move
+    Error,      // a clash, an illegal move: two tones, high then low ("aww")
     Hint,       // a hint filled in
     Win,        // solved / won
     Lose,       // the computer won

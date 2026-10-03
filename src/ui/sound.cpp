@@ -10,7 +10,8 @@ struct Seq { const Tone* t; int n; };
 
 constexpr Tone kPlace[]  = {{1480, 22}};
 constexpr Tone kMove[]   = {{880, 22}, {1320, 28}};
-constexpr Tone kError[]  = {{220, 90}, {0, 30}, {175, 140}};
+// "Aww": a soft high note, then a lower one - disappointed, not a buzzer (Tom)
+constexpr Tone kError[]  = {{660, 110}, {0, 25}, {440, 220}};
 constexpr Tone kHint[]   = {{1320, 60}, {1760, 100}};
 constexpr Tone kWin[]    = {{523, 110}, {659, 110}, {784, 110}, {1047, 280}};
 constexpr Tone kLose[]   = {{392, 170}, {330, 170}, {262, 340}};

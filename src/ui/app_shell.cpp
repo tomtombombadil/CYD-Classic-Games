@@ -1,5 +1,6 @@
 // The app shell: game picker (boot screen), switching between games, and
 // the settings every game shares.
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <lvgl.h>
@@ -321,6 +322,7 @@ void close_current()
     close_overlays();
     if (current >= 0) {
         const games::GameOps* ops = games::get(current).ops;
+        log_step("close %s", games::get(current).id);
         if (ops && ops->close) ops->close();
         current = -1;
     }
@@ -334,6 +336,32 @@ void home_async(void*)   { app_go_home_now(); }
 
 // ---- Public -------------------------------------------------------------------------
 const Shell& shell()    { return H; }
+
+namespace {
+void log_v(bool to_file, const char* fmt, va_list ap)
+{
+    if (!H.log) return;
+    char text[96];
+    vsnprintf(text, sizeof text, fmt, ap);
+    H.log(text, to_file);
+}
+} // namespace
+
+void log_event(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    log_v(true, fmt, ap);
+    va_end(ap);
+}
+
+void log_step(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    log_v(false, fmt, ap);
+    va_end(ap);
+}
 UiSettings&  settings() { return S; }
 
 void save_settings()
@@ -383,6 +411,7 @@ void app_open_game_now(int index)
     }
     current = index;
     metrics_update();
+    log_event("Open %s", gi.id);
     if (gi.ops && gi.ops->open) gi.ops->open();
 }
 

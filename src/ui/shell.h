@@ -46,9 +46,23 @@ struct Shell {
     bool (*stats_clear)(const char* id);
     const char* (*stats_location)();           // "SD card" / "board memory"
 
+    // Device log (nullptr = none). log: one line; to_file = false only
+    // prints it and marks it as the last step a crash report names.
+    // log_copy_sd is nullptr on boards without a usable SD slot.
+    void (*log)(const char* text, bool to_file);
+    bool (*log_read)(void (*line)(const char* text, void* ctx), void* ctx);
+    void (*log_clear)();
+    bool (*log_copy_sd)();
+    void (*memory)(uint32_t* free_bytes, uint32_t* largest_block);
+
     const char* firmware_version;
     const char* board_name;
 };
+
+// Device log lines (printf style). log_event goes to the log file; log_step is for
+// frequent events: serial only, and kept as the "last step" for a crash.
+void log_event(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+void log_step(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 // Start the app: applies theme and brightness and shows the game picker.
 void app_begin(const Shell& shell, const UiSettings& settings, const CustomThemes& themes);
@@ -72,7 +86,9 @@ void app_set_theme(Theme t);
 
 // Settings (shared). `back` runs on its Back button.
 void settings_open(void (*back)());
-void settings_open_touch_test();               // from Settings
+void settings_open_touch_test();               // from Diagnostics
+void diagnostics_open();                       // from Settings
+void device_log_open(int page = -1);           // from Diagnostics; -1 = newest page
 void settings_reopen();                        // Settings again, same Back
 // Theme screens (src/ui/theme_screen.cpp), reached from Settings
 void theme_open();

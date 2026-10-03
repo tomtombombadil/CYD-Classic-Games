@@ -2,12 +2,14 @@
 #include <Arduino.h>
 #include <esp_random.h>
 #include <lvgl.h>
+#include "app/device_log.h"
 #include "app/legacy_import.h"
 #include "app/save_store.h"
 #include "app/settings_store.h"
 #include "app/stats_store.h"
 #include "app/themes_store.h"
 #include "hal/lvgl_port.h"
+#include "boards/board_select.h"
 #include "hal/panel_prefs.h"
 #include "hal/speaker.h"
 #include "hal/splash.h"
@@ -87,6 +89,21 @@ void recalibrate()
     ESP.restart();
 }
 
+// The Device Log screen reads the log through this; it also goes to the
+// serial port then, for anyone with the Serial Monitor open.
+bool log_read(void (*line)(const char*, void*), void* ctx)
+{
+    struct Both { void (*line)(const char*, void*); void* ctx; } both{line, ctx};
+    Serial.println("---- device log ----");
+    const bool ok = device_log_read([](const char* text, void* p) {
+        Serial.println(text);
+        Both* b = static_cast<Both*>(p);
+        b->line(text, b->ctx);
+    }, &both);
+    Serial.println("---- end of log ----");
+    return ok;
+}
+
 } // namespace
 
 void setup()
@@ -101,6 +118,7 @@ void setup()
         while (true) delay(1000);
     }
 
+    device_log_begin(CYD_GAMES_VERSION, BOARD_NAME);
     legacy_import();
     speaker_begin();
 
@@ -130,6 +148,13 @@ void setup()
     sh.stats_delete_last = stats_store_delete_last;
     sh.stats_clear       = stats_store_clear;
     sh.stats_location    = stats_store_location;
+    sh.log               = device_log;
+    sh.log_read          = log_read;
+    sh.log_clear         = device_log_clear;
+#if BOARD_SD_USABLE
+    sh.log_copy_sd       = device_log_copy_sd;
+#endif
+    sh.memory            = device_memory;
     sh.firmware_version  = CYD_GAMES_VERSION;
     sh.board_name        = BOARD_NAME;
     ui::app_begin(sh, settings, themes_store_load());
@@ -141,5 +166,6 @@ void loop()
     const uint32_t wait_ms = lvgl_port_loop();
     ui::app_tick(millis());
     speaker_loop();
+    device_log_loop();
     delay(wait_ms < 5 ? wait_ms : 5);
 }

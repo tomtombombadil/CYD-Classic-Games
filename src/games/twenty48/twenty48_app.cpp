@@ -101,6 +101,10 @@ void record()
 // ---- Game flow -----------------------------------------------------------------------------
 Rng rng_now() { return Rng(shell().random_seed ? shell().random_seed() : lv_tick_get()); }
 
+// Clock ticks only change the top bar: the board isn't redrawn for them
+// (a full card table redraw every second slowed taps down - Tom).
+bool ticking = false;
+
 void update_status()
 {
     if (!bar.center || !S) return;
@@ -112,7 +116,7 @@ void update_status()
     else                    snprintf(s, sizeof s, "Score %lu", (unsigned long)S->g.score);
     kit::top_bar_status(bar, s);
     lv_obj_set_hidden(again_k, !S->g.over());
-    lv_obj_invalidate(area);
+    if (!ticking) lv_obj_invalidate(area);
 }
 
 void new_game()
@@ -386,7 +390,7 @@ void close()
 void tick(uint32_t now)
 {
     if (!S) return;
-    if (clock_.tick(now, !S->g.over(), S->seconds)) update_status();
+    if (clock_.tick(now, !S->g.over(), S->seconds)) { ticking = true; update_status(); ticking = false; }
     if (now - last_save_ms > 30000) { last_save_ms = now; save(); }
 }
 

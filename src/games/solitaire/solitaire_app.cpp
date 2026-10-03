@@ -15,15 +15,16 @@
 // table (tap to stop).
 //
 // Options (☰ → Options): Draw 1 / Draw 3 (default 3), Standard / Vegas /
-// No scoring, the card back. Draw and scoring take effect on the next deal.
+// No scoring, the card back. Draw takes effect at once; scoring on the
+// next deal.
 //
 // Deals: only winnable ones (Tom). The next deal is searched for in the
 // background (solitaire_solve.*, on the AI core) while the current one is
 // played, so New Game is usually instant; if it isn't ready, the table says
 // "Shuffling..." until it is.
 //
-// Sounds: none while playing (Tom: card games are quiet); a playful
-// tune (Fanfare) when won.
+// Sounds: none while playing (Tom: card games are quiet) except a soft
+// "aww" (Error) for a move that isn't allowed; Fanfare when won.
 #include <cstdio>
 #include <new>
 #include "games/common/ai_task.h"
@@ -268,6 +269,10 @@ int32_t shown_score()
     return S->g.scoring == Scoring::Vegas ? S->bank + S->g.score : S->g.score;
 }
 
+// Clock ticks only change the top bar: the board isn't redrawn for them
+// (a full card table redraw every second slowed taps down - Tom).
+bool ticking = false;
+
 void update_status()
 {
     if (!bar.center || !S) return;
@@ -288,7 +293,7 @@ void update_status()
     lv_obj_set_hidden(undo_k, won);
     lv_obj_set_hidden(hint_k, won);
     set_dim(undo_k, g.undo_n == 0);
-    lv_obj_invalidate(table);
+    if (!ticking) lv_obj_invalidate(table);
 }
 
 void record(bool won)
@@ -310,6 +315,8 @@ struct Search {
     uint32_t seed;
     uint8_t  draw, scoring;
     uint32_t result;
+    int      tries;                        // 0 = no memory for the search
+    uint32_t ms;
     volatile bool done;
 };
 Search search{};
@@ -317,9 +324,12 @@ Search search{};
 void search_job(void* ctx, volatile bool* stop)
 {
     Search* s = static_cast<Search*>(ctx);
+    const uint32_t t0 = lv_tick_get();
     int tries = 0;
     s->result = find_winnable(s->seed, s->draw, Scoring(s->scoring), kNodeLimit, stop, &tries);
-    s->done = tries > 0;
+    s->tries = tries;
+    s->ms = lv_tick_get() - t0;
+    s->done = true;                        // a stopped search is dropped by whoever stopped it
 }
 
 void start_search()
@@ -329,7 +339,16 @@ void start_search()
     search.draw = S->opt_draw;
     search.scoring = S->opt_scoring;
     search.done = false;
-    searching = ai_start(search_job, &search, 48 * 1024);
+    log_step("solitaire: deal search, draw %d", search.draw);
+    searching = ai_start(search_job, &search, 20 * 1024);   // moves live on the heap, frames are small
+    if (!searching && shuffling) {
+        // No task (out of memory): deal an unchecked shuffle rather than wait forever
+        log_event("Solitaire: deal search could not start");
+        search.result = search.seed;
+        search.tries = 0;
+        search.done = true;
+        searching = true;
+    }
 }
 
 void deal_seed(uint32_t seed);
@@ -339,6 +358,9 @@ void poll_search()
 {
     if (!searching || !search.done) return;
     searching = false;
+    log_step("solitaire: deal found, %d tries, %lu ms", search.tries, (unsigned long)search.ms);
+    if (search.tries == 0 || search.tries >= solitaire::kMaxTries)
+        log_event("Solitaire: no proven deal (%d tries, %lu ms)", search.tries, (unsigned long)search.ms);
     S->next_seed = search.result;
     S->next_draw = search.draw;
     S->next_scoring = search.scoring;
@@ -382,7 +404,7 @@ void deal(bool same)
         if (g.scoring == Scoring::Vegas) S->bank += g.score;     // this deal's dollars stay
     }
     if (same) {                                // Restart: the same (winnable) deal again
-        g.deal(g.seed, g.draw, g.scoring);
+        g.deal(g.seed, S->opt_draw, g.scoring);
         S->recorded = 0;
         S->seconds = 0;
         clear_pick();
@@ -481,6 +503,7 @@ void table_cb(lv_event_t*)
     if (p == Stock) {
         clear_pick();
         if (g.draw_stock()) dirty = true;
+        else sound(Sound::Error);
         update_status();
         return;
     }
@@ -490,7 +513,7 @@ void table_cb(lv_event_t*)
             const int to = g.best_target(sp, si);
             if (to >= 0 && g.move(sp, si, to)) {after_move(); return; }
             clear_pick();
-
+            sound(Sound::Error);
             update_status();
             return;
         }
@@ -499,7 +522,7 @@ void table_cb(lv_event_t*)
         if (g.move(sp, si, dest)) {after_move(); return; }
         if (pickable(p, i)) { sel_pile = p; sel_idx = i; hint_to = -1; update_status(); return; }
         clear_pick();
-
+        sound(Sound::Error);
         update_status();
         return;
     }
@@ -579,9 +602,15 @@ void options_open();
 void opt_cb(lv_event_t* e)
 {
     const int id = int(reinterpret_cast<intptr_t>(lv_event_get_user_data(e)));
-    if (id == 1 || id == 3) S->opt_draw = uint8_t(id);
+    // Draw takes effect at once (Tom picked Draw 1 and the deal kept turning
+    // three); scoring waits for the next deal, so a score never mixes rules
+    if (id == 1 || id == 3) { S->opt_draw = uint8_t(id); S->g.draw = uint8_t(id); }
     else if (id >= 10 && id <= 12) S->opt_scoring = uint8_t(id - 10);
-    if ((id == 1 || id == 3 || (id >= 10 && id <= 12)) && !searching) start_search();
+    if (id == 1 || id == 3 || (id >= 10 && id <= 12)) {          // look for a deal with the new rules
+        if (searching) { ai_stop(); searching = false; }
+        S->next_ok = 0;
+        start_search();
+    }
     else if (id == 99) { open_menu(); return; }
     else if (id == 98) { cards::back_screen(options_open); return; }
     dirty = true;
@@ -616,7 +645,7 @@ void options_open()
     static const char* const sl[3] = {"Standard", "Vegas", "None"};
     static const int si[3] = {10, 11, 12};
     opt_row(sl, si, 3, 10 + S->opt_scoring);
-    overlay_text("Draw and scoring start with the next deal.", true);
+    overlay_text("Draw changes at once; scoring starts with the next deal.", true);
     overlay_button(overlay(), "Card Back", opt_cb, 98);
     overlay_bottom_button("Back", opt_cb, 99);
 }
@@ -673,7 +702,7 @@ void tick(uint32_t now)
 {
     if (!S) return;
     poll_search();
-    if (clock_.tick(now, !S->g.won() && S->g.moves > 0, S->seconds) && !cards::celebrating()) update_status();
+    if (clock_.tick(now, !S->g.won() && S->g.moves > 0, S->seconds) && !cards::celebrating()) { ticking = true; update_status(); ticking = false; }
     if ((dirty || now - last_save_ms > 30000) && !cards::celebrating()) { last_save_ms = now; save(); }
 }
 

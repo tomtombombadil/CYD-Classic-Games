@@ -10,8 +10,8 @@
 // Red suits use the theme's red, black suits its dark ink. Faces stay
 // cream in every theme (cards are paper); the table is the theme's felt.
 //
-// Rank and suit glyphs: DejaVu Sans Condensed Bold / DejaVu Sans via
-// lv_font_conv, card_font_{10,12,16,20,26,34,46}.c; the back's "B" is DejaVu
+// Rank and suit glyphs: DejaVu Sans Bold / DejaVu Sans via
+// lv_font_conv, card_font_{10..46}.c (ranks: DejaVu Sans Bold); the back's "B" is DejaVu
 // Serif Bold, card_b_font_*.c (THIRD_PARTY_NOTICES.md).
 #pragma once
 

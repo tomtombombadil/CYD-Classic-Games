@@ -141,8 +141,9 @@ and touch calibration are shared.
   through a speaker on the board's speaker connector, and only for what
   matters in a game: moves, the computer's reply, mistakes, hints and the
   end of a game. Plain button taps are silent.
-- **Brightness**, **Invert Colors**, **Swap Red/Blue**, **Recalibrate** and
-  **Touch Test** (see below).
+- **Brightness**, **Invert Colors**, **Swap Red/Blue**, **Recalibrate** (see
+  below) and **Diagnostics**: a **Touch Test** and the **Device Log** (see
+  [If the board crashes or misbehaves](#if-the-board-crashes-or-misbehaves)).
 
 ## Two-player games
 
@@ -459,6 +460,28 @@ dark, and it's remembered.
 On first boot (or when the **BOOT** button is held while powering on), the
 screen shows corner arrows — tap each tip precisely. The calibration is saved
 to flash and reused. To redo it: **☰ → Settings → Recalibrate**.
+
+## If the board crashes or misbehaves
+
+The board keeps a small log: each start, why it last restarted (power on,
+crash, watchdog, power dip) and, after a crash, a short crash report. Read
+it on the board under **☰ → Settings → Diagnostics → Device Log** (pages
+with < >; newest at the end). **Copy To SD** saves it as
+`/CYD-Classic-Games/log.txt` on boards with a working SD slot.
+
+Or plug the board into a PC and open PlatformIO's **Serial Monitor** (plug
+icon, 115200 baud): every log line shows there as it happens, and opening
+Device Log prints the whole log. With the PlatformIO project open, crash
+backtraces are decoded right in the monitor.
+
+A crash report's backtrace is a list of addresses. To turn them into
+function names for a downloaded build, use the matching `firmware.elf`
+(Actions → the build → artifact `elf-<board>`, or `debug-symbols.zip` on a
+release) in PowerShell:
+
+```powershell
+& "$env:USERPROFILE\.platformio\packages\toolchain-xtensa-esp-elf\bin\xtensa-esp32-elf-addr2line.exe" -pfiaC -e firmware.elf 0x400d8f3c 0x400d9122
+```
 
 ## Colors look wrong?
 

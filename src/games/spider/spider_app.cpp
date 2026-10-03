@@ -8,7 +8,8 @@
 // again to send it to the best column (its own suit first). Tap the stock
 // to deal a row.
 //
-// Sounds: none while playing (card games are quiet); Fanfare when won.
+// Sounds: none while playing (card games are quiet) except a soft "aww"
+// (Error) for a move that isn't allowed; Fanfare when won.
 #include <cstdio>
 #include <new>
 #include "games/common/cards.h"
@@ -150,6 +151,10 @@ void draw_cb(lv_event_t* e)
 }
 
 // ---- Flow ----------------------------------------------------------------------------------------
+// Clock ticks only change the top bar: the board isn't redrawn for them
+// (a full card table redraw every second slowed taps down - Tom).
+bool ticking = false;
+
 void update_status()
 {
     if (!bar.center || !S) return;
@@ -165,7 +170,7 @@ void update_status()
     lv_obj_set_hidden(undo_k, g.won());
     lv_obj_set_hidden(hint_k, g.won());
     set_dim(undo_k, g.log_n == 0);
-    lv_obj_invalidate(table);
+    if (!ticking) lv_obj_invalidate(table);
 }
 
 void record(bool won)
@@ -238,7 +243,7 @@ void table_cb(lv_event_t*)
     if (y >= row_y && y < row_y + ch && x >= stock_x() && deals_left()) {
         clear_marks();
         if (g.deal_row()) {after_change(done_before); }
-        else { note_empty = true;update_status(); }
+        else { note_empty = true; sound(Sound::Error); update_status(); }
         return;
     }
     if (y < tab_y - 2) { clear_marks(); update_status(); return; }
@@ -253,11 +258,11 @@ void table_cb(lv_event_t*)
         if (c == sc && i == si) {
             const int to = g.best_target(sc, si);
             if (to >= 0 && g.move(sc, si, to)) { after_change(done_before); return; }
-            clear_marks();update_status(); return;
+            clear_marks(); sound(Sound::Error); update_status(); return;
         }
         if (g.move(sc, si, c)) { after_change(done_before); return; }
         if (i >= 0 && i >= g.run_start(c)) { sel_col = c; sel_idx = i; hint_to = -1; update_status(); return; }
-        clear_marks();update_status(); return;
+        clear_marks(); sound(Sound::Error); update_status(); return;
     }
     clear_marks();
     if (i >= 0 && i >= g.run_start(c) && up(g.col[c][i])) { sel_col = c; sel_idx = i; }
@@ -368,7 +373,7 @@ void close()
 void tick(uint32_t now)
 {
     if (!S) return;
-    if (clock_.tick(now, !S->g.won() && S->g.moves > 0, S->seconds) && !cards::celebrating()) update_status();
+    if (clock_.tick(now, !S->g.won() && S->g.moves > 0, S->seconds) && !cards::celebrating()) { ticking = true; update_status(); ticking = false; }
     if (now - last_save_ms > 30000 && !cards::celebrating()) { last_save_ms = now; save(); }
 }
 

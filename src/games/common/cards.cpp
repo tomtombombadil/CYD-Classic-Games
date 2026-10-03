@@ -9,7 +9,8 @@
 #include "ui/widgets.h"
 
 extern "C" {
-extern const lv_font_t card_font_10, card_font_12, card_font_16, card_font_20, card_font_26, card_font_34, card_font_46;
+extern const lv_font_t card_font_10, card_font_12, card_font_14, card_font_16, card_font_18, card_font_20, card_font_24,
+    card_font_28, card_font_34, card_font_46;
 extern const lv_font_t card_b_font_16, card_b_font_22, card_b_font_30, card_b_font_40, card_b_font_54, card_b_font_70;
 }
 
@@ -17,8 +18,8 @@ namespace cards {
 
 namespace {
 
-const lv_font_t* const kFonts[] = {&card_font_10, &card_font_12, &card_font_16, &card_font_20,
-                                   &card_font_26, &card_font_34, &card_font_46};
+const lv_font_t* const kFonts[] = {&card_font_10, &card_font_12, &card_font_14, &card_font_16, &card_font_18,
+                                   &card_font_20, &card_font_24, &card_font_28, &card_font_34, &card_font_46};
 constexpr int kFontCount = sizeof kFonts / sizeof kFonts[0];
 
 const char* const kRanks[14] = {"", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
@@ -167,11 +168,54 @@ lv_color_t felt() { return lv_color_darken(ui::pal().felt, 38); }
 
 int index_h(int w, int h)
 {
-    int s = h * 30 / 100;
+    int s = h * 36 / 100;                   // bigger than it was: the rank must read on a 2.8"
     if (s < 12) s = 12;
     if (s > w / 2) s = w / 2;
     return s;
 }
+
+namespace {
+// The index and body sizes for one card size, worked out once (font fitting
+// for 52 cards on every redraw was slow - Tom felt taps lag)
+struct Layout {
+    int w = 0, h = 0, pad = 0, sh = 0, rank_h = 0, squeeze = 0;
+    const lv_font_t* rank = nullptr;
+    const lv_font_t* suit = nullptr;
+    const lv_font_t* body[4] = {};
+};
+Layout cache[6];
+int cache_next = 0;
+
+int ten_w(const lv_font_t* f, int squeeze) { return text_w("1", f) - squeeze + text_w("0", f); }
+
+const Layout& layout(int w, int h)
+{
+    for (const Layout& c : cache) if (c.w == w && c.h == h) return c;
+    Layout& L = cache[cache_next];
+    cache_next = (cache_next + 1) % 6;
+    L = Layout{};
+    L.w = w; L.h = h;
+    L.pad = w >= 40 ? 3 : w >= 26 ? 2 : 1;
+    L.sh = index_h(w, h);
+    const int ink_h = L.sh * 80 / 100, avail = w - L.pad - 1;
+    L.rank = kFonts[0];
+    L.suit = kFonts[0];
+    for (int i = 0; i < kFontCount; ++i) {
+        const lv_font_t* sf = kFonts[i > 0 ? i - 1 : 0];
+        const int sq = lv_font_get_line_height(kFonts[i]) / 9;
+        const Box rb = glyph_box(kFonts[i], '8');
+        if (rb.h <= ink_h && ten_w(kFonts[i], sq) + 1 + glyph_box(sf, kSuitCode[0]).w <= avail) {
+            L.rank = kFonts[i];
+            L.suit = sf;
+            L.squeeze = sq;
+        }
+    }
+    L.rank_h = glyph_box(L.rank, '8').h;
+    const int by = L.sh + 1, bh = h - L.pad - by;
+    for (int s = 0; s < 4; ++s) L.body[s] = fit(kSuits[s], kSuitCode[s], w - 2 * L.pad - 2, bh - 2);
+    return L;
+}
+} // namespace
 
 void draw_face(lv_layer_t* layer, int x, int y, int w, int h, uint8_t card, bool selected)
 {
@@ -189,26 +233,28 @@ void draw_face(lv_layer_t* layer, int x, int y, int w, int h, uint8_t card, bool
     const char* rs = kRanks[rank];
     const uint32_t sc = kSuitCode[suit];
 
-    // Index strip: rank, then a small suit, ink filling ~70 % of the strip
-    const int pad = w >= 40 ? 4 : w >= 26 ? 2 : 1, sh = index_h(w, h);   // narrow (Spider) cards: tight
-    const int ink_h = sh * 72 / 100;
-    const int avail_w = w - 2 * pad - 1;
-    const lv_font_t* rf = kFonts[0];
-    for (int i = 0; i < kFontCount; ++i) {
-        const Box rb = glyph_box(kFonts[i], 'K');
-        const Box sb = glyph_box(kFonts[i], sc);
-        // sized for the widest rank, "10", so every card's index matches
-        if (rb.h <= ink_h && text_w("10", kFonts[i]) + 1 + sb.w <= avail_w) rf = kFonts[i];
+    // Index strip: the rank as big as fits (Tom: on the 2.8" the digits must
+    // read apart), then the suit a size smaller right after it. Sized for
+    // the widest rank, "10" (its digits drawn a little closer), so every
+    // card's index matches. Worked out once per card size.
+    const Layout& L = layout(w, h);
+    const int ty = y + L.pad + (L.sh - L.pad - L.rank_h) / 2;
+    int rx = x + L.pad;
+    if (rank == 10) {
+        draw_at(layer, "1", L.rank, ink, rx, ty, '8');
+        rx += text_w("1", L.rank) - L.squeeze;
+        draw_at(layer, "0", L.rank, ink, rx, ty, '8');
+        rx += text_w("0", L.rank);
+    } else {
+        draw_at(layer, rs, L.rank, ink, rx, ty, '8');
+        rx += text_w(rs, L.rank);
     }
-    const int ty = y + pad + (sh - pad - glyph_box(rf, 'K').h) / 2;
-    draw_at(layer, rs, rf, ink, x + pad, ty, 'K');
-    const Box sb = glyph_box(rf, sc), kb = glyph_box(rf, 'K');
-    // suit right after the rank, so a sideways fan that shows the rank shows the suit too
-    draw_at(layer, kSuits[suit], rf, ink, x + pad + text_w(rs, rf) + 1, ty + (kb.h - sb.h) / 2, sc);
+    const Box sb = glyph_box(L.suit, sc);
+    draw_at(layer, kSuits[suit], L.suit, ink, rx + 1, ty + (L.rank_h - sb.h) / 2, sc);
 
     // Body: one big suit in the space below the strip
-    const int by = y + sh + 1, bh = y + h - pad - by;
-    const lv_font_t* bf = fit(kSuits[suit], sc, w - 2 * pad - 2, bh - 2);
+    const int by = y + L.sh + 1, bh = y + h - L.pad - by;
+    const lv_font_t* bf = L.body[suit];
     const Box bb = glyph_box(bf, sc);
     draw_at(layer, kSuits[suit], bf, ink, x + (w - bb.w) / 2, by + (bh - bb.h) / 2, sc);
 }

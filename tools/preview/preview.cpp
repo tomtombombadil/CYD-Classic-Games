@@ -167,6 +167,33 @@ static bool stats_read(const char* id, void (*fn)(const char*, void*), void* ctx
 }
 static const char* fake_location() { return "SD card"; }
 
+// A sample device log: a few boots, then a crash report
+static bool fake_log(void (*line)(const char*, void*), void* ctx)
+{
+    static const char* const L[] = {
+        "0:00:00 === Boot: firmware v0.1.0, 2.8\" ST7789 Resistive",
+        "0:00:00 Last reset: power on",
+        "0:00:00 Memory: 212 KB free, largest block 108 KB",
+        "0:00:09 Open sudoku", "0:04:51 Open solitaire", "0:21:13 Open spider",
+        "0:00:00 === Boot: firmware v0.1.0, 2.8\" ST7789 Resistive",
+        "0:00:00 Last reset: restart by the firmware",
+        "0:00:00 Memory: 212 KB free, largest block 108 KB",
+        "0:00:12 Open freecell", "0:08:40 Open chess", "0:09:02 AI stack tight: 1460 of 32768 bytes unused",
+        "0:00:00 === Boot: firmware v0.1.0, 2.8\" ST7789 Resistive",
+        "0:00:00 Last reset: CRASH",
+        "0:00:00 Crash: Task watchdog got triggered. The following tasks did not reset the watchdog in time",
+        "0:00:00 Task ai on core 0 at 0x400d8f3c",
+        "0:00:00 Backtrace: 400d8f3c 400d9122 400da410",
+        "0:00:00   400e0a6c 4008ff2d",
+        "0:00:00 Last step: solitaire: deal search, draw 3",
+        "0:00:00 Memory: 212 KB free, largest block 108 KB",
+        "0:00:05 Open solitaire",
+    };
+    for (const char* l : L) line(l, ctx);
+    return true;
+}
+static void fake_memory(uint32_t* f, uint32_t* b) { *f = 187 * 1024; *b = 104 * 1024; }
+
 // Simulated stylus taps for the touch-test screenshot: the first reading of
 // each tap lands one cell low, the rest on target (Tom's 4.0" symptom).
 static int fake_step = -1;
@@ -283,6 +310,10 @@ int main(int argc, char** argv)
     sh.stats_location = fake_location;
     sh.stats_delete_last = [](const char*) { return true; };
     sh.stats_clear = [](const char*) { return true; };
+    sh.log_read = fake_log;
+    sh.log_clear = [] {};
+    sh.log_copy_sd = [] { return true; };
+    sh.memory = fake_memory;
     // Look like a real board so the README screenshots read naturally.
     sh.firmware_version = "v0.1.0";
     sh.board_name = W == 240 ? "3.2\" ST7789 Resistive" : "4.0\" ST7796 Resistive";
@@ -411,6 +442,12 @@ int main(int argc, char** argv)
     for (fake_step = 0; fake_step < 3 * 14; ++fake_step) { fake_ms += 10; lv_timer_handler(); }
     fake_step = -1;
     shot(out + "_light_9_touch_test.ppm");
+    ui::diagnostics_open();
+    shot(out + "_light_9_diagnostics.ppm");
+    ui::device_log_open();
+    shot(out + "_light_9_device_log.ppm");
+    ui::device_log_open(0);
+    shot(out + "_light_9_device_log_1.ppm");
     ui::close_overlays();
 
     // 4. The stage-2 games
@@ -884,6 +921,21 @@ int main(int argc, char** argv)
         shot(out + "_light_45_card_back.ppm");
         ui::close_overlays();
         ui::app_go_home_now();
+        {   // Options -> Draw 1 must change the deal being played (Tom found it didn't)
+            stage(*g, 223, 0);
+            kit_preview_menu();
+            press_overlay_key("Options");
+            press_overlay_key("Draw 1");
+            run(20);
+            ui::close_overlays();
+            ui::app_go_home_now();
+            Game* chk = new Game();
+            chk->deserialize(files["solitaire"].data(), files["solitaire"].size());
+            if (chk->draw != 1) fprintf(stderr, "SOLITAIRE DRAW FAIL: draw %d after picking Draw 1\n", chk->draw);
+            const uint8_t* q = files["solitaire"].data() + Game::kSaveBytes;
+            if (q[5] != 1) fprintf(stderr, "SOLITAIRE DRAW FAIL: option %d\n", q[5]);
+            delete chk;
+        }
         // A deal one step from done: foundations to Queen, the Kings on columns
         ui::app_set_theme(ui::Theme::Dark);
         Game* w = new Game();

@@ -85,6 +85,10 @@ bool load(State& st)
 }
 
 // ---- Flow ---------------------------------------------------------------------------------------
+// Clock ticks only change the top bar: the board isn't redrawn for them
+// (a full card table redraw every second slowed taps down - Tom).
+bool ticking = false;
+
 void update_status()
 {
     if (!bar.center || !S) return;
@@ -101,7 +105,7 @@ void update_status()
     lv_obj_set_hidden(mark_k, g.solved());
     set_checked(fill_k, !S->mark_mode);
     set_checked(mark_k, S->mark_mode);
-    lv_obj_invalidate(board_obj);
+    if (!ticking) lv_obj_invalidate(board_obj);
 }
 
 void record(bool solved)
@@ -311,7 +315,7 @@ void close()
 void tick(uint32_t now)
 {
     if (!S) return;
-    if (clock_.tick(now, !S->g.solved(), S->seconds)) update_status();
+    if (clock_.tick(now, !S->g.solved(), S->seconds)) { ticking = true; update_status(); ticking = false; }
     if (dirty || now - last_save_ms > 30000) { last_save_ms = now; save(); }
 }
 

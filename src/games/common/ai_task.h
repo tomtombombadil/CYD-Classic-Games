@@ -1,5 +1,7 @@
 // Runs a computer opponent's search off the UI: on the board a FreeRTOS
-// task on core 0 (the UI runs on core 1), in the PC preview straight away.
+// task on core 0 (the UI runs on core 1) at idle priority, so core 0's idle
+// task still runs and the task watchdog stays fed however long the search
+// takes; in the PC preview straight away.
 // One job at a time. The job gets a stop flag it should check now and then;
 // ai_stop() sets it and waits for the job to end (used when the player
 // leaves the game).

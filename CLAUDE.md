@@ -105,9 +105,10 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
     with a dark outline on blue, like the splash title), Moon (a crescent
     on black, one star in the top right corner), Tree (green
     crown, brown trunk), then Lattice / Stripes / Dots in blue, red, green.
-    Default back: Blue Lattice (Tom). Card games make no sound while
-    playing (no tap/move/error/hint sounds - Tom); a won solitaire-type
-    game plays `Sound::Fanfare`, a playful tune.
+    Default back: Blue Lattice (Tom). Card games make no tap/move/hint
+    sounds (Tom); an invalid move plays `Sound::Error` (Tom, 2026-10-03:
+    OK if not annoying - a two-tone high-then-low "aww", 660 then 440 Hz);
+    a won solitaire-type game plays `Sound::Fanfare`, a playful tune.
     Keep pictures simple: small cards. The player's back is shared by every
     card game (`UiSettings::card_back`, UIS2 byte 9 = back + 1);
     `cards::back_screen()` is the picker (Options -> Card Back). Memory
@@ -115,11 +116,21 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
     foundations and bounce off the screen leaving trails, Windows-style;
     only the flying card's rect is invalidated each frame, so trails cost
     no RAM (the preview's `shot(..., keep=true)` keeps them). Fonts from
-    DejaVu via lv_font_conv (ranks Condensed Bold, suits Sans).
+    DejaVu via lv_font_conv (ranks Sans Bold - clearer than Condensed on
+    the 2.8", Tom; suits Sans). Index strip 36 % of the card, rank as big
+    as fits ("10" drawn tight), suit a size smaller; sizes cached per card
+    size.
     `tools/preview/card_mockups.cpp` renders table mockups (Klondike,
     FreeCell, Blackjack, video poker).
   - `ai_task.*`: one background job on a core-0 FreeRTOS task with a stop
-    flag (device); the preview stub runs it at once.
+    flag (device); the preview stub runs it at once. The task runs at
+    IDLE priority: at priority 1 a search over 5 s starved core 0's idle
+    task and the task watchdog rebooted the board (Tom's 2.8", Solitaire
+    "Shuffling..."). Keep it there. It logs a job's unused stack when
+    under 1/8 ("AI stack tight") - raise that job's stack if seen.
+  - Screens with a clock must not redraw the board each second: a
+    `ticking` flag makes the clock tick update only the top bar (a
+    full-table redraw every second made Solitaire taps feel sluggish).
 - Games so far: Sudoku, Light Switch (5x5, par via GF(2) solve, two-tap
   hint), Sliding Tiles (3x3/4x4/5x5), FourConnect (bitboard negamax,
   depth 1/3/8), Tic-Tac-Toe (negamax, depth 1/2/9 = perfect), Reversi
@@ -149,15 +160,17 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   random left-right mirrored pictures kept only when a line solver solves
   them - unique, no guessing; Fill | Mark modes, no long-press; clue turns
   grey when its line matches; fill/mark taps silent), Solitaire (Klondike, called Solitaire - Tom; Options
-  menu key -> Draw 1 / Draw 3 (default 3), Standard / Vegas (balance
-  carries over) / None scoring, Card Back; tap card then destination, tap
+  menu key -> Draw 1 / Draw 3 (default 3; applies to the deal in play at
+  once - Tom expected that), Standard / Vegas (balance carries over) /
+  None scoring (from the next deal), Card Back; tap card then destination, tap
   the picked card again = best target; auto-finish; Undo + Hint keys;
   stats per draw mode, an unfinished deal = Lost; the win show; only
   winnable deals (Tom: fun for kids on a car ride): `solitaire_solve.*`
   searches each candidate deal seeing every card (20k positions, safe
-  foundation moves forced, a 32 KB lossy position table) and only proven
+  foundation moves forced, a 16 KB lossy position table, moves in a heap
+  pool, at most `kMaxTries` = 300 candidates) and only proven
   wins are dealt; the next deal is found in the background on the AI task
-  (48 KB stack) while one is played, else "Shuffling..."; foundations
+  (20 KB stack) while one is played, else "Shuffling..."; foundations
   fixed Spades, Hearts, Clubs, Diamonds left to right with their suit on
   empty piles, and the whole foundation row is one drop target; a second
   tap (double tap) on the picked card sends it to its foundation), Spider
@@ -172,10 +185,12 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   all 17s and peeks, 3:2, double any two, one split, split Aces one card;
   500 chips, New Chips +500 when broke; stats per hand CSV
   "#,Bet,Result,Net,Chips"; dealer's cards revealed one at a time;
-  Fanfare on a blackjack). Landscape (Tom asked 2026-10-03 to look at it):
-  mockup `card_mockups` case 5 - bigger cards (42 vs 31 px) but about 3
-  card-heights of column room instead of 5; needs the runtime rotation
-  switch first. Waiting for Tom's call. Card
+  Fanfare on a blackjack). Landscape (decided 2026-10-03): Solitaire
+  stays portrait (Tom agreed: too short for late-game columns, mockup
+  `card_mockups` case 5); Tom OK'd landscape for card games where it is
+  truly better - none is on these 3:4 screens (Golf/Pyramid would gain
+  ~10-15 % card size only), so all stay portrait and no runtime rotation
+  switch was built. Card
   games keep their undo history only while open (not in the save). A
   stuck deal is recorded as Lost only when the next deal starts (Undo can
   still save it). Golf/Pyramid/Spider menus: "Card Back" key -> the
@@ -280,7 +295,24 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   placement, the other side's reply, mistakes, hints, game end, and one
   sample when the Volume slider is released.
 - Settings (☰ → Settings, shared): [Theme | Invert Colors], Brightness
-  slider, Volume slider, Swap Red/Blue, [Recalibrate | Touch Test], Back.
+  slider, Volume slider, Swap Red/Blue, [Recalibrate | Diagnostics], Back.
+  Diagnostics (`src/ui/diagnostics_screen.cpp`): [Touch Test | Device
+  Log], board, firmware, free memory, uptime, Back. Device Log: paged
+  with < > (opens on the newest page), [Clear Log | Copy To SD], [< Back >].
+- Device log (Tom, 2026-10-03: "we need a way to pull logs"):
+  `src/app/device_log.*` (device only). `/log.txt` + `/log.old` on
+  LittleFS, 8 KB each, every line also to serial (115200). Each boot logs
+  firmware, board, reset reason (power on / crash / watchdog / brownout)
+  and memory. A crash handler (`set_arduino_panic_handler`; needs
+  `-Wl,--wrap=esp_panic_handler` in platformio.ini - PlatformIO doesn't
+  add it) saves reason, task, PC, 8 backtrace addresses and the last step
+  in RTC memory; the next boot writes them to the log. Games log through
+  the shell: `ui::log_event()` (written to the file - rare events: game
+  opened, search failed) and `ui::log_step()` (serial + "last step" only -
+  frequent events). Other tasks' lines are queued for the main loop.
+  Copy To SD writes `/CYD-Classic-Games/log.txt`. CI keeps each build's
+  `firmware.elf` (artifact `elf-<env>`, 90 days; releases attach
+  `debug-symbols.zip`) to decode backtraces with addr2line.
 - Themes: Light, Dark and 3 Custom slots. A custom theme starts from Light
   or Dark and overrides 10 color roles, each picked from a 48-color palette
   (`/themes.bin`). Games take every color from `ui::pal()`, so a custom
@@ -344,7 +376,7 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 - Touch filter (fixed a first-tap offset on the 4.0"): a press starts only
   after two consecutive readings agree within 8 px and ends after two empty
   readings; ESP32-32E touch clock 1 MHz. Keep both. Diagnostic: Settings >
-  Touch test; `-D CYD_TOUCH_DEBUG` logs raw touches to serial.
+  Diagnostics > Touch Test; `-D CYD_TOUCH_DEBUG` logs raw touches to serial.
 - Panel inversion / red-blue order differ between production runs. Fixed
   per unit on the device (`src/hal/panel_prefs.*`), not with build flags.
 - Before the screen comes up, quiet the RGB LED and audio amp

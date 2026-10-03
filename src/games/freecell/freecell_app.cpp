@@ -9,7 +9,8 @@
 // A second tap on the picked card sends it to its foundation, else to a
 // column, else a free cell. Safe cards go up by themselves.
 //
-// Sounds: none while playing (card games are quiet); Fanfare when won.
+// Sounds: none while playing (card games are quiet) except a soft "aww"
+// (Error) for a move that isn't allowed; Fanfare when won.
 #include <cstdio>
 #include <new>
 #include "freecell_core.h"
@@ -128,6 +129,10 @@ void draw_cb(lv_event_t* e)
 }
 
 // ---- Flow ----------------------------------------------------------------------------------------
+// Clock ticks only change the top bar: the board isn't redrawn for them
+// (a full card table redraw every second slowed taps down - Tom).
+bool ticking = false;
+
 void update_status()
 {
     if (!bar.center || !S) return;
@@ -144,7 +149,7 @@ void update_status()
     lv_obj_set_hidden(undo_k, g.won());
     lv_obj_set_hidden(hint_k, g.won());
     set_dim(undo_k, g.log_n == 0);
-    lv_obj_invalidate(table);
+    if (!ticking) lv_obj_invalidate(table);
 }
 
 void record(bool won)
@@ -249,7 +254,7 @@ void table_cb(lv_event_t*)
         if (p == sp && (i == si || p < Col0)) {                    // second tap: send it
             const int to = g.best_target(sp, si);
             if (to >= 0 && g.move(sp, si, to)) { after_move(); return; }
-            clear_marks(); update_status(); return;
+            clear_marks(); sound(Sound::Error); update_status(); return;
         }
         int dest = p;
         if (p >= Found0 && p < Col0) {                             // the foundation row: its suit
@@ -260,7 +265,7 @@ void table_cb(lv_event_t*)
         }
         if (g.move(sp, si, dest)) { after_move(); return; }
         if (pickable(p, i)) { sel_pile = p; sel_idx = i; hint_to = -1; update_status(); return; }
-        clear_marks(); update_status(); return;
+        clear_marks(); sound(Sound::Error); update_status(); return;
     }
     clear_marks();
     if (pickable(p, i)) { sel_pile = p; sel_idx = p < Found0 ? 0 : i; }
@@ -366,7 +371,7 @@ void close()
 void tick(uint32_t now)
 {
     if (!S) return;
-    if (clock_.tick(now, !S->g.won() && S->g.moves > 0, S->seconds) && !cards::celebrating()) update_status();
+    if (clock_.tick(now, !S->g.won() && S->g.moves > 0, S->seconds) && !cards::celebrating()) { ticking = true; update_status(); ticking = false; }
     if (now - last_save_ms > 30000 && !cards::celebrating()) { last_save_ms = now; save(); }
 }
 

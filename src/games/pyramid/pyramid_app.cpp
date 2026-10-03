@@ -6,7 +6,8 @@
 // uncovered card to pick it (amber), then its partner that makes 13; a
 // King goes as soon as you tap it. Tap the stock to turn a card.
 //
-// Sounds: none while playing (card games are quiet); Fanfare when won.
+// Sounds: none while playing (card games are quiet) except a soft "aww"
+// (Error) for a pair that doesn't make 13; Fanfare when won.
 #include <cstdio>
 #include <new>
 #include "games/common/cards.h"
@@ -136,6 +137,10 @@ int slot_at(int x, int y)
 // ---- Flow -----------------------------------------------------------------------------------------
 bool over() { return S->g.won() || S->g.stuck(); }
 
+// Clock ticks only change the top bar: the board isn't redrawn for them
+// (a full card table redraw every second slowed taps down - Tom).
+bool ticking = false;
+
 void update_status()
 {
     if (!bar.center || !S) return;
@@ -156,7 +161,7 @@ void update_status()
     const int pad = m.large ? 8 : 4, kgap = m.large ? 8 : 6, half = (m.w - 2 * pad - kgap) / 2;
     lv_obj_set_width(again_k, g.won() ? m.w - 2 * pad : half);
     lv_obj_set_x(again_k, g.won() ? pad : m.w - pad - half);
-    lv_obj_invalidate(table);
+    if (!ticking) lv_obj_invalidate(table);
 }
 
 void record(bool won)
@@ -229,14 +234,15 @@ void table_cb(lv_event_t*)
     hint_a = hint_b = -1;
     if (s == -2) {
         sel = -1;
-        if (g.draw()) {after_change(); }
+        if (g.draw()) after_change();
+        else sound(Sound::Error);
         return;
     }
     if (s < 0 || !g.free(s)) { sel = -1; update_status(); return; }
     if (g.can_pair(s, -1)) { g.pair(s, -1);after_change(); return; }   // a King
     if (sel >= 0 && sel != s) {
-        if (g.pair(sel, s)) {after_change(); return; }
-
+        if (g.pair(sel, s)) { after_change(); return; }
+        sound(Sound::Error);                               // they don't make 13
         sel = s;
         update_status();
         return;
@@ -347,7 +353,7 @@ void close()
 void tick(uint32_t now)
 {
     if (!S) return;
-    if (clock_.tick(now, !over() && S->g.moves > 0, S->seconds) && !cards::celebrating()) update_status();
+    if (clock_.tick(now, !over() && S->g.moves > 0, S->seconds) && !cards::celebrating()) { ticking = true; update_status(); ticking = false; }
     if (now - last_save_ms > 30000 && !cards::celebrating()) { last_save_ms = now; save(); }
 }
 

@@ -111,6 +111,18 @@ jobs:
           name: fw-${{ matrix.env }}
           path: out/*.bin
 
+      # Symbols for decoding a crash backtrace from the device log
+      # (xtensa-esp32-elf-addr2line -pfiaC -e <file>.elf <addresses>)
+      - name: Keep symbols
+        run: |
+          mkdir -p sym
+          cp .pio/build/${{ matrix.env }}/firmware.elf "sym/${{ matrix.name }}.elf"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elf-${{ matrix.env }}
+          path: sym/*.elf
+          retention-days: 90
+
   # Tag pushes, or "Run workflow" with a release_tag, become a GitHub
   # release. Tags with a hyphen (v0.1.0-alpha.1) are marked pre-release.
   release:
@@ -123,13 +135,23 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: out
+          pattern: fw-*
           merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          path: sym
+          pattern: elf-*
+          merge-multiple: true
+      - name: Zip symbols
+        run: cd sym && zip -9 ../out/debug-symbols.zip *.elf
       - uses: softprops/action-gh-release@v2
         with:
           # Creates the tag on this commit when started from "Run workflow"
           tag_name: ${{ needs.boards.outputs.version }}
           target_commitish: ${{ github.sha }}
-          files: out/*.bin
+          files: |
+            out/*.bin
+            out/debug-symbols.zip
           prerelease: ${{ contains(needs.boards.outputs.version, '-') }}
           generate_release_notes: true
           body: |
@@ -137,6 +159,7 @@ jobs:
 
             Or download the `.bin` for your board and flash it at address **0x0**.
             Files are named by screen size, display driver and touch type.
+            `debug-symbols.zip` is only for decoding crash reports from the device log.
 
   # Web flasher on GitHub Pages: every push to main and every release.
   # Tom tests new builds by flashing them from here (his choice).
@@ -158,6 +181,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: bins
+          pattern: fw-*
           merge-multiple: true
       - name: Assemble site
         run: python3 tools/make_site.py --bins bins --version "${{ needs.boards.outputs.version }}" --out _site

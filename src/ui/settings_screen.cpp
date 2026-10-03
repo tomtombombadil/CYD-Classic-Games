@@ -1,5 +1,5 @@
 // Settings: theme, sound, brightness, panel color fixes, touch calibration
-// and the touch test. Shared by every game and the picker.
+// and the touch test (from Diagnostics). Shared by every game and the picker.
 #include <cstdio>
 #include <cstring>
 #include <lvgl.h>
@@ -14,7 +14,7 @@ namespace {
 
 void (*back_fn)() = nullptr;
 
-enum Action : intptr_t { kTheme, kInvert, kSwapRb, kRecal, kTouchTest, kBack };
+enum Action : intptr_t { kTheme, kInvert, kSwapRb, kRecal, kDiagnostics, kBack };
 
 void brightness_cb(lv_event_t* e)
 {
@@ -178,7 +178,7 @@ void tt_stop()
     for (auto& d : tt_dots) d = nullptr;     // children of the overlay
 }
 
-void tt_done_cb(lv_event_t*) { settings_open(back_fn); }
+void tt_done_cb(lv_event_t*) { diagnostics_open(); }
 
 } // namespace
 
@@ -206,7 +206,7 @@ void action_cb(lv_event_t* e)
             app_save_current();
             if (H.recalibrate_touch) H.recalibrate_touch();
             break;
-        case kTouchTest: settings_open_touch_test(); break;
+        case kDiagnostics: diagnostics_open(); break;
         case kBack:
             if (back_fn) back_fn();
             else close_overlays();
@@ -238,8 +238,7 @@ void settings_open(void (*back)())
 
     // Full width: "Swap Red/Blue" doesn't fit half a row at the menu font.
     overlay_pair("Swap Red/Blue", action_cb, kSwapRb, nullptr, nullptr, 0);
-    overlay_pair("Recalibrate", action_cb, kRecal,
-                 H.raw_touch ? "Touch Test" : nullptr, action_cb, kTouchTest);
+    overlay_pair("Recalibrate", action_cb, kRecal, "Diagnostics", action_cb, kDiagnostics);
     overlay_button(overlay(), "Back", action_cb, kBack, true);
     char info[96];
     snprintf(info, sizeof info, "%s, firmware %s", H.board_name ? H.board_name : "",

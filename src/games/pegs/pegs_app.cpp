@@ -92,6 +92,10 @@ bool hole_xy(int sq, int* x, int* y)
 // ---- Flow ----------------------------------------------------------------------------------------
 bool over() { return S->g.solved() || S->g.stuck(); }
 
+// Clock ticks only change the top bar: the board isn't redrawn for them
+// (a full card table redraw every second slowed taps down - Tom).
+bool ticking = false;
+
 void update_status()
 {
     if (!bar.center || !S) return;
@@ -110,7 +114,7 @@ void update_status()
     lv_obj_set_hidden(again_k, !again);
     lv_obj_set_width(undo_k, again ? (m.w - 2 * pad - gap) / 2 : m.w - 2 * pad);
     set_dim(undo_k, g.moves == 0 || g.solved());
-    lv_obj_invalidate(board_obj);
+    if (!ticking) lv_obj_invalidate(board_obj);
 }
 
 void record(bool solved, bool lost)
@@ -321,7 +325,7 @@ void close()
 void tick(uint32_t now)
 {
     if (!S) return;
-    if (clock_.tick(now, !over(), S->seconds)) update_status();
+    if (clock_.tick(now, !over(), S->seconds)) { ticking = true; update_status(); ticking = false; }
     if (now - last_save_ms > 30000) { last_save_ms = now; save(); }
 }
 

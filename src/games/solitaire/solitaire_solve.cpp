@@ -7,12 +7,19 @@ namespace solitaire {
 
 namespace {
 
-constexpr int kSeenBits = 13;                       // 8192 hashes, 32 KB
+constexpr int kSeenBits = 12;                       // 4096 hashes, 16 KB
 constexpr int kMaxDepth = 180;                      // under the undo log's 200
+
+// Candidate moves for every depth live in one heap block, not on the stack:
+// recursion 180 deep with a 40-move list in each frame overflowed the
+// board's task stack (Xtensa frames are bigger than the PC's)
+struct M { uint8_t from, idx, to; };
+constexpr int kMovesPerDepth = 40;
 
 struct Search {
     Game*         g;
     uint32_t*     seen;
+    M*            pool;                              // kMaxDepth x kMovesPerDepth
     uint32_t      nodes, limit;
     volatile bool* stop;
     bool          gave_up;
@@ -77,10 +84,9 @@ bool dfs(Search& S, int depth)
     }
 
     // Candidate moves, best first
-    struct M { uint8_t from, idx, to; };
-    M ms[40];
+    M* ms = S.pool + depth * kMovesPerDepth;
     int n = 0;
-    auto add = [&](int f, int i, int t) { if (n < 40) ms[n++] = M{uint8_t(f), uint8_t(i), uint8_t(t)}; };
+    auto add = [&](int f, int i, int t) { if (n < kMovesPerDepth) ms[n++] = M{uint8_t(f), uint8_t(i), uint8_t(t)}; };
     // foundation moves
     for (int p = Waste; p < kPiles; ++p) {
         if ((p >= Found0 && p < Tab0) || !g.pile[p].n) continue;
@@ -138,12 +144,14 @@ Verdict check_deal(Game& work, uint32_t seed, int draw, Scoring scoring, uint32_
                    volatile bool* stop, uint32_t* nodes)
 {
     uint32_t* seen = new (std::nothrow) uint32_t[1u << kSeenBits];
-    if (!seen) return Verdict::Unknown;
+    M* pool = new (std::nothrow) M[kMaxDepth * kMovesPerDepth];
+    if (!seen || !pool) { delete[] seen; delete[] pool; return Verdict::Unknown; }
     memset(seen, 0, sizeof(uint32_t) << kSeenBits);
     work.deal(seed, draw, scoring);
-    Search S{&work, seen, 0, node_limit, stop, false};
+    Search S{&work, seen, pool, 0, node_limit, stop, false};
     const bool won = dfs(S, 0);
     delete[] seen;
+    delete[] pool;
     if (nodes) *nodes = S.nodes;
     return won ? Verdict::Win : S.gave_up ? Verdict::Unknown : Verdict::NoWin;
 }
@@ -159,6 +167,7 @@ uint32_t find_winnable(uint32_t seed, int draw, Scoring scoring, uint32_t node_l
         if (stop && *stop) { t = 0; break; }
         ++t;
         if (check_deal(*work, s, draw, scoring, node_limit, stop) == Verdict::Win) break;
+        if (t >= kMaxTries) break;                  // never spin forever (e.g. out of memory)
         s = s * 1664525u + 1013904223u;              // next candidate
         if (!s) s = 1;
     }

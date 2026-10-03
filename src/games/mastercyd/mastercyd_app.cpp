@@ -127,6 +127,10 @@ void answer(lv_layer_t* layer, int x, int y, int w, int h, const Feedback& f, in
 }
 
 // ---- Status ----------------------------------------------------------------------------------
+// Clock ticks only change the top bar: the board isn't redrawn for them
+// (a full card table redraw every second slowed taps down - Tom).
+bool ticking = false;
+
 void update_status()
 {
     if (!bar.center || !S) return;
@@ -143,9 +147,9 @@ void update_status()
     set_checked(check_k, g.full());
     lv_obj_set_hidden(check_k, g.over());
     lv_obj_set_hidden(again_k, !g.over());
-    lv_obj_invalidate(rows_obj);
-    lv_obj_invalidate(entry_obj);
-    lv_obj_invalidate(colors_obj);
+    if (!ticking) lv_obj_invalidate(rows_obj);
+    if (!ticking) lv_obj_invalidate(entry_obj);
+    if (!ticking) lv_obj_invalidate(colors_obj);
 }
 
 void record(bool solved, bool lost)
@@ -387,7 +391,7 @@ void close()
 void tick(uint32_t now)
 {
     if (!S) return;
-    if (clock_.tick(now, !S->g.over(), S->seconds)) update_status();
+    if (clock_.tick(now, !S->g.over(), S->seconds)) { ticking = true; update_status(); ticking = false; }
     if (dirty || now - last_save_ms > 30000) { last_save_ms = now; save(); }
 }
 

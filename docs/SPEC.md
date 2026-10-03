@@ -43,8 +43,11 @@ Budget (CYD-Sudoku v1.0.0 as the baseline):
 - Inside a game, the ☰ menu has: new game, restart, stats, Settings,
   All games.
 - **Settings** is shared: Theme, Volume slider (50 % default, far left = muted), brightness,
-  invert colors, swap red/blue, recalibrate, touch test, player name (once
-  multiplayer exists).
+  invert colors, swap red/blue, recalibrate, Diagnostics (touch test,
+  device log), player name (once multiplayer exists).
+- **Device log**: boots, reset reasons, crash reports (reason, address,
+  backtrace, last step) kept in flash, shown under Diagnostics, copied to
+  SD on request, and echoed to the serial port.
 - **Themes**: Light, Dark, and three Custom themes. A custom theme starts
   from Light or Dark; the player picks colors for 10 roles (background,
   cells, grid lines, ink, your entries, selected, same digit, row/column,
