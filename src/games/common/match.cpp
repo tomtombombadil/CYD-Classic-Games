@@ -71,12 +71,18 @@ void update_status()
     kit::top_bar_status(bar, st);
 
     if (info_l) {
-        char in[80], extra[40] = "";
-        if (G.note) G.note(extra, sizeof extra);
-        if (!extra[0] && G.score) G.score(extra, sizeof extra);
-        if (extra[0])
+        char in[80], extra[48] = "", note[48] = "";
+        if (G.note) G.note(note, sizeof note);
+        if (!note[0] && G.score) G.score(extra, sizeof extra);
+        if (note[0]) {
+            snprintf(in, sizeof in, "%s", note);          // a note is news: on its own
+        } else if (extra[0]) {
             snprintf(in, sizeof in, "%s. %s", extra,
                      S.mode == Mode::Computer ? twoplayer::level_name(S.level) : "Pass and play");
+            // The level goes when the line would be cut short
+            if (text_width(in, lv_obj_get_style_text_font(info_l, LV_PART_MAIN)) > lv_obj_get_style_width(info_l, LV_PART_MAIN))
+                snprintf(in, sizeof in, "%s", extra);
+        }
         else if (S.mode == Mode::Computer)
             snprintf(in, sizeof in, "Computer: %s. You: %s",
                      twoplayer::level_name(S.level), side_name(S.human_side));

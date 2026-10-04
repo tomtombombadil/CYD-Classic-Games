@@ -87,7 +87,7 @@ Candidates, grouped. Order of building is in section 6.
 | FourConnect (Connect Four) | Can play perfectly; easy levels hold back |
 | Mancala (Kalah) | Two rows of six pits (*built 2026-10-03*: portrait, pits in two columns, stores in the middle) |
 | Tic-Tac-Toe / Ultimate Tic-Tac-Toe | Ultimate is the interesting one |
-| Nine Men's Morris | Big targets |
+| Nine Men's Morris | Big targets (*built 2026-10-03*) |
 | Gomoku | 15x15, 16 px cells on 240-wide boards |
 | You Sunk My CYD! (Battleship) | Two grids, flip between them |
 

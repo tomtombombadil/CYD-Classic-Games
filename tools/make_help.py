@@ -193,6 +193,13 @@ write("mancala", [
  TP,
 ], two_player=True)
 
+write("morris", [
+ ("The Idea", "Each side has nine men; White starts. Three of your men in a line - a mill - lets you take one of the other side's men.\nTake them down to two men, or leave them no move, and you win."),
+ ("Placing, Then Moving", "First, take turns placing a man on any empty point (tap it).\nWith all men placed, a turn moves one man along a line to the next empty point: tap your man (dots show where it can go), then the point.\nA side down to three men may fly: move to any empty point."),
+ ("Mills", "Make a mill and the men you may take get a red ring: tap one. Men in a mill are safe while the other side has men outside mills.\nTap your new man again to take that move back.\nThe last move is tinted; a red ring on an empty point shows where a man was taken. 50 moves each with nothing taken is a draw."),
+ TP,
+], two_player=True)
+
 write("vpoker", [
  ("The Idea", "The classic Jacks or Better machine. Bet 1 to 5 credits and get five cards. Tap the cards you want to keep: they say HELD. Then Draw replaces the rest, once.\nYour final hand pays by the table at the top, times your bet. The hand you hold lights up."),
  ("Paying Hands", "• Jacks or Better: a pair of Jacks, Queens, Kings or Aces\n• Two Pair, Three of a Kind\n• Straight: five in a row (A-2-3-4-5 and 10-J-Q-K-A count)\n• Flush: five of one suit\n• Full House, Four of a Kind, Straight Flush\n• Royal Flush: 10 to Ace of one suit, 4000 at a 5 credit bet"),

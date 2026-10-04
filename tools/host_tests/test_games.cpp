@@ -31,6 +31,7 @@
 #include "../../src/games/holdem/holdem_core.h"
 #include "../../src/games/farkle/farkle_core.h"
 #include "../../src/games/mancala/mancala_core.h"
+#include "../../src/games/morris/morris_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -1796,6 +1797,72 @@ static void test_mancala()
     CHECK(wins[0] >= 8 && wins[2] >= 6);
 }
 
+// ---- Nine Men's Morris ------------------------------------------------------------------------
+static void test_morris()
+{
+    using namespace morris;
+    // The board: 24 points, every point on exactly two mills, 32 links
+    int on[kPoints] = {}, links = 0;
+    for (const auto& l : kMills) for (int k = 0; k < 3; ++k) ++on[l[k]];
+    for (int p = 0; p < kPoints; ++p) { CHECK(on[p] == 2); links += __builtin_popcount(neighbours(p)); }
+    CHECK(links == 64);
+    CHECK(neighbours(4) == ((1u << 1) | (1u << 3) | (1u << 5) | (1u << 7)));
+    Game g;
+    MoveList l;
+    g.legal(l);
+    CHECK(l.n == 24);
+    auto code = [](int from, int to, int remove) { Move m; m.from = int8_t(from); m.to = int8_t(to); m.remove = int8_t(remove); return m.code(); };
+    // White 0, Black 9, White 1, Black 10, White 2 = mill: must take one
+    CHECK(g.play(code(-1, 0, -1)) && g.play(code(-1, 9, -1)) && g.play(code(-1, 1, -1)) && g.play(code(-1, 10, -1)));
+    CHECK(!g.play(code(-1, 2, -1)));                 // a mill without a capture isn't legal
+    CHECK(g.play(code(-1, 2, 9)) && g.pos.cell(9) == -1 && g.pos.on_board(1) == 1);
+    // Men in a mill are safe while others aren't
+    Position p;
+    p.hand[0] = p.hand[1] = 0;
+    p.men[1] = (1u << 0) | (1u << 1) | (1u << 2) | (1u << 23);
+    CHECK(p.removable(1) == (1u << 23));
+    p.men[1] = (1u << 0) | (1u << 1) | (1u << 2);
+    CHECK(p.removable(1) == p.men[1]);              // all in mills: any
+    // Flying with three men; two men left = a loss
+    Game f;
+    f.pos.hand[0] = f.pos.hand[1] = 0;
+    f.pos.men[0] = (1u << 0) | (1u << 4) | (1u << 23);
+    f.pos.men[1] = (1u << 9) | (1u << 10) | (1u << 11) | (1u << 12);
+    f.legal(l);
+    int from0 = 0;
+    for (int k = 0; k < l.n; ++k) from0 += l.m[k].from == 0;
+    CHECK(from0 == kPoints - 7);                     // to every empty point
+    f.pos.men[0] = (1u << 0) | (1u << 4);
+    CHECK(f.result() == 1);
+    // Blocked = loss
+    Game b;
+    b.pos.hand[0] = b.pos.hand[1] = 0;
+    b.pos.men[0] = (1u << 0) | (1u << 2) | (1u << 21) | (1u << 23);
+    b.pos.men[1] = (1u << 1) | (1u << 9) | (1u << 14) | (1u << 22) | (1u << 4) | (1u << 10) | (1u << 13) | (1u << 19);
+    CHECK(b.result() == 1);
+    // Computer games: always legal, they end, the save round-trips
+    int hard_wins = 0;
+    for (int k = 0; k < 6; ++k) {
+        Game x;
+        const int hard_side = k & 1;
+        int guard = 0;
+        while (x.result() == -1 && ++guard < 700) {
+            const int m = best_move(x, x.turn() == hard_side ? 2 : 0, uint32_t(k * 101 + guard));
+            CHECK(x.play(m));
+        }
+        CHECK(x.result() != -1);
+        hard_wins += x.result() == hard_side;
+        if (k == 0) {
+            uint8_t buf[Game::kSaveBytes];
+            Game y;
+            CHECK(x.serialize(buf, sizeof buf) == sizeof buf && y.deserialize(buf, sizeof buf));
+            CHECK(y.pos.men[0] == x.pos.men[0] && y.pos.men[1] == x.pos.men[1] && y.plies == x.plies && y.result() == x.result());
+        }
+    }
+    printf("morris: Hard beat Easy %d of 6\n", hard_wins);
+    CHECK(hard_wins >= 5);
+}
+
 static void test_stats()
 {
     using namespace twoplayer;
@@ -1865,6 +1932,7 @@ int main()
     test_holdem();
     test_farkle();
     test_mancala();
+    test_morris();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

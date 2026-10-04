@@ -27,6 +27,11 @@
 #include "games/holdem/holdem_core.h"
 #include "games/farkle/farkle_core.h"
 #include "games/mancala/mancala_core.h"
+#include "games/morris/morris_core.h"
+namespace morris_preview {
+morris::Game* game();
+void tap_point(int p);
+}
 namespace mancala_preview {
 mancala::Board* board();
 void finish();
@@ -510,6 +515,8 @@ int main(int argc, char** argv)
     shot(out + "_light_11_puzzles.ppm");
     ui::picker_open_category(1);
     shot(out + "_light_12_strategy.ppm");
+    ui::picker_next_page();
+    shot(out + "_light_12_strategy2.ppm");
     {   // Sliding Tiles: a 4x4 two slides from solved
         sliding::Puzzle p; p.reset(4); p.tap(14); p.tap(10);
         sliding::Puzzle st; st.reset(4); sliding::Rng rng(5); st.shuffle(rng);
@@ -775,6 +782,41 @@ int main(int argc, char** argv)
         kit_preview_menu();
         shot(out + "_dark_57_holdem_menu.ppm");
         ui::close_overlays();
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Nine Men's Morris: placing, a mill asking for a capture, moving
+        ui::app_open_game_now(games::find("morris"));
+        shot(out + "_light_62_morris_new.ppm");
+        morris::Game* g = morris_preview::game();
+        if (g) {
+            auto code = [](int from, int to, int remove) { morris::Move m; m.from = int8_t(from); m.to = int8_t(to); m.remove = int8_t(remove); return m.code(); };
+            const int placing[] = {4, 10, 7, 13, 19, 22, 3};       // White 4 7 19 3, Black 10 13 22
+            for (int pt : placing) g->play(code(-1, pt, -1));
+            // Black to place: Black 16? make it White's turn with a mill ready at 5
+            g->play(code(-1, 16, -1));                            // Black
+            match::refresh();
+            ui::app_go_home_now();
+            ui::app_open_game_now(games::find("morris"));
+            shot(out + "_light_62_morris_placing.ppm");
+            morris_preview::tap_point(5);                         // 3-4-5: a mill
+            shot(out + "_light_62_morris_take.ppm");
+            // The moving phase: a full board, White picks a man
+            *g = morris::Game{};
+            g->pos.hand[0] = g->pos.hand[1] = 0;
+            g->pos.men[0] = (1u << 0) | (1u << 1) | (1u << 4) | (1u << 9) | (1u << 11) | (1u << 16) | (1u << 20);
+            g->pos.men[1] = (1u << 3) | (1u << 6) | (1u << 13) | (1u << 14) | (1u << 17) | (1u << 22) | (1u << 23);
+            g->plies = 30;
+            ui::app_go_home_now();
+            ui::app_open_game_now(games::find("morris"));
+            morris_preview::tap_point(16);
+            shot(out + "_light_62_morris_move.ppm");
+        }
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("morris"));
+        shot(out + "_dark_62_morris.ppm");
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
     }

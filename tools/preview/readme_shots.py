@@ -43,6 +43,7 @@ SHOTS = {
     "s_light_56_holdem_flop": "small_holdem",
     "s_light_58_farkle_pick": "small_farkle",
     "s_light_60_mancala_sowing": "small_mancala",
+    "s_light_62_morris_take": "small_morris",
     "s_light_40_help_twenty48_2": "small_help",
     "s_light_15_lightswitch": "small_lightswitch",
     "s_dark_0_settings": "small_settings_dark",

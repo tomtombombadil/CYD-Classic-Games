@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Twenty-six games and an RPG dice roller so far: **Sudoku** (from
+> under way. Twenty-seven games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **Mancala**, **CYD-dle**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **CYD-dle**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, CYD-dle, Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, CYD-dle, Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -57,6 +57,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_holdem.png" width="240" alt="Texas Hold'em: your turn after the flop">
 <img src="docs/screenshots/small_farkle.png" width="240" alt="Farkle: three dice set aside, Bank 1000">
 <img src="docs/screenshots/small_mancala.png" width="240" alt="Mancala: seeds being sown round the board">
+<img src="docs/screenshots/small_morris.png" width="240" alt="Nine Men's Morris: a mill made, pick a man to take">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -92,6 +93,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | 2048 | Puzzle Games | Solo, tap toward a side to slide; reach the 2048 tile |
 | Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Mancala | Strategy Games | Kalah, six pits a side, sown seed by seed; vs computer or pass-and-play |
+| Nine Men's Morris | Strategy Games | Place, move and fly; mills take men; vs computer or pass-and-play |
 | Checkers | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Reversi | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | FourConnect | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -111,7 +113,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 
 Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
 greyed out, until it's built). Coming next: more games from the plan
-(Nine Men's Morris...), then wireless play. The plan is in
+(Ultimate Tic-Tac-Toe, Gomoku, You Sunk My CYD!...), then wireless play. The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -325,6 +327,14 @@ Last seed in your store: you go again. Last seed in an empty pit of yours:
 it and the seeds opposite go to your store. When either side runs out, the
 other side keeps what's left on its side; most seeds wins. vs Computer the
 board turns so your pits are always on the left.
+
+## Nine Men's Morris
+
+Each side has nine men; White starts. First place them one a turn on any
+empty point, then move them along the lines to a neighbouring empty point
+(tap your man - dots show where it can go - then the point). Three in a
+line is a mill: the men you may take get a red ring, tap one. A side down
+to three men may fly to any empty point. Two men left, or no move, loses.
 
 ## Farkle
 

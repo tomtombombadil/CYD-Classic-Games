@@ -260,7 +260,17 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   (both go to the store); a side out of seeds ends it, the other sweeps
   its own; computer: Easy 1 move ahead, Medium 5, Hard deepening within
   400k nodes (Hard beats Medium every test game); note line "You go
-  again" / "Captured N seeds"). Computer ties between equal moves are broken by a random
+  again" / "Captured N seeds"). Nine Men's Morris (id `morris`, Strategy; White/Black, White first;
+  points 0-23 on a 7x7 grid (`kX/kY`), 16 mills; place 9 each, then move
+  along lines, fly at 3; a move is one code (from+1 | to<<5 |
+  (remove+1)<<10) so the mill's capture is part of it - the screen asks
+  for the man to take after a mill (red rings on the takeable men, tap the
+  new man again to take the move back); men in mills safe unless all are;
+  2 men or blocked = loss; 100 quiet plies after placing = draw; computer
+  Easy 1 ply, Medium 3, Hard deepening within 150k nodes, removals
+  searched first, move lists on the stack - ai_stack 24 KB). The match
+  info line shows a game's note on its own, and drops the level when
+  score + level would be cut short. Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
   view: tap, target dots). Checkers: when a jump is
   compulsory (American rules - yes, a jump must be taken; Tom checked and
