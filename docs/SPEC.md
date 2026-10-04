@@ -160,6 +160,25 @@ Chinese checkers, Dots and Boxes (thin tap targets).
   alternates); Done takes both boards back to the Play page ("Bob is done
   playing. Thanks for the game!"). A board whose game is over isn't busy:
   accepting a new offer ends that session.
+- Decided 2026-10-04 (Tom, situation review; to build):
+  - Two boards ask the same board: the **first asker has priority**; the
+    second gets the busy answer at once.
+  - Accepting an offer while playing that same game against the computer:
+    **not a loss**. The computer game is saved and comes back once the
+    2-player game is over (if that can't be done, no big deal).
+  - Different firmware: the **older** board's player is told to update to
+    the other board's version; the **newer** board's player is told the
+    other player's version is too low (both versions shown). Both see the
+    web flasher's address.
+  - Names: every board's name carries its board ID **internally** (in the
+    protocol, the code and the log), so two boards can never be mixed up;
+    players only ever see the chosen name.
+  - Accepting a new offer while in an old session: the old partner is
+    disconnected gracefully - forfeited if its game was still going - and
+    told the player quit.
+  - Also to fix: a forfeit made while the other board is away must still
+    reach it as a win; after a game ends the menu offers Play Again / Done,
+    not Forfeit; boards out of step can start over together.
 - Protocol (`src/net/wireless.*`, plain C++): no acks; every board repeats
   its state twice a second and at once on a change, with a counter so late
   copies can't undo newer ones. Beacons: name, firmware, available / busy
