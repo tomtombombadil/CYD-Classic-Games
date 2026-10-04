@@ -156,6 +156,24 @@ int main()
         for (int tgt; (tgt = hg.hint_target(-1)) >= 0 && guard < 100; ++guard) CHECK(hg.apply_hint(tgt));
         CHECK(hg.solved());
         CHECK(hg.hint_target(-1) == -1);
+        // Restarting a solved puzzle: a replay (not recorded), clock from 0
+        CHECK(!hg.replay());
+        hg.restart();
+        CHECK(hg.replay() && !hg.solved() && hg.elapsed_s() == 0);
+        std::vector<uint8_t> rb(sudoku::Game::max_serialized_size());
+        const size_t n = hg.serialize(rb.data(), rb.size());
+        sudoku::Game* back = new sudoku::Game();
+        CHECK(n && back->deserialize(rb.data(), n) && back->replay());
+        delete back;
+    }
+    {   // Restarting an unsolved puzzle keeps its clock and hints
+        sudoku::Game* u = new sudoku::Game();
+        sudoku::Rng r2(77);
+        u->start(sudoku::Difficulty::Easy, r2);
+        for (int k = 0; k < 95; ++k) u->add_second();
+        u->restart();
+        CHECK(u->elapsed_s() == 95 && !u->replay());
+        delete u;
     }
 
     // Undo history overflow is handled

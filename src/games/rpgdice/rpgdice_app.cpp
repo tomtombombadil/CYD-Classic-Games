@@ -15,6 +15,7 @@
 #include "games/common/game_kit.h"
 #include "games/registry.h"
 #include "rpgdice_core.h"
+#include "ui/keyboard.h"
 #include "ui/shell.h"
 #include "ui/sound.h"
 #include "ui/theme.h"
@@ -737,110 +738,18 @@ void edit_line(int slot, int line)
     key_label(done, "Done", menu_font());
 }
 
-// ---- Name keyboard: letters (each word starts with a capital), digits page ----------------
-char     kb_text[kNameLen];
-bool     kb_digits = false;
-lv_obj_t* kb_label = nullptr;
-
-void kb_show()
+// ---- Name keyboard (the shared one, src/ui/keyboard.*) -------------------------------------
+void name_done(const char* text)
 {
-    if (!kb_label) return;
-    char t[kNameLen + 4];
-    snprintf(t, sizeof t, "%s_", kb_text);
-    lv_label_set_text(kb_label, t);
-}
-
-void kb_cb(lv_event_t* e)
-{
-    const int c = static_cast<int>(reinterpret_cast<intptr_t>(lv_event_get_user_data(e)));
-    size_t n = strlen(kb_text);
-    if (c == 1) { if (n) kb_text[n - 1] = 0; kb_show(); return; }          // backspace
-    if (c == 2) { kb_digits = !kb_digits; open_keyboard(); return; }       // ABC / 123
-    if (c == 3) {                                                          // Done
-        Preset& p = S->presets[edit_slot];
-        // trim spaces at the ends
-        while (n && kb_text[n - 1] == ' ') kb_text[--n] = 0;
-        const char* s = kb_text;
-        while (*s == ' ') ++s;
-        if (*s) snprintf(p.name, sizeof p.name, "%s", s);
-        dirty = true;
-        update_pool();
-        edit_preset(edit_slot);
-        return;
-    }
-    if (n + 1 >= sizeof kb_text) { sound(Sound::Error); return; }
-    char ch = char(c);
-    // Auto capitals: the first letter of each word
-    if (ch >= 'a' && ch <= 'z' && (n == 0 || kb_text[n - 1] == ' ')) ch = char(ch - 'a' + 'A');
-    kb_text[n] = ch;
-    kb_text[n + 1] = 0;
-    kb_show();
+    if (text[0]) snprintf(S->presets[edit_slot].name, sizeof S->presets[edit_slot].name, "%s", text);
+    dirty = true;
+    update_pool();
+    edit_preset(edit_slot);
 }
 
 void open_keyboard()
 {
-    if (!kb_label) {                       // coming from the editor: start from the name
-        snprintf(kb_text, sizeof kb_text, "%s", S->presets[edit_slot].name);
-    }
-    overlay_begin("Preset Name", [] { kb_label = nullptr; });
-    kb_label = lv_label_create(overlay());
-    lv_obj_set_width(kb_label, lv_pct(100));
-    lv_obj_set_style_text_font(kb_label, metrics().large ? &lv_font_montserrat_28 : &lv_font_montserrat_20, 0);
-    lv_obj_set_style_text_color(kb_label, pal().ink, 0);
-    lv_obj_set_style_bg_color(kb_label, pal().cell, 0);
-    lv_obj_set_style_bg_opa(kb_label, LV_OPA_COVER, 0);
-    lv_obj_set_style_pad_all(kb_label, 4, 0);
-    kb_show();
-    static const char* const kLetters = "abcdefghijklmnopqrstuvwxyz'-";
-    static const char* const kDigits = "1234567890+-'#&.";
-    const char* keys = kb_digits ? kDigits : kLetters;
-    const int n = int(strlen(keys)), per = 6;
-    const int kh = menu_btn_h();
-    for (int i = 0; i < n; i += per) {
-        lv_obj_t* row = lv_obj_create(overlay());
-        lv_obj_remove_style_all(row);
-        lv_obj_set_size(row, lv_pct(100), kh);
-        lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-        lv_obj_set_style_pad_column(row, 4, 0);
-        lv_obj_set_scrollable(row, false);
-        for (int k = i; k < i + per; ++k) {
-            if (k < n) {
-                char lab[2] = {keys[k] >= 'a' && keys[k] <= 'z' ? char(keys[k] - 'a' + 'A') : keys[k], 0};
-                lv_obj_t* b = make_key(row, 10, kh, kb_cb, intptr_t(keys[k]));
-                lv_obj_set_flex_grow(b, 1);
-                key_label(b, lab, menu_font());
-            } else if (k == n) {
-                lv_obj_t* b = make_key(row, 10, kh, kb_cb, 1);
-                lv_obj_set_flex_grow(b, per - (n % per) == 0 ? 1 : per - (n % per));
-                key_label(b, LV_SYMBOL_BACKSPACE, menu_font());
-                break;
-            }
-        }
-        if (n % per == 0 && i + per >= n) {                // full last row: backspace on its own
-            lv_obj_t* r2 = lv_obj_create(overlay());
-            lv_obj_remove_style_all(r2);
-            lv_obj_set_size(r2, lv_pct(100), kh);
-            lv_obj_t* b = make_key(r2, lv_pct(100), kh, kb_cb, 1);
-            key_label(b, LV_SYMBOL_BACKSPACE, menu_font());
-        }
-    }
-    lv_obj_t* row = lv_obj_create(overlay());
-    lv_obj_remove_style_all(row);
-    lv_obj_set_size(row, lv_pct(100), kh);
-    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_column(row, 4, 0);
-    lv_obj_set_ignore_layout(row, true);
-    lv_obj_align(row, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_obj_t* tg = make_key(row, 10, kh, kb_cb, 2);
-    lv_obj_set_flex_grow(tg, 1);
-    key_label(tg, kb_digits ? "ABC" : "123", menu_font());
-    lv_obj_t* sp = make_key(row, 10, kh, kb_cb, ' ');
-    lv_obj_set_flex_grow(sp, 2);
-    key_label(sp, "Space", menu_font());
-    lv_obj_t* dn = make_key(row, 10, kh, kb_cb, 3);
-    lv_obj_set_flex_grow(dn, 1);
-    lv_obj_add_state(dn, LV_STATE_CHECKED);
-    key_label(dn, "Done", menu_font());
+    keyboard_open("Preset Name", S->presets[edit_slot].name, kNameLen - 1, name_done);
 }
 
 // ---- History: newest first, as many as fit per page --------------------------------------

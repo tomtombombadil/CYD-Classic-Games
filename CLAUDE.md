@@ -458,7 +458,10 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   a tap, then the picker. Source art in `assets/splash/`, headers made by
   `tools/make_splash.py`.
 
-## Sudoku (ported from CYD-Sudoku v1.0.0 - keep its behavior)
+## Sudoku (ported from CYD-Sudoku v1.0.0 - keep its behavior, but fix real issues: Tom, 2026-10-03)
+- Restart This Puzzle: an unsolved puzzle keeps its clock and hint count;
+  a solved one restarts as a replay (`Game::replay()`, saved in spare bit
+  87 of the hint bits) whose solve isn't recorded again.
 - Files: `sudoku_core` (grid, solver, generator), `sudoku_grader`,
   `sudoku_game` (rules, undo, save), `sudoku_stats`, `sudoku_board_view`,
   `sudoku_screen`, `sudoku_app`, `sudoku_stock` (device only). Namespaces

@@ -11,7 +11,7 @@ void Game::start(Difficulty d, sudoku::Rng& rng)
 {
     diff_ = d;
     sudoku::generate(d, rng, puzzle_, solution_);
-    restart();
+    fresh();
 }
 
 void Game::start_with(Difficulty d, const sudoku::Grid& puzzle, const sudoku::Grid& solution)
@@ -19,17 +19,37 @@ void Game::start_with(Difficulty d, const sudoku::Grid& puzzle, const sudoku::Gr
     diff_ = d;
     puzzle_ = puzzle;
     solution_ = solution;
-    restart();
+    fresh();
 }
 
-void Game::restart()
+void Game::fresh()
 {
-    for (int i = 0; i < N; ++i) { value_[i] = puzzle_.c[i]; notes_[i] = 0; hinted_[i] = 0; }
+    clear_entries();
     elapsed_s_ = 0;
     hints_used_ = 0;
+    replay_ = false;
+}
+
+void Game::clear_entries()
+{
+    for (int i = 0; i < N; ++i) { value_[i] = puzzle_.c[i]; notes_[i] = 0; hinted_[i] = 0; }
     undo_n_ = 0;
     group_ = 0;
     active_ = true;
+}
+
+// Restart clears the grid. An unsolved puzzle keeps its clock and hint
+// count (a restart mustn't wipe the time that goes in the stats); a solved
+// one starts over as a replay, which the stats don't record again.
+void Game::restart()
+{
+    const bool was_solved = solved();
+    clear_entries();
+    if (was_solved) {
+        replay_ = true;
+        elapsed_s_ = 0;
+        hints_used_ = 0;
+    }
 }
 
 bool Game::conflict(int i) const
@@ -210,6 +230,7 @@ size_t Game::serialize(uint8_t* buf, size_t cap) const
         for (int k = 0; k < 8; ++k) {
             const int i = b * 8 + k;
             if (i < N && hinted_[i]) bits |= 1u << k;
+            if (i == 87 && replay_) bits |= 1u << k;     // a spare bit after the 81 cells
         }
         put<uint8_t>(p, bits);
     }
@@ -257,6 +278,7 @@ bool Game::deserialize(const uint8_t* buf, size_t len)
     g.elapsed_s_ = el;
     g.hints_used_ = hints;
     for (int i = 0; i < N; ++i) g.hinted_[i] = (hbits[i / 8] >> (i % 8)) & 1;
+    g.replay_ = (hbits[10] >> 7) & 1;
     memcpy(g.puzzle_.c, p, 81);   p += 81;
     memcpy(g.solution_.c, p, 81); p += 81;
     memcpy(g.value_, p, 81);      p += 81;

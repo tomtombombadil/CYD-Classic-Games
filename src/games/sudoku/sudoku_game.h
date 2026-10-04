@@ -25,7 +25,8 @@ public:
     void start(Difficulty d, sudoku::Rng& rng);
     // Start from a puzzle made elsewhere (e.g. the background puzzle stock)
     void start_with(Difficulty d, const sudoku::Grid& puzzle, const sudoku::Grid& solution);
-    void restart();                       // clear all entries, keep the puzzle
+    void restart();                       // clear all entries, keep the puzzle (see .cpp)
+    bool replay() const { return replay_; }   // a solved puzzle restarted: not recorded again
 
     // ---- Queries -----------------------------------------------------------
     bool        active() const        { return active_; }
@@ -87,6 +88,9 @@ private:
     uint32_t      elapsed_s_ = 0;
     uint8_t       hinted_[N]{};
     uint8_t       hints_used_ = 0;
+    bool          replay_ = false;
+    void fresh();                         // a new puzzle: clock, hints, replay reset
+    void clear_entries();
     Change        undo_[kUndoCap];
     uint16_t      undo_n_ = 0;
     uint16_t      group_  = 0;
