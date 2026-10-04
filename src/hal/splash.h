@@ -9,4 +9,5 @@
 int  splash_count();
 // Show image `index` (wrapped to the count) and return after a tap
 // (press and release, so the tap doesn't carry into the first screen).
-void splash_show(LGFX& gfx, int index);
+// `idle` (optional) runs while it waits, e.g. to answer the serial port.
+void splash_show(LGFX& gfx, int index, void (*idle)() = nullptr);

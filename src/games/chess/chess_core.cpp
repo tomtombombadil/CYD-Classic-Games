@@ -141,7 +141,16 @@ uint64_t Position::compute_hash() const
     for (int s = 0; s < 64; ++s) if (sq[s]) h ^= z_piece(sq[s], s);
     if (side) h ^= z_extra(0);
     h ^= z_extra(1 + (castle & 15));
-    if (ep >= 0) h ^= z_extra(20 + ep % 8);
+    // En passant counts only when a pawn could actually take: otherwise the
+    // position repeats like any other (threefold repetition, FIDE)
+    if (ep >= 0) {
+        const int pawn_sq = side == 0 ? ep - 8 : ep + 8;   // the pawn that just moved two
+        const int f = ep % 8;
+        bool can_take = false;
+        for (int df = -1; df <= 1; df += 2)
+            if (f + df >= 0 && f + df < 8 && sq[pawn_sq + df] == make_cell(Pawn, side)) can_take = true;
+        if (can_take) h ^= z_extra(20 + f);
+    }
     return h;
 }
 

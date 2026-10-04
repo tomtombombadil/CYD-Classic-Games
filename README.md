@@ -562,8 +562,9 @@ and an **Email the Log** button (to cyd.classic.games.logs@gmail.com):
   (linked from the installer page). This reads the whole log.
 
 Or plug the board into a PC and open PlatformIO's **Serial Monitor** (plug
-icon, 115200 baud): every log line shows there as it happens, and opening
-Device Log prints the whole log. With the PlatformIO project open, crash
+icon, 115200 baud): every log line shows there as it happens, and typing
+`log` prints the whole log (it also answers while the splash screen waits
+for its tap). With the PlatformIO project open, crash
 backtraces are decoded right in the monitor.
 
 A crash report's backtrace is a list of addresses. To turn them into

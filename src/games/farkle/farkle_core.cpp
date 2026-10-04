@@ -12,8 +12,8 @@ int kind(int face, int k)
     return k == 4 ? 1000 : k == 5 ? 2000 : 3000;
 }
 
-// Best score using all the dice counted in c[0..5] (faces 1..6), -1 if impossible
-int exact(int c[6])
+// Score of all the dice counted in c[0..5] (faces 1..6), -1 if impossible
+int exact(const int c[6])
 {
     int total = 0;
     for (int f = 0; f < 6; ++f) total += c[f];
@@ -27,22 +27,18 @@ int exact(int c[6])
         if (threes == 2) best = best > 2500 ? best : 2500;
         if (fours == 1 && twos == 1) best = best > 1500 ? best : 1500;
     }
+    // Otherwise each face's dice score as one unit: three or more of a kind
+    // as a set (four 1s = 1000, not a triple plus a single), else only 1s
+    // and 5s, singly
+    int sum = 0;
     for (int f = 0; f < 6; ++f) {
         if (!c[f]) continue;
-        for (int k = 3; k <= c[f]; ++k) {
-            c[f] -= k;
-            const int r = exact(c);
-            c[f] += k;
-            if (r >= 0 && kind(f + 1, k) + r > best) best = kind(f + 1, k) + r;
-        }
-        if (f == 0 || f == 4) {
-            --c[f];
-            const int r = exact(c);
-            ++c[f];
-            const int v = (f == 0 ? 100 : 50) + r;
-            if (r >= 0 && v > best) best = v;
-        }
+        if (c[f] >= 3) sum += kind(f + 1, c[f]);
+        else if (f == 0) sum += 100 * c[f];
+        else if (f == 4) sum += 50 * c[f];
+        else { sum = -1; break; }
     }
+    if (sum > best) best = sum;
     return best;
 }
 

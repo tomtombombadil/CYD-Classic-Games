@@ -83,6 +83,10 @@ bool Game::can_score(int box) const
     if (is_yaht() && score[YahtCyd] >= 0) {
         const int up = dice[0] - 1;
         if (score[up] < 0) return box == up;
+        // Forced joker (official rules): then an open lower box; an upper
+        // box (scoring 0) only when every lower box is used
+        for (int b = ThreeKind; b < kBoxes; ++b)
+            if (score[b] < 0) return box >= ThreeKind;
     }
     return true;
 }

@@ -142,7 +142,7 @@ void Game::new_hand(uint32_t seed)
         p.bet = p.total = 0;
         p.folded = p.all_in = p.acted = false;
         p.last = Act::None;
-        p.last_amount = p.won = 0;
+        p.last_amount = p.won = p.returned = 0;
         p.value = 0;
     }
     Rng rng(seed);
@@ -262,7 +262,7 @@ void Game::end_street()
 void Game::finish()
 {
     street = Street::Over;
-    for (Seat& s : seat) s.won = 0;
+    for (Seat& s : seat) s.won = s.returned = 0;
     if (in_hand() == 1) {                                  // everyone else folded
         for (Seat& s : seat) if (!s.folded) { s.won = pot(); s.stack += s.won; }
         showdown = false;
@@ -288,6 +288,20 @@ void Game::finish()
             const int32_t a = s.total < level ? s.total : level, b = s.total < prev ? s.total : prev;
             amount += a - b;
         }
+        // Only one player still in reached this level: their own chips in it
+        // go back to them (an uncalled bet), the folded players' are won
+        int eligible = 0;
+        for (const Seat& s : seat) eligible += !s.folded && s.total >= level;
+        if (eligible == 1) {
+            for (Seat& s : seat)
+                if (!s.folded && s.total >= level) {
+                    const int32_t own = level - (s.total < prev ? s.total : prev);
+                    s.returned += own;
+                    s.won += amount - own;
+                }
+            prev = level;
+            continue;
+        }
         uint32_t best = 0;
         for (const Seat& s : seat) if (!s.folded && s.total >= level && s.value > best) best = s.value;
         int winners = 0;
@@ -300,7 +314,7 @@ void Game::finish()
         }
         prev = level;
     }
-    for (Seat& s : seat) s.stack += s.won;
+    for (Seat& s : seat) s.stack += s.won + s.returned;
 }
 
 // ---- The computer --------------------------------------------------------------------------

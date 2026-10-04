@@ -93,6 +93,8 @@ bool append_record(fs::FS& fs, const char* path, const char* header, uint32_t se
     return append_line(fs, path, header, line);
 }
 
+bool rewrite_range(fs::FS& fs, const char* path, uint32_t first, uint32_t last);
+
 // Move the game's records saved on flash onto the card, numbering them after
 // the card's own records, then delete the flash copy.
 void migrate_flash_to_sd(const char* id)
@@ -103,16 +105,30 @@ void migrate_flash_to_sd(const char* id)
     if (!storage_begin() || !LittleFS.exists(fpath)) return;
     fs::FS& sd = sd_fs();
     read_header(LittleFS, fpath, header, sizeof header);
-    uint32_t seq = count_records(sd, spath);
+    uint32_t seq = count_records(sd, spath), moved = 0, total = 0;
     bool ok = true;
     for_each_line(LittleFS, fpath, [&](const char* l) {
         const char* body = record_body(l);
-        if (ok && body) ok = append_record(sd, spath, header, ++seq, body);
+        if (!body) return;
+        ++total;
+        if (ok && (ok = append_record(sd, spath, header, ++seq, body))) ++moved;
     });
     if (ok) {
         LittleFS.remove(fpath);
         Serial.printf("[stats] moved %s records from flash to SD card\n", id);
+    } else if (moved) {
+        // Keep only what didn't make it, so the next try doesn't copy twice
+        rewrite_range(LittleFS, fpath, moved + 1, total);
     }
+}
+
+// A rewrite cut off between remove and rename leaves only "<path>.tmp":
+// put it back
+void recover_tmp(fs::FS& fs, const char* path)
+{
+    char tmp[56];
+    snprintf(tmp, sizeof tmp, "%s.tmp", path);
+    if (!fs.exists(path) && fs.exists(tmp)) fs.rename(tmp, path);
 }
 
 // Picks the card if there is one, else flash. Returns the file system and
@@ -125,11 +141,13 @@ fs::FS* target(const char* id, char* path, size_t cap)
         migrate_flash_to_sd(id);
         on_sd = true;
         sd_path(id, path, cap);
+        recover_tmp(sd, path);
         return &sd;
     }
     on_sd = false;
     if (!storage_mkdir(kFlashDir)) return nullptr;
     flash_path(id, path, cap);
+    recover_tmp(LittleFS, path);
     return &LittleFS;
 }
 
@@ -151,15 +169,17 @@ bool rewrite_range(fs::FS& fs, const char* path, uint32_t first, uint32_t last)
     read_header(fs, path, header, sizeof header);
     File out = fs.open(tmp, "w");
     if (!out) return false;
-    if (header[0]) out.print(header);
+    bool ok = !header[0] || out.print(header) == strlen(header);
     uint32_t seen = 0, kept = 0;
     for_each_line(fs, path, [&](const char* l) {
         const char* body = record_body(l);
-        if (!body) return;
+        if (!body || !ok) return;
         ++seen;
-        if (seen >= first && seen <= last) out.printf("%lu,%s\n", (unsigned long)++kept, body);
+        if (seen >= first && seen <= last) ok = out.printf("%lu,%s\n", (unsigned long)++kept, body) > 0;
     });
     out.close();
+    // A short write (card pulled, flash full) must never replace the stats
+    if (!ok) { fs.remove(tmp); return false; }
     return replace_file(fs, tmp, path);
 }
 

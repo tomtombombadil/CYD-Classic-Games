@@ -112,6 +112,17 @@ bool Game::deserialize(const uint8_t* buf, size_t len)
     int total = g.stock_n + g.waste_n;
     for (int c = 0; c < kCols; ++c) { if (g.col_n[c] > kDepth) return false; total += g.col_n[c]; }
     if (g.stock_n > kStock || g.waste_n > 52 || g.log_n > sizeof g.log || total != 52) return false;
+    // Every card once; the undo log must fit back where it came from
+    uint64_t seen = 0;
+    auto card_ok = [&](uint8_t c) { if (c >= 52 || ((seen >> c) & 1)) return false; seen |= 1ull << c; return true; };
+    for (int c = 0; c < kCols; ++c) for (int i = 0; i < g.col_n[c]; ++i) if (!card_ok(g.col[c][i])) return false;
+    for (int i = 0; i < g.stock_n; ++i) if (!card_ok(g.stock[i])) return false;
+    for (int i = 0; i < g.waste_n; ++i) if (!card_ok(g.waste[i])) return false;
+    if (g.log_n && g.log_n >= g.waste_n) return false;
+    int back[kCols + 1] = {};
+    for (int i = 0; i < g.log_n; ++i) { if (g.log[i] > kCols) return false; ++back[g.log[i]]; }
+    for (int c = 0; c < kCols; ++c) if (g.col_n[c] + back[c] > kDepth) return false;
+    if (g.stock_n + back[kCols] > kStock) return false;
     *this = g;
     return true;
 }

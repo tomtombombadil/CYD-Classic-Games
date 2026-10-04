@@ -229,8 +229,8 @@ void key_cb(lv_event_t* e)
             if (text) diagnostics_open();                    // from the log
             else settings_reopen();
             break;
-        case kPrev:  device_log_open(page_now - 1); break;
-        case kNext:  device_log_open(page_now + 1); break;
+        case kPrev:  status = nullptr; device_log_open(page_now - 1); break;
+        case kNext:  status = nullptr; device_log_open(page_now + 1); break;
         case kClear:
             if (H.log_clear) H.log_clear();
             free_text();

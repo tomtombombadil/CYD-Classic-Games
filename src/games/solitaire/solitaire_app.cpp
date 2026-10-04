@@ -56,6 +56,8 @@ struct State {
     int32_t  bank = 0;                     // Vegas: dollars from earlier deals
     uint32_t next_seed = 0;                // a winnable deal found in the background
     uint8_t  next_draw = 0, next_scoring = 0, next_ok = 0;
+    uint8_t  pending = 0;                  // saved while "Shuffling...": the old deal is already
+                                           // recorded and banked; deal a new one on open
 };
 State* S = nullptr;
 constexpr size_t kExtraOld = 1 + 4 + 1 + 1 + 4;          // saves from before the deal check
@@ -103,7 +105,7 @@ void save()
     put32(buf + n, S->next_seed); n += 4;
     buf[n++] = S->next_draw;
     buf[n++] = S->next_scoring;
-    buf[n++] = S->next_ok;
+    buf[n++] = uint8_t((S->next_ok ? 1 : 0) | (shuffling ? 2 : 0));
     shell().save_game(kId, buf, n);
     delete[] buf;
     dirty = false;
@@ -126,7 +128,8 @@ bool load(State& st)
             st.next_seed = get32(q + 11);
             st.next_draw = q[15];
             st.next_scoring = q[16];
-            st.next_ok = q[17];
+            st.next_ok = q[17] & 1;
+            st.pending = (q[17] >> 1) & 1;
         }
     }
     delete[] buf;
@@ -679,6 +682,20 @@ void open()
     dirty = false;
     build();
     if (!loaded) { deal(false); return; }      // the first deal: a winnable one
+    if (S->pending) {                          // left while shuffling: keep waiting
+        S->pending = 0;
+        S->recorded = 1;
+        if (S->next_ok && S->next_draw == S->opt_draw && S->next_scoring == S->opt_scoring) {
+            S->next_ok = 0;
+            deal_seed(S->next_seed);
+            return;
+        }
+        shuffling = true;
+        start_search();
+        poll_search();
+        if (shuffling) update_status();
+        return;
+    }
     if (S->g.can_finish()) finish_timer = lv_timer_create(finish_cb, 90, nullptr);
     if (!S->next_ok) start_search();
 }
@@ -703,7 +720,7 @@ void tick(uint32_t now)
     if (!S) return;
     poll_search();
     if (clock_.tick(now, !S->g.won() && S->g.moves > 0, S->seconds) && !cards::celebrating()) { ticking = true; update_status(); ticking = false; }
-    if ((dirty || now - last_save_ms > 30000) && !cards::celebrating()) { last_save_ms = now; save(); }
+    if ((dirty || kit::save_due(now, last_save_ms, S->seconds)) && !cards::celebrating()) { last_save_ms = now; save(); }
 }
 
 void restyle() { if (S) { cards::celebrate_stop(); build(); } }

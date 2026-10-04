@@ -37,6 +37,11 @@ struct Clock {
 };
 
 // ---- Win flash ------------------------------------------------------------------------
+// The every-30-seconds save of an open game: due only when the game's clock
+// has moved since the last one, so an idle, finished or paused game isn't
+// rewritten to flash over and over (moves save straight away anyway).
+bool save_due(uint32_t now_ms, uint32_t last_save_ms, uint32_t seconds);
+
 void flash();                      // invert the panel a few times (about 1.2 s)
 void flash_stop();
 

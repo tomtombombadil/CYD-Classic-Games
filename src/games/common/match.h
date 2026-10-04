@@ -35,6 +35,9 @@ struct Game {
     void (*score)(char* buf, size_t cap) = nullptr;
     // Optional: a note after the last move, e.g. "White had no move" (or "")
     void (*note)(char* buf, size_t cap) = nullptr;
+    // Optional: true while the board is still showing the last move (an
+    // animation); the computer waits for it before thinking or moving
+    bool (*busy)() = nullptr;
     uint32_t ai_stack = 8192;      // the computer's task stack (bytes)
 };
 
@@ -60,6 +63,7 @@ struct State {
     twoplayer::Level level      = twoplayer::Level::Medium;
     uint8_t          human_side = 0;      // vs Computer: which side the player has
     uint8_t          recorded   = 0;      // finished game already in the stats
+    uint8_t          human_moved = 0;     // vs Computer: the player has moved (else leaving isn't a loss)
     uint32_t         seconds    = 0;
 };
 State& state();

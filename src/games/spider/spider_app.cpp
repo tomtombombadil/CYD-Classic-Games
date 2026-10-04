@@ -374,7 +374,7 @@ void tick(uint32_t now)
 {
     if (!S) return;
     if (clock_.tick(now, !S->g.won() && S->g.moves > 0, S->seconds) && !cards::celebrating()) { ticking = true; update_status(); ticking = false; }
-    if (now - last_save_ms > 30000 && !cards::celebrating()) { last_save_ms = now; save(); }
+    if (kit::save_due(now, last_save_ms, S->seconds) && !cards::celebrating()) { last_save_ms = now; save(); }
 }
 
 void restyle() { if (S) { cards::celebrate_stop(); build(); } }

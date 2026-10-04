@@ -258,7 +258,7 @@ void tick(uint32_t now)
     match::tick(now);
     if (!G) return;
     if (flipped() != shown_flipped) { shown_flipped = flipped(); board8::set_flipped(shown_flipped); }
-    if (G->plies != saved_plies || now - last_save_ms > 30000) {
+    if (G->plies != saved_plies || kit::save_due(now, last_save_ms, match::state().seconds)) {
         if (G->plies != saved_plies) { clear_pick(); redraw(); match::refresh(); }
         saved_plies = G->plies;
         last_save_ms = now;

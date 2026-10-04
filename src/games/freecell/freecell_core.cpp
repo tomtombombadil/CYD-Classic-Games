@@ -184,9 +184,11 @@ bool Game::hint(int* from, int* idx, int* to) const
         const int i = p >= Col0 ? n[p - Col0] - 1 : 0;
         if (can_move(p, i, found_for(c))) { *from = p; *idx = i; *to = found_for(c); return true; }
     }
+    // Only whole runs: part of a run already sits on a card it fits, so
+    // moving it elsewhere just swaps it back and forth (hint ping-pong)
     for (int k = 0; k < 8; ++k) {
         if (!n[k]) continue;
-        for (int i = run_start(k); i < n[k]; ++i)
+        for (int i = run_start(k); i == run_start(k) && i < n[k]; ++i)
             for (int d = 0; d < 8; ++d)
                 if (n[d] && can_move(Col0 + k, i, Col0 + d)) { *from = Col0 + k; *idx = i; *to = Col0 + d; return true; }
     }

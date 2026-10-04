@@ -396,7 +396,7 @@ void tick(uint32_t now)
         if (bar.left) lv_label_set_text(bar.left, t);       // only the clock: no board redraw
     }
     computer_step();
-    if (now - last_save_ms > 30000) { last_save_ms = now; save(); }
+    if (kit::save_due(now, last_save_ms, S->seconds)) { last_save_ms = now; save(); }
 }
 
 void restyle() { if (S) build(); }

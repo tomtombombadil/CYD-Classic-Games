@@ -95,40 +95,38 @@ void recalibrate()
     ESP.restart();
 }
 
-// The Device Log screen reads the log through this; it also goes to the
-// serial port then, for anyone with the Serial Monitor open. The web
-// flasher's log page (web/l/) asks for the same dump with "log".
-bool log_read(void (*line)(const char*, void*), void* ctx)
+// The whole log on the serial port, for the web flasher's log page
+// (web/l/), which asks with "log". Only on request: at 115200 baud a full
+// log takes over a second to send, and the UI waits for it.
+void dump_log()
 {
-    struct Both { void (*line)(const char*, void*); void* ctx; } both{line, ctx};
     Serial.println("---- device log ----");
     Serial.println("CYD Classic Games log");
     Serial.println("Board: " BOARD_NAME);
     Serial.println("Firmware: " CYD_GAMES_VERSION " (" CYD_GAMES_BUILD ")");
-    const bool ok = device_log_read([](const char* text, void* p) {
-        Serial.println(text);
-        Both* b = static_cast<Both*>(p);
-        b->line(text, b->ctx);
-    }, &both);
+    device_log_read([](const char* text, void*) { Serial.println(text); }, nullptr);
     Serial.println("---- end of log ----");
-    return ok;
 }
 
-// Commands typed on the serial port (one per line): "log" prints the log
+// Commands typed on the serial port (one per line): "log" prints the log.
+// Also runs while the splash waits for its tap. Requests that piled up
+// (the page asks every few seconds) get one answer.
 void serial_commands()
 {
     static char cmd[16];
     static size_t n = 0;
+    bool want_log = false;
     while (Serial.available() > 0) {
         const int c = Serial.read();
         if (c == '\n' || c == '\r') {
             cmd[n] = 0;
-            if (n && strcasecmp(cmd, "log") == 0) log_read([](const char*, void*) {}, nullptr);
+            if (n && strcasecmp(cmd, "log") == 0) want_log = true;
             n = 0;
         } else if (n < sizeof cmd - 1) {
             cmd[n++] = static_cast<char>(c);
         }
     }
+    if (want_log) dump_log();
 }
 
 } // namespace
@@ -159,7 +157,7 @@ void setup()
     const int shown = settings.splash_next % splash_count();
     settings.splash_next = static_cast<uint8_t>((shown + 1) % splash_count());
     settings_store_save(settings);
-    splash_show(lvgl_port_gfx(), shown);
+    splash_show(lvgl_port_gfx(), shown, serial_commands);
 
     ui::Shell sh{};
     sh.random_seed       = hw_seed;
@@ -181,7 +179,7 @@ void setup()
     sh.stats_clear       = stats_store_clear;
     sh.stats_location    = stats_store_location;
     sh.log               = device_log;
-    sh.log_read          = log_read;
+    sh.log_read          = device_log_read;
     sh.log_clear         = device_log_clear;
 #if BOARD_SD_USABLE
     sh.log_copy_sd       = device_log_copy_sd;

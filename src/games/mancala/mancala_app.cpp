@@ -112,6 +112,7 @@ match::Game make_game()
     match::Game g{kId, "Mancala", kSides, result, turn, moves, play, reset, think, redraw};
     g.score = score;
     g.note = note;
+    g.busy = [] { return A.on; };
     g.ai_stack = 8 * 1024;
     return g;
 }
@@ -315,7 +316,7 @@ void close()
 void tick(uint32_t now)
 {
     match::tick(now);
-    if (B && (B->moves != saved_moves || now - last_save_ms > 30000)) {
+    if (B && (B->moves != saved_moves || kit::save_due(now, last_save_ms, match::state().seconds))) {
         saved_moves = B->moves;
         last_save_ms = now;
         save();

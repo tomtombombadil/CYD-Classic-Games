@@ -4,6 +4,7 @@
 #include <new>
 #include "fourconnect_core.h"
 #include "fourconnect_screen.h"
+#include "games/common/game_kit.h"
 #include "games/common/match.h"
 #include "games/registry.h"
 #include "ui/shell.h"
@@ -81,7 +82,7 @@ void tick(uint32_t now)
 {
     match::tick(now);
     // Save after every move, and every 30 s for the clock
-    if (B && (B->moves != saved_moves || now - last_save_ms > 30000)) {
+    if (B && (B->moves != saved_moves || kit::save_due(now, last_save_ms, match::state().seconds))) {
         saved_moves = B->moves;
         last_save_ms = now;
         save();

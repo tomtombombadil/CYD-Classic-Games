@@ -219,6 +219,7 @@ const Layout& layout(int w, int h)
 
 void draw_face(lv_layer_t* layer, int x, int y, int w, int h, uint8_t card, bool selected)
 {
+    if (card >= 52) return;                     // never index the suit tables with junk
     const ui::Palette& P = ui::pal();
     const int rad = w / 8;
     // Picked cards (Tom: must be obvious): a thick amber edge and the whole

@@ -20,7 +20,7 @@ ui::CustomThemes themes_store_load()
     ui::CustomThemes t;
     if (!storage_begin() || !LittleFS.exists(kPath)) return t;
     File f = LittleFS.open(kPath, "r");
-    static File1 d;
+    File1 d{};                                  // ~140 B: the stack, not static RAM
     const bool ok = f && f.read(reinterpret_cast<uint8_t*>(&d), sizeof d) == sizeof d && d.magic == kMagic;
     f.close();
     if (ok) t = d.themes;
@@ -30,7 +30,7 @@ ui::CustomThemes themes_store_load()
 void themes_store_save(const ui::CustomThemes& t)
 {
     if (!storage_begin()) return;
-    static File1 d;
+    File1 d{};
     d.magic = kMagic;
     d.themes = t;
     File f = LittleFS.open(kTmp, "w");

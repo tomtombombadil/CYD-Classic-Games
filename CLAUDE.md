@@ -307,16 +307,43 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   `/themes.bin` custom themes, `/panel_prefs.bin`, `/touch_cal.bin`).
 - Stats store (`src/app/stats_store.*`) is game-agnostic: it numbers lines
   ("seq,body"), the game formats/parses the body and owns the header.
+  Rewrites check every write and keep the old file on failure; a
+  leftover `<file>.tmp` with no `<file>` is put back.
 - `src/app/legacy_import.*`: flashing over CYD-Sudoku without erasing moves
   its `/game.bin`, `/stats.csv`, `/puzzle_stock.bin` to the per-game names
   and copies SD `/CYD-Sudoku/stats.csv` to `/CYD-Classic-Games/sudoku.csv`.
 - Firmware version define: `CYD_GAMES_VERSION` (CI sets it).
 - Per game: save `/games/<id>.bin` (temp file + rename, 4-char format tag
-  + version, older versions still load) and stats
+  + version, older versions still load; loaders validate every card /
+  index they read - a corrupt save is rejected, never indexed) - after
+  each move, plus every 30 s via `kit::save_due()` only while the game's
+  clock moves (idle or finished games aren't rewritten) - and stats
   (SD `/CYD-Classic-Games/<id>.csv` when usable, else LittleFS `/stats/<id>.csv`).
 - Computer opponents think on a core-0 task so the UI never freezes; each
   has difficulty levels limited by depth or time, not by making random
   blunders.
+- match.* (code review 2026-10-03): leaving a vs-computer game counts as a
+  loss only once the player has moved (`State::human_moved`, saved as bit 1
+  of the recorded byte - the computer often moves first); a finished
+  computer move waits while a menu is open; `match::Game::busy` holds the
+  computer while a game animates its last move (Mancala's sowing), and the
+  think pause starts after; if the AI task can't start (no memory) it
+  retries every 3 s, logs once, and the status says "Low on memory...".
+- Rules settled in the code review (2026-10-03): Hold'em - an uncalled bet
+  handed back is `Seat::returned`, not winnings (Split/"wins" ignore it),
+  and Exit Game mid-hand records nothing (the hand resumes); Solitaire -
+  leaving while "Shuffling..." saves a pending flag (bit 1 of next_ok),
+  reopening keeps shuffling without re-recording; FreeCell hints move only
+  whole runs (no back-and-forth); Video Poker hint holds 4 to a straight
+  flush over two pair / a high pair; Blackjack 3:2 rounds half chips up;
+  Yaht-CYD forced joker (upper box, else an open lower box, else an upper
+  box for 0); Farkle scores each face's dice as one set (four 1s = 1000);
+  CYD-dle has no Restart (the word is known); Light Switch / Sliding Tiles
+  Restart of a solved puzzle doesn't record again (Sudoku keeps v1.0.0's
+  behaviour); chess repetition ignores an en passant square nobody can use.
+- Taps on boards with small cells act on release at the PRESS point with
+  an own 750 ms long-press (board8, Minesweeper's flag) - never
+  SHORT_CLICKED + LVGL's 400 ms long-press.
 
 ## UI rules (Tom's, all games)
 - Portrait by default (comfortable one-handed). Tom is not married to it:
@@ -415,8 +442,11 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   **cyd.classic.games.logs@gmail.com** - Tom's address for logs), Copy,
   Download log.txt. The same page reads the whole log over USB (Web
   Serial, Chrome/Edge): it sends "log\n"; the firmware (`serial_commands()`
-  in main.cpp) prints it between "---- device log ----" and
-  "---- end of log ----". The flasher page links to it. CI keeps each build's
+  in main.cpp, also polled while the splash waits for its tap; requests
+  that piled up get one answer) prints it between "---- device log ----"
+  and "---- end of log ----". Only that command prints the whole log to
+  serial (a 16 KB dump blocks ~1.4 s): the Device Log / Send Log screens
+  read it quietly. The flasher page links to it. CI keeps each build's
   `firmware.elf` (artifact `elf-<env>`, 90 days; releases attach
   `debug-symbols.zip`) to decode backtraces with addr2line.
 - Themes: Light, Dark and 3 Custom slots. A custom theme starts from Light

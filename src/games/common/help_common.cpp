@@ -5,5 +5,5 @@ const char kHelpTwoPlayer[] =
     "take turns going first, game by game.\n"
     "Pass and Play: two people share this CYD and take turns.\n"
     "Wireless (CYD to CYD) is coming.\n"
-    "Leaving a started game against the computer counts as a loss.";
+    "Exit Game keeps the game. A new game once you've moved counts as a loss.";
 }

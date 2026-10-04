@@ -326,7 +326,7 @@ void tick(uint32_t now)
 {
     if (!S) return;
     if (clock_.tick(now, !over(), S->seconds)) { ticking = true; update_status(); ticking = false; }
-    if (now - last_save_ms > 30000) { last_save_ms = now; save(); }
+    if (kit::save_due(now, last_save_ms, S->seconds)) { last_save_ms = now; save(); }
 }
 
 void restyle() { if (S) build(); }

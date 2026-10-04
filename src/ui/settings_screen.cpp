@@ -2,6 +2,7 @@
 // and the touch test (from Diagnostics). Shared by every game and the picker.
 #include <cstdio>
 #include <cstring>
+#include <new>
 #include <lvgl.h>
 #include "shell.h"
 #include "sound.h"
@@ -98,21 +99,26 @@ lv_obj_t* slider_row(const char* text, int label_w, int lo, int hi, int value,
 // calibrated but not filtered, so this shows what the hardware reports.
 constexpr int kMaxDots = 160;
 constexpr int kMaxSamples = 64;
-lv_obj_t*   tt_dots[kMaxDots] = {};
+// The big buffers live on the heap while the test is open (~1.1 KB that
+// would otherwise be static RAM all the time)
+struct TouchTest {
+    lv_obj_t* dots[kMaxDots];
+    int16_t   x[kMaxSamples], y[kMaxSamples];
+    char      log[4][48];
+};
+TouchTest*  TT = nullptr;
 int         tt_dot_next = 0;
 lv_obj_t*   tt_info = nullptr;
 lv_timer_t* tt_timer = nullptr;
-int16_t     tt_x[kMaxSamples], tt_y[kMaxSamples];
 int         tt_n = 0;
 int         tt_misses = 0;           // empty readings since the last touch
-char        tt_log[4][48];
 int         tt_log_n = 0;
 
 void tt_dot(int16_t x, int16_t y, bool first)
 {
     lv_obj_t* ov = overlay();
-    if (!ov) return;
-    lv_obj_t*& d = tt_dots[tt_dot_next];
+    if (!ov || !TT) return;
+    lv_obj_t*& d = TT->dots[tt_dot_next];
     tt_dot_next = (tt_dot_next + 1) % kMaxDots;
     if (!d) {
         d = lv_obj_create(ov);
@@ -134,34 +140,35 @@ void tt_dot(int16_t x, int16_t y, bool first)
 
 void tt_finish_tap()
 {
-    if (tt_n == 0) return;
+    if (tt_n == 0 || !TT) return;
     // "Settled" position = median of the second half of the readings
     int16_t xs[kMaxSamples], ys[kMaxSamples];
     const int from = tt_n / 2, n = tt_n - from;
-    for (int k = 0; k < n; ++k) { xs[k] = tt_x[from + k]; ys[k] = tt_y[from + k]; }
+    for (int k = 0; k < n; ++k) { xs[k] = TT->x[from + k]; ys[k] = TT->y[from + k]; }
     for (int a = 0; a < n; ++a) for (int b = a + 1; b < n; ++b) {
         if (xs[b] < xs[a]) { int16_t t = xs[a]; xs[a] = xs[b]; xs[b] = t; }
         if (ys[b] < ys[a]) { int16_t t = ys[a]; ys[a] = ys[b]; ys[b] = t; }
     }
     const int sx = xs[n / 2], sy = ys[n / 2];
-    for (int k = 3; k > 0; --k) memcpy(tt_log[k], tt_log[k - 1], sizeof tt_log[0]);
-    snprintf(tt_log[0], sizeof tt_log[0], "First off by %+d,%+d (%d reads)",
-             tt_x[0] - sx, tt_y[0] - sy, tt_n);
+    for (int k = 3; k > 0; --k) memcpy(TT->log[k], TT->log[k - 1], sizeof TT->log[0]);
+    snprintf(TT->log[0], sizeof TT->log[0], "First off by %+d,%+d (%d reads)",
+             TT->x[0] - sx, TT->y[0] - sy, tt_n);
     if (tt_log_n < 4) ++tt_log_n;
     char text[220];
     int len = snprintf(text, sizeof text, "Red dot = first reading of a tap.");
     for (int k = 0; k < tt_log_n && len < (int)sizeof text; ++k)
-        len += snprintf(text + len, sizeof text - len, "\n%s", tt_log[k]);
+        len += snprintf(text + len, sizeof text - len, "\n%s", TT->log[k]);
     lv_label_set_text(tt_info, text);
     tt_n = 0;
 }
 
 void tt_timer_cb(lv_timer_t*)
 {
+    if (!TT) return;
     int16_t x, y;
     if (shell().raw_touch && shell().raw_touch(&x, &y)) {
         tt_misses = 0;
-        if (tt_n < kMaxSamples) { tt_x[tt_n] = x; tt_y[tt_n] = y; }
+        if (tt_n < kMaxSamples) { TT->x[tt_n] = x; TT->y[tt_n] = y; }
         tt_dot(x, y, tt_n == 0);
         if (tt_n < kMaxSamples) ++tt_n;
     } else if (tt_n && ++tt_misses >= 3) {   // 30 ms without touch = tap over
@@ -175,7 +182,8 @@ void tt_stop()
         lv_timer_delete(tt_timer);
         tt_timer = nullptr;
     }
-    for (auto& d : tt_dots) d = nullptr;     // children of the overlay
+    delete TT;                               // the dots are children of the overlay
+    TT = nullptr;
 }
 
 void tt_done_cb(lv_event_t*) { diagnostics_open(); }
@@ -187,7 +195,8 @@ void settings_open_touch_test()
     overlay_begin("Touch Test", tt_stop);
     tt_info = overlay_text("Tap anywhere. Red dot = first reading of a tap, blue = the rest.", true);
     tt_n = tt_misses = tt_log_n = tt_dot_next = 0;
-    for (auto& d : tt_dots) d = nullptr;
+    delete TT;
+    TT = new (std::nothrow) TouchTest();       // zeroed: no dots yet
     overlay_bottom_button("Done", tt_done_cb, 0);
     tt_timer = lv_timer_create(tt_timer_cb, 10, nullptr);
 }

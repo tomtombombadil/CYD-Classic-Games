@@ -1,6 +1,8 @@
 #include "sudoku_game.h"
 
 #include <cstring>
+#include <memory>
+#include <new>
 
 namespace sudoku {
 
@@ -243,9 +245,11 @@ bool Game::deserialize(const uint8_t* buf, size_t len)
         for (int b = 0; b < 11; ++b) hbits[b] = get<uint8_t>(p);
     }
 
-    // Validate into a scratch copy, then commit. Static: a Game is ~4 KB,
-    // too big for the ESP32's default task stack.
-    static Game g;
+    // Validate into a scratch copy, then commit. On the heap: a Game is
+    // ~4 KB, too big for a task stack and too much to keep as static RAM.
+    std::unique_ptr<Game> scratch(new (std::nothrow) Game());
+    if (!scratch) return false;
+    Game& g = *scratch;
     g.diff_ = static_cast<Difficulty>(d);
     g.active_ = act != 0;
     g.undo_n_ = un;

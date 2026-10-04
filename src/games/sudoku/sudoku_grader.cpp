@@ -11,7 +11,8 @@ struct Geometry {
     uint8_t unit[27][9];      // 0-8 rows, 9-17 cols, 18-26 boxes
     uint8_t peers[81][20];
     uint8_t cell_unit[81][3]; // row, col, box unit of each cell
-    bool    sees[81][81];
+    uint8_t sees_bits[81][11];   // bit j: cells i and j share a unit (bits, not bools: 6 KB less static RAM)
+    bool    sees(int i, int j) const { return (sees_bits[i][j >> 3] >> (j & 7)) & 1; }
     Geometry()
     {
         for (int r = 0; r < 9; ++r)
@@ -24,11 +25,13 @@ struct Geometry {
                 cell_unit[i][1] = 9 + c;
                 cell_unit[i][2] = 18 + b;
             }
+        memset(sees_bits, 0, sizeof sees_bits);
         for (int i = 0; i < 81; ++i) {
             int n = 0;
             for (int j = 0; j < 81; ++j) {
-                sees[i][j] = (i != j) && same_unit(i, j);
-                if (sees[i][j]) peers[i][n++] = j;
+                if (i == j || !same_unit(i, j)) continue;
+                sees_bits[i][j >> 3] |= uint8_t(1 << (j & 7));
+                peers[i][n++] = j;
             }
         }
     }
@@ -277,7 +280,7 @@ bool xy_wing(State& s)
                 if ((s.cand[a] | s.cand[b] | s.cand[p]) != (s.cand[p] | c)) continue;
                 bool changed = false;
                 for (int i = 0; i < 81; ++i)
-                    if (i != a && i != b && i != p && G.sees[i][a] && G.sees[i][b] && s.eliminate(i, c))
+                    if (i != a && i != b && i != p && G.sees(i, a) && G.sees(i, b) && s.eliminate(i, c))
                         changed = true;
                 if (changed) return true;
             }
@@ -303,7 +306,7 @@ bool xyz_wing(State& s)
                 if (popcount(c) != 1) continue;
                 bool changed = false;
                 for (int i = 0; i < 81; ++i)
-                    if (i != a && i != b && i != p && G.sees[i][a] && G.sees[i][b] && G.sees[i][p]
+                    if (i != a && i != b && i != p && G.sees(i, a) && G.sees(i, b) && G.sees(i, p)
                         && s.eliminate(i, c))
                         changed = true;
                 if (changed) return true;

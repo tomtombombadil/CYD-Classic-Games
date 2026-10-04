@@ -12,6 +12,10 @@ Import("env")  # noqa: F821 - provided by PlatformIO
 root = env.subst("$PROJECT_DIR")  # noqa: F821
 with open(os.path.join(root, "VERSION"), encoding="utf-8") as f:
     version = "v" + f.read().strip()
+# CI passes the release tag; a pre-release suffix (v1.2.0-beta.1) shows too
+tag = os.environ.get("CYD_VERSION", "")
+if tag == version or tag.startswith(version + "-"):
+    version = tag
 try:
     build = subprocess.check_output(["git", "rev-parse", "--short=7", "HEAD"], cwd=root,
                                     stderr=subprocess.DEVNULL, text=True).strip()

@@ -237,8 +237,10 @@ void menu_pick(int id)
     if (id <= kit::kLevel2) { start_new(id); return; }
     if (id == kit::kRestart) {
         kit::flash_stop();
+        // A solved puzzle replayed isn't a new result for the stats
+        const bool was_solved = G->p.solved();
         G->p = G->start;
-        G->recorded = 0;
+        G->recorded = was_solved ? 1 : 0;
         G->seconds = 0;
         lv_obj_invalidate(board_obj);
         update_status();
@@ -284,7 +286,7 @@ void tick(uint32_t now)
 {
     if (!G) return;
     if (clock_.tick(now, !G->p.solved(), G->seconds)) update_status();
-    if (G->p.moves != saved_moves || now - last_save_ms > 30000) {
+    if (G->p.moves != saved_moves || kit::save_due(now, last_save_ms, G->seconds)) {
         saved_moves = G->p.moves;
         last_save_ms = now;
         save();

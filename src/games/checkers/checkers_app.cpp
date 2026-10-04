@@ -265,7 +265,7 @@ void tick(uint32_t now)
     // A new game may have changed which side the player has
     static bool was_flipped = false;
     if (flipped() != was_flipped) { was_flipped = flipped(); board8::set_flipped(was_flipped); }
-    if (G->plies != saved_plies || now - last_save_ms > 30000) {
+    if (G->plies != saved_plies || kit::save_due(now, last_save_ms, match::state().seconds)) {
         if (G->plies != saved_plies) { clear_pick(); redraw(); }
         saved_plies = G->plies;
         last_save_ms = now;

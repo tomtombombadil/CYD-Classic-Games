@@ -415,6 +415,17 @@ static void test_chess()
     };
     for (int k = 0; k < 2; ++k) { rp("g1f3"); rp("g8f6"); rp("f3g1"); rp("f6g8"); }
     CHECK(r.end() == End::Repetition);
+    // After a two-square push nobody can take en passant: still a repetition
+    Game r2;
+    auto rp2 = [&](const char* mv) {
+        MoveList l; r2.legal(l);
+        const int from = (mv[1] - '1') * 8 + (mv[0] - 'a'), to = (mv[3] - '1') * 8 + (mv[2] - 'a');
+        for (int k = 0; k < l.n; ++k) if (l.m[k].from == from && l.m[k].to == to) return r2.play(k);
+        return false;
+    };
+    rp2("e2e4"); rp2("e7e5");
+    for (int k = 0; k < 2; ++k) { rp2("g1f3"); rp2("b8c6"); rp2("f3g1"); rp2("c6b8"); }
+    CHECK(r2.end() == End::Repetition);
     // Computer: finds mate in one; Hard beats Easy
     Position m1;
     load_fen(m1, "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1");      // Rd8#
@@ -529,6 +540,9 @@ static void test_yahtcyd()
     g.score[Sixes] = 18;
     set(6, 6, 6, 6, 6);
     CHECK(g.can_score(FullHouse) && g.potential(FullHouse) == 25);
+    CHECK(!g.can_score(Ones));                    // forced joker: a lower box while one is open
+    for (int b = ThreeKind; b < kBoxes; ++b) if (g.score[b] < 0) g.score[b] = 0;
+    CHECK(g.can_score(Ones));                     // all lower boxes used: an upper box, for 0
     // Holding: only between rolls; held dice keep their value
     Game h;
     Rng rng(4);
@@ -1539,6 +1553,7 @@ static void test_vpoker()
         {"JS JH 2D 5C 8H", 0x03},              // high pair
         {"JS QS KS 3D 3H", 0x07},              // 3 to a royal beats a low pair
         {"2S 6S 9S QS 4H", 0x0F},              // 4 to a flush
+        {"JH JS 10H 9H 8H", 0x1D},             // 4 to a straight flush beats a high pair
         {"5S 5H 9D JC 2H", 0x03},              // low pair
         {"5S 6H 7D 8C KH", 0x0F},              // 4 to an open straight
         {"QS KS 3D 7C 9H", 0x03},              // 2 suited high cards
@@ -1682,6 +1697,7 @@ static void test_farkle()
         {"666", 600}, {"2222", 1000}, {"22222", 2000}, {"222222", 3000}, {"123456", 1500},
         {"223344", 1500}, {"222333", 2500}, {"222255", 1500}, {"1115", 1050}, {"55555", 2000},
         {"111111", 3000}, {"115", 250}, {"", 0},
+        {"1111", 1000}, {"11115", 1050}, {"111115", 2050}, {"5555", 1000},   // a face's dice are one set
     };
     for (const Case& c : cases) {
         uint8_t v[6]; int n = 0;

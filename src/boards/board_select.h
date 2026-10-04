@@ -2,8 +2,8 @@
 // This is the ONLY file that tests CYD_BOARD_* flags.
 //
 // Boards are named by what a user can identify: screen size, display driver,
-// touch type. BOARD_NAME matches the firmware file name shown in releases
-// and the web flasher (e.g. CYD_3.2in_ST7789_Resistive.bin).
+// touch type. BOARD_NAME says the same in words (e.g. 3.2" ST7789 Resistive);
+// firmware files are TTB-CYD-CG_<size>in_<DRIVER>_<touch>.bin (platformio.ini).
 //
 // Every board must end up defining:
 //   class LGFX : public lgfx::LGFX_Device   display + touch + backlight
@@ -18,7 +18,7 @@
 //
 // Colors: each board's default inversion is a best guess. If a particular
 // unit shows a negative image or swapped red/blue, fix it on the device
-// (test screen buttons, saved to flash) - no rebuild needed.
+// (Settings > Invert Colors / Swap Red/Blue, saved to flash) - no rebuild needed.
 #pragma once
 
 // Display SPI clock. 40 MHz is safe on every board; many run at 55-80 MHz.

@@ -293,8 +293,37 @@ int cell_at(lv_event_t* e)
     return r * G->b.w + c;
 }
 
-void tap_cb(lv_event_t* e)  { const int i = cell_at(e); if (i >= 0) tap(i); }
-void long_cb(lv_event_t* e) { const int i = cell_at(e); if (i >= 0) flag(i); }
+// Taps act on release at the cell where the stylus came DOWN (a resistive
+// panel's lift-off readings drift onto the neighbour - a wrong cell here
+// can be a mine). A hold of kLongMs flags instead, and its release is not
+// a tap. LVGL's own 400 ms long-press caught firm taps (Chess, 2026-10-03).
+constexpr uint32_t kLongMs = 750;
+int      pressed_cell = -1;
+uint32_t pressed_at = 0;
+bool     long_done = false;
+
+void press_cb(lv_event_t* e)
+{
+    pressed_cell = cell_at(e);
+    pressed_at = lv_tick_get();
+    long_done = false;
+}
+
+void pressing_cb(lv_event_t*)
+{
+    if (long_done || pressed_cell < 0 || lv_tick_elaps(pressed_at) < kLongMs) return;
+    long_done = true;
+    flag(pressed_cell);
+}
+
+void tap_cb(lv_event_t*)
+{
+    const int i = pressed_cell;
+    pressed_cell = -1;
+    if (!long_done && i >= 0) tap(i);
+}
+
+void lost_cb(lv_event_t*) { pressed_cell = -1; }
 
 void mode_cb(lv_event_t* e)
 {
@@ -336,8 +365,11 @@ void build()
     lv_obj_set_pos(board_obj, (m.w - b.w * cell) / 2, top + (bottom - top - b.h * cell) / 2);
     lv_obj_set_clickable(board_obj, true);
     lv_obj_add_event_cb(board_obj, draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
-    lv_obj_add_event_cb(board_obj, tap_cb, LV_EVENT_SHORT_CLICKED, nullptr);
-    lv_obj_add_event_cb(board_obj, long_cb, LV_EVENT_LONG_PRESSED, nullptr);
+    lv_obj_add_event_cb(board_obj, press_cb, LV_EVENT_PRESSED, nullptr);
+    lv_obj_add_event_cb(board_obj, pressing_cb, LV_EVENT_PRESSING, nullptr);
+    lv_obj_add_event_cb(board_obj, tap_cb, LV_EVENT_CLICKED, nullptr);
+    lv_obj_add_event_cb(board_obj, lost_cb, LV_EVENT_PRESS_LOST, nullptr);
+    pressed_cell = -1;
     clock_ = kit::Clock{};
     update_status();
 }

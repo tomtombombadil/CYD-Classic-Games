@@ -326,7 +326,7 @@ void menu_back()  { update_status(); }
 void open_menu()
 {
     kit::MenuHandlers h{menu_pick, menu_stats, menu_back, open_menu};
-    kit::menu_solo("CYD-dle", kLevels, h);
+    kit::menu_solo("CYD-dle", kLevels, h, false);    // no Restart: the word is known (would game the stats)
 }
 
 // ---- Registry entry --------------------------------------------------------------------------
@@ -359,7 +359,7 @@ void tick(uint32_t now)
 {
     if (!S) return;
     if (clock_.tick(now, !S->g.over(), S->seconds)) update_status();
-    if (now - last_save_ms > 30000) { last_save_ms = now; save(); }
+    if (kit::save_due(now, last_save_ms, S->seconds)) { last_save_ms = now; save(); }
 }
 
 void restyle() { if (S) build(); }

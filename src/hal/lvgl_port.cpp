@@ -106,6 +106,9 @@ void lvgl_port_set_rotation(uint8_t rotation)
     gfx.waitDMA();
     gfx.setRotation(rotation);       // touch follows: LovyanGFX maps it per rotation
     if (disp) {
+        // 90 degree turns swap width and height (the draw buffers are
+        // the same size either way); screens lay out from these
+        lv_display_set_resolution(disp, gfx.width(), gfx.height());
         lv_obj_invalidate(lv_screen_active());
         lv_obj_invalidate(lv_layer_top());
     }

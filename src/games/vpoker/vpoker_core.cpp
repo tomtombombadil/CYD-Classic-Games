@@ -174,6 +174,8 @@ uint8_t hint(const uint8_t h[5])
     // 3. Full house, flush, straight (pat); three of a kind (the three)
     if (now == FullHouse || now == Flush || now == Straight) return 0x1F;
     if (now == ThreeKind) return rank_mask(3);
+    // 3b. 4 to a straight flush (worth more than two pair or a high pair)
+    if (uint8_t m = find_subset(4, [&](uint8_t s) { return same_suit(h, s) && straight_window(h, s); })) return m;
     // 4. Two pair
     if (now == TwoPair) return rank_mask(2);
     // 5. High pair
@@ -297,6 +299,7 @@ bool Game::deserialize(const uint8_t* buf, size_t len)
     for (int i = 0; i < 52; ++i) { if (g.deck[i] > 51 || ((bits >> g.deck[i]) & 1)) return false; bits |= 1ull << g.deck[i]; ++seen; }
     for (int i = 0; i < 5; ++i) if (g.hand[i] > 51) return false;
     if (ph > 2 || g.pos > 52 || g.bet < 1 || g.bet > kMaxBet || g.last_rank >= kRanks) return false;
+    if (ph == uint8_t(Phase::Dealt) && g.pos > 47) return false;     // the draw needs 5 more cards
     g.phase = Phase(ph);
     *this = g;
     return true;

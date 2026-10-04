@@ -78,7 +78,7 @@ int32_t hand_net(const Hand& h, Result r)
 {
     switch (r) {
         case Result::Win:       return h.bet;
-        case Result::Blackjack: return h.bet * 3 / 2;
+        case Result::Blackjack: return (h.bet * 3 + 1) / 2;           // 3 to 2, half chips round up
         case Result::Lose:      return -h.bet;
         default:                return 0;
     }

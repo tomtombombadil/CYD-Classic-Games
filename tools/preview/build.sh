@@ -7,12 +7,20 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 LVGL=$1
 OUT=$2
 mkdir -p "$OUT/obj"
+rm -f "$OUT/obj/FAILED"
+# LVGL, 8 compiles at a time. An object is rebuilt when its source or
+# lv_conf.h is newer; a failed compile leaves a FAILED marker (a bare
+# `wait` can't report it).
 for f in $(find "$LVGL/src" -name '*.c'); do
   o="$OUT/obj/lv_$(echo "$f" | md5sum | cut -c1-12).o"
-  [ "$o" -nt "$f" ] || gcc -c -O1 -w -DCYD_PREVIEW -DLV_CONF_INCLUDE_SIMPLE -I"$ROOT/include" -I"$LVGL" "$f" -o "$o" &
+  if [ ! "$o" -nt "$f" ] || [ ! "$o" -nt "$ROOT/include/lv_conf.h" ]; then
+    ( gcc -c -O1 -w -DCYD_PREVIEW -DLV_CONF_INCLUDE_SIMPLE -I"$ROOT/include" -I"$LVGL" "$f" -o "$o" \
+      || { echo "failed: $f" >&2; touch "$OUT/obj/FAILED"; } ) &
+  fi
   [ $(jobs -p | wc -l) -ge 8 ] && wait
 done
 wait
+[ ! -e "$OUT/obj/FAILED" ] || { echo "LVGL compile failed" >&2; exit 1; }
 # Everything under src/ui and src/games except device-only files (the ones
 # that include Arduino.h; preview_stubs.cpp stands in for them).
 SRC="$(find "$ROOT/src/ui" "$ROOT/src/games" -name '*.cpp' ! -name registry.cpp | xargs grep -L '<Arduino.h>' | sort | tr '\n' ' ') $ROOT/tools/preview/preview_stubs.cpp"

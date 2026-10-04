@@ -51,6 +51,7 @@ struct Seat {
     Act     last = Act::None;
     int32_t last_amount = 0;
     int32_t won = 0;                  // chips won this hand (after it's over)
+    int32_t returned = 0;             // own uncalled chips handed back (not winnings; not saved)
     uint32_t value = 0;               // showdown hand value
     uint16_t rebuys = 0;
 };

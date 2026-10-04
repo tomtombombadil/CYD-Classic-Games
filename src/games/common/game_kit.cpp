@@ -523,4 +523,12 @@ void text(lv_layer_t* layer, const char* s, const lv_font_t* font, lv_color_t c,
     lv_draw_label(layer, &d, &a);
 }
 
+bool save_due(uint32_t now_ms, uint32_t last_save_ms, uint32_t seconds)
+{
+    static uint32_t saved_seconds = 0xFFFFFFFFu;    // one game is open at a time
+    if (now_ms - last_save_ms < 30000 || seconds == saved_seconds) return false;
+    saved_seconds = seconds;
+    return true;
+}
+
 } // namespace kit

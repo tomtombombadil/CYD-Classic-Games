@@ -32,6 +32,8 @@ struct Think {
 } think;
 bool     thinking = false;
 uint32_t think_after_ms = 0;          // short pause so the reply isn't instant
+bool     start_failed = false;        // the AI task couldn't start (logged once a game)
+bool     was_busy = false;            // the game's animation was running last tick
 uint32_t now_ms = 0;
 constexpr uint32_t kThinkPauseMs = 350;
 
@@ -60,7 +62,7 @@ void update_status()
         else if (r == S.human_side)    snprintf(st, sizeof st, "You win!");
         else if (r >= 0)               snprintf(st, sizeof st, "Computer wins");
         else if (clock_.paused)        snprintf(st, sizeof st, "Paused");
-        else if (computer_to_move())   snprintf(st, sizeof st, "Thinking...");
+        else if (computer_to_move())   snprintf(st, sizeof st, start_failed ? "Low on memory..." : "Thinking...");
         else                           snprintf(st, sizeof st, "Your turn (%s)", side_name(S.human_side));
     } else {
         if (r == 2)                    snprintf(st, sizeof st, "Draw");
@@ -134,8 +136,8 @@ void start_new(Mode mode, twoplayer::Level level)
 {
     ai_stop();
     thinking = false;
-    // Leaving a started vs-computer game counts as a loss
-    if (!over() && !S.recorded && S.mode == Mode::Computer && G.moves() > 0)
+    // Leaving a vs-computer game the player has moved in counts as a loss
+    if (!over() && !S.recorded && S.mode == Mode::Computer && S.human_moved)
         record(twoplayer::Result::Side2);
     kit::flash_stop();
     const bool was_computer = S.mode == Mode::Computer;
@@ -144,6 +146,8 @@ void start_new(Mode mode, twoplayer::Level level)
     // Alternate who moves first vs the computer
     S.human_side = (mode == Mode::Computer && was_computer) ? uint8_t(S.human_side ^ 1) : 0;
     S.recorded = 0;
+    S.human_moved = 0;
+    start_failed = false;
     S.seconds = 0;
     G.reset();
     if (G.redraw) G.redraw();
@@ -159,7 +163,7 @@ void menu_pick(int id)
     else if (id == kit::kPassAndPlay) start_new(Mode::PassAndPlay, S.level);
 }
 void menu_stats() { kit::stats_two_player(G.id, G.sides, open_menu); }
-void menu_back()  { update_status(); }
+void menu_back()  { if (G.redraw) G.redraw(); update_status(); }
 
 } // namespace
 
@@ -199,6 +203,8 @@ void build_chrome(int* top, int* bottom)
 void restart_view()
 {
     clock_ = kit::Clock{};
+    start_failed = false;
+    was_busy = false;
     if (computer_to_move()) think_after_ms = now_ms + kThinkPauseMs;
     update_status();
 }
@@ -224,6 +230,7 @@ bool human_may_move()
 void human_move(int move)
 {
     if (!human_may_move()) return;
+    S.human_moved = 1;
     G.play(move);
     after_move(false);
 }
@@ -234,15 +241,28 @@ void tick(uint32_t now)
     if (!attached) return;
     if (clock_.tick(now, !over(), S.seconds)) update_status();
     // Computer: start thinking after the pause, pick up the move when done
+    // A game still animating its last move holds the computer back; the
+    // pause starts when the animation ends
+    const bool busy = G.busy && G.busy();
+    if (was_busy && !busy && computer_to_move()) think_after_ms = now + kThinkPauseMs;
+    was_busy = busy;
+    if (busy) return;
     if (!thinking && computer_to_move() && !overlay_open() && int32_t(now - think_after_ms) >= 0) {
         think.level = static_cast<int>(S.level);
         think.seed = shell().random_seed ? shell().random_seed() : now;
         think.done = false;
         think.move = -1;
         thinking = ai_start(ai_job, &think, G.ai_stack);
+        if (!thinking) {
+            // No task (out of memory): try again in a while, log it once
+            think_after_ms = now + 3000;
+            if (!start_failed) log_event("%s: the computer could not start thinking", G.id);
+            start_failed = true;
+        }
         update_status();
     }
-    if (thinking && think.done) {
+    // A finished move waits while a menu is open (it would land unseen)
+    if (thinking && think.done && !overlay_open()) {
         thinking = false;
         if (think.move >= 0 && computer_to_move()) {
             G.play(think.move);
@@ -275,7 +295,7 @@ size_t save_state(uint8_t* buf, size_t cap)
     buf[0] = static_cast<uint8_t>(S.mode);
     buf[1] = static_cast<uint8_t>(S.level);
     buf[2] = S.human_side;
-    buf[3] = S.recorded;
+    buf[3] = uint8_t((S.recorded ? 1 : 0) | (S.human_moved ? 2 : 0));
     for (int k = 0; k < 4; ++k) buf[4 + k] = uint8_t(S.seconds >> (8 * k));
     return kStateBytes;
 }
@@ -286,7 +306,8 @@ bool read_state(const uint8_t* buf, size_t len, State& out)
     out.mode = static_cast<Mode>(buf[0]);
     out.level = static_cast<twoplayer::Level>(buf[1]);
     out.human_side = buf[2];
-    out.recorded = buf[3] ? 1 : 0;
+    out.recorded = buf[3] & 1;
+    out.human_moved = (buf[3] >> 1) & 1;
     out.seconds = 0;
     for (int k = 0; k < 4; ++k) out.seconds |= uint32_t(buf[4 + k]) << (8 * k);
     return true;

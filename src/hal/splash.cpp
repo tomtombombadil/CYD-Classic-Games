@@ -20,11 +20,14 @@ bool touched(LGFX& gfx)
 // Wait until `want` (touching or not) has held for `n` readings 20 ms apart.
 // Resistive panels flicker at the edges of a press, so one reading isn't
 // enough either way.
+void (*idle_fn)() = nullptr;
+
 void wait_for(LGFX& gfx, bool want, int n)
 {
     int run = 0;
     while (run < n) {
         run = (touched(gfx) == want) ? run + 1 : 0;
+        if (idle_fn) idle_fn();
         delay(20);
     }
 }
@@ -33,8 +36,9 @@ void wait_for(LGFX& gfx, bool want, int n)
 
 int splash_count() { return kSplashCount; }
 
-void splash_show(LGFX& gfx, int index)
+void splash_show(LGFX& gfx, int index, void (*idle)())
 {
+    idle_fn = idle;
     const SplashImage& img = kSplashImages[((index % kSplashCount) + kSplashCount) % kSplashCount];
     gfx.fillScreen(TFT_BLACK);
     const uint32_t t0 = millis();
@@ -44,4 +48,5 @@ void splash_show(LGFX& gfx, int index)
     wait_for(gfx, false, 5);             // a finger/stylus still down from calibration
     wait_for(gfx, true, 2);              // the tap
     wait_for(gfx, false, 3);             // ...and its release
+    idle_fn = nullptr;
 }

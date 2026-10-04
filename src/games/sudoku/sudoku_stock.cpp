@@ -1,5 +1,7 @@
 #include "sudoku_stock.h"
 
+#include <new>
+
 #include <Arduino.h>
 #include <LittleFS.h>
 #include <esp_random.h>
@@ -46,30 +48,34 @@ void load()
 {
     if (!storage_begin() || !LittleFS.exists(kPath)) return;
     File f = LittleFS.open(kPath, "r");
-    static StockFile tmp;
-    const bool ok = f && f.read(reinterpret_cast<uint8_t*>(&tmp), sizeof tmp) == sizeof tmp
-                 && tmp.magic == kMagic;
+    StockFile* tmp = new (std::nothrow) StockFile;     // heap: not kept as static RAM
+    const bool ok = tmp && f && f.read(reinterpret_cast<uint8_t*>(tmp), sizeof *tmp) == sizeof *tmp
+                 && tmp->magic == kMagic;
     f.close();
-    if (!ok) return;
-    for (int d = 0; d < 4; ++d) {
-        stock.count[d] = 0;
-        for (int k = 0; k < tmp.count[d] && k < kPerLevel; ++k)
-            if (valid_slot(tmp.slot[d][k])) stock.slot[d][stock.count[d]++] = tmp.slot[d][k];
-    }
+    if (ok)
+        for (int d = 0; d < 4; ++d) {
+            stock.count[d] = 0;
+            for (int k = 0; k < tmp->count[d] && k < kPerLevel; ++k)
+                if (valid_slot(tmp->slot[d][k])) stock.slot[d][stock.count[d]++] = tmp->slot[d][k];
+        }
+    delete tmp;
 }
 
 void save()
 {
     if (!storage_begin() || !storage_mkdir("/games")) return;
-    static StockFile copy;
+    StockFile* copy_p = new (std::nothrow) StockFile;  // heap: not kept as static RAM
+    if (!copy_p) return;
+    StockFile& copy = *copy_p;
     xSemaphoreTake(lock, portMAX_DELAY);
     copy = stock;
     dirty = false;
     xSemaphoreGive(lock);
     File f = LittleFS.open(kTmp, "w");
-    if (!f) return;
+    if (!f) { delete copy_p; return; }
     const size_t w = f.write(reinterpret_cast<const uint8_t*>(&copy), sizeof copy);
     f.close();
+    delete copy_p;
     if (w != sizeof copy) { LittleFS.remove(kTmp); return; }
     if (!LittleFS.rename(kTmp, kPath)) { LittleFS.remove(kPath); LittleFS.rename(kTmp, kPath); }
 }
@@ -102,7 +108,7 @@ void worker_task(void*)
         xSemaphoreGive(lock);
         if (need < 0) { ulTaskNotifyTake(pdTRUE, portMAX_DELAY); continue; }
 
-        static Slot made;
+        Slot made;                                    // on the worker's 12 KB stack
         const uint32_t t0 = millis();
         sudoku::generate(static_cast<sudoku::Difficulty>(need), rng, made.puzzle, made.solution, yield_cb);
         xSemaphoreTake(lock, portMAX_DELAY);

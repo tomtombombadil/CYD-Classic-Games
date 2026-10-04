@@ -161,7 +161,7 @@ void Game::settle()
         const Hand& h = hand[i];
         const int v = h.value();
         int32_t pay = 0;                     // returned to the chips, stake included
-        if (h.blackjack() && !dealer.blackjack()) { result[i] = Result::Blackjack; pay = h.bet + h.bet * 3 / 2; }
+        if (h.blackjack() && !dealer.blackjack()) { result[i] = Result::Blackjack; pay = h.bet + (h.bet * 3 + 1) / 2; /* half chips round up */ }
         else if (h.blackjack() && dealer.blackjack()) { result[i] = Result::Push; pay = h.bet; }
         else if (dealer.blackjack())         { result[i] = Result::Lose; }
         else if (v > 21)                     { result[i] = Result::Lose; }
@@ -218,6 +218,7 @@ bool Game::deserialize(const uint8_t* buf, size_t len)
         memcpy(h->c, buf + k, kMaxCards); k += kMaxCards;
         h->n = buf[k++];
         if (h->n > kMaxCards) return false;
+        for (int i = 0; i < h->n; ++i) if (h->c[i] >= 52) return false;
         h->bet = get32();
         h->doubled = buf[k++]; h->done = buf[k++]; h->from_split = buf[k++];
     }

@@ -90,7 +90,7 @@ void record_hand()
     if (you.folded) r.result = Result::Folded;
     else if (you.won == 0) r.result = Result::Lost;
     else r.result = others_won ? Result::Split : Result::Won;
-    r.net = you.won - you.total;
+    r.net = you.won + you.returned - you.total;
     r.chips = you.stack;
     char body[64];
     if (shell().stats_append && format_body(body, sizeof body, r)) shell().stats_append(kId, kCsvHeader, body);
@@ -522,7 +522,7 @@ void close()
 {
     if (!S) return;
     stop_thinking();
-    record_hand();
+    if (S->g.hand_over()) record_hand();        // a hand in play carries on next time
     save();
     bar = kit::TopBar{};
     table = nullptr;

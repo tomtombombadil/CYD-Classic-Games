@@ -226,11 +226,14 @@ document.getElementById("usb").addEventListener("click", async () => {
   }
   status.textContent = "Reading the log…";
   const writer = port.writable.getWriter();
-  const reader = port.readable.pipeThrough(new TextDecoderStream()).getReader();
+  // Keep the pipe's promise: the port can only close once the pipe ends
+  const decoder = new TextDecoderStream();
+  const piped = port.readable.pipeTo(decoder.writable).catch(() => {});
+  const reader = decoder.readable.getReader();
   const ask = () => writer.write(new TextEncoder().encode("\nlog\n"));
   let buf = "", done = false;
   const timer = setInterval(() => { if (!done) ask(); }, 2500);   // again, if the board was still starting
-  const giveUp = setTimeout(() => { if (!done) { done = true; reader.cancel(); } }, 20000);
+  const giveUp = setTimeout(() => { if (!done) { done = true; reader.cancel().catch(() => {}); } }, 20000);
   await ask();
   try {
     while (!done) {
@@ -250,7 +253,12 @@ document.getElementById("usb").addEventListener("click", async () => {
   clearInterval(timer);
   clearTimeout(giveUp);
   if (!logText) status.textContent = "No answer from the board. Is CYD Classic Games installed and running on it?";
-  try { reader.releaseLock(); writer.releaseLock(); await port.close(); } catch (e) { /* ignore */ }
+  // Release everything so the port can be opened again (here or by the installer)
+  try { await reader.cancel(); } catch (e) { /* ignore */ }
+  await piped;
+  try { reader.releaseLock(); } catch (e) { /* ignore */ }
+  try { writer.releaseLock(); } catch (e) { /* ignore */ }
+  try { await port.close(); } catch (e) { /* ignore */ }
 });
 </script>
 </body>

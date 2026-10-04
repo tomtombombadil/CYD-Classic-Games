@@ -208,6 +208,12 @@ bool Game::deserialize(const uint8_t* buf, size_t len)
     for (int c = 0; c < kCols; ++c) { cn[c] = buf[k]; if (cn[c] > kColMax) return false; total += cn[c]; k += 1 + kColMax; }
     const uint8_t sn = buf[k], dn = buf[k + 51];
     if (sn > 50 || dn > 8 || total + sn + 13 * dn != 104) return false;
+    {   // card values in range (face-down bit aside)
+        size_t q = 5;
+        for (int c = 0; c < kCols; ++c, q += 1 + kColMax)
+            for (int i = 0; i < buf[q]; ++i) if ((buf[q + 1 + i] & ~kDown) >= 52) return false;
+        for (int i = 0; i < sn; ++i) if ((buf[q + 1 + i] & ~kDown) >= 52) return false;
+    }
     k = 4;
     level = buf[k++];
     for (int c = 0; c < kCols; ++c) { n[c] = buf[k++]; memcpy(col[c], buf + k, kColMax); k += kColMax; }

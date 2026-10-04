@@ -136,7 +136,7 @@ void close()
 void tick(uint32_t now)
 {
     match::tick(now);
-    if (B && (B->plies != saved_plies || now - last_save_ms > 30000)) {
+    if (B && (B->plies != saved_plies || kit::save_due(now, last_save_ms, match::state().seconds))) {
         saved_plies = B->plies;
         last_save_ms = now;
         save();

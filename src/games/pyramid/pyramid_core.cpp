@@ -164,6 +164,9 @@ bool Game::deserialize(const uint8_t* buf, size_t len)
     for (int k = 0; k < 4; ++k) g.seed |= uint32_t(buf[n++]) << (8 * k);
     g.moves = uint16_t(buf[n] | (buf[n + 1] << 8));
     if (g.stock_n > 24 || g.waste_n > 24 || g.stock_n + g.waste_n > 24 || g.passes < 1 || g.passes > kPasses) return false;
+    for (int i = 0; i < kPyr; ++i) if (g.pyr[i] >= 52) return false;
+    for (int i = 0; i < g.stock_n; ++i) if (g.stock[i] >= 52) return false;
+    for (int i = 0; i < g.waste_n; ++i) if (g.waste[i] >= 52) return false;
     *this = g;
     return true;
 }

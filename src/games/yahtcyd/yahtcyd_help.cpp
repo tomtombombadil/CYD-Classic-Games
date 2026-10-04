@@ -22,7 +22,7 @@ const HelpPage kPages[] = {
         "\xE2\x80\xA2  Chance: total of all dice\n"
         "A box that doesn't fit scores 0."},
     {"Extra Yaht-CYDs",
-        "Each extra Yaht-CYD after a scored 50 earns 100 more. It must go in its number's upper box if that's empty; otherwise in any box, and Full House and the runs then score in full.\n"
+        "Each extra Yaht-CYD after a scored 50 earns 100 more. It must go in its number's upper box if that's empty; else in an open lower box, where Full House and the runs score in full; only with those all used, in an upper box for 0.\n"
         "Stats keep every game's score, your best and average."},
 };
 
