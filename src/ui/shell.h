@@ -74,6 +74,8 @@ void app_tick(uint32_t now_ms);
 const Shell& shell();
 UiSettings&  settings();
 void         save_settings();
+// Layouts put what's tapped most on the stylus hand's side (Settings)
+inline bool  right_handed() { return !settings().left_handed; }
 
 // Switching (deferred to the next LVGL cycle, so these are safe to call
 // from a click handler of an object they delete).

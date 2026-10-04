@@ -4,6 +4,13 @@
 //
 // Screen: top bar (clock, score, ☰); the table, one custom-drawn object:
 // stock, waste, the four foundations, the seven columns; Undo | Hint keys.
+// The top row follows the hand that holds the stylus (Settings, Tom
+// 2026-10-04): right-handed = foundations on the left, the stock in the
+// top right corner with the waste just inside it, so the hand turning cards
+// doesn't cover the table; left-handed = the mirror (stock top left, waste,
+// foundations on the right). The waste fans away from the stock in Draw 3
+// left-handed; right-handed its top card stays put next to the stock and
+// the older two show to its left (a card's index is on its left side).
 // Moving: tap a face-up card (it and the cards on it are picked, amber
 // edge), then tap where it goes. Tapping the picked card again (a double
 // tap) sends it to its foundation if it can go, else to the first column
@@ -75,6 +82,7 @@ lv_timer_t* finish_timer = nullptr;
 // Geometry (inside `table`)
 int cw = 0, ch = 0, pitch = 0, x0 = 0, row_y = 0, tab_y = 0, tab_bottom = 0, fan = 0;
 int down_step = 0, up_step = 0;
+bool rh = true;                            // right-handed layout (see the top of the file)
 
 int sel_pile = -1, sel_idx = -1;           // picked cards
 int hint_to = -1;                          // Hint: where the picked card can go
@@ -139,11 +147,16 @@ bool load(State& st)
 // ---- Geometry -------------------------------------------------------------------------------
 int col_x(int i) { return x0 + i * pitch; }
 
+// Top row columns: right-handed F F F F . W S, left-handed S W . F F F F
+int stock_col()      { return rh ? 6 : 0; }
+int waste_col()      { return rh ? 5 : 1; }          // where the waste's top card starts
+int found_col(int f) { return rh ? f : 3 + f; }
+
 void pile_xy(int p, int* x, int* y)
 {
-    if (p == Stock)        { *x = col_x(0); *y = row_y; }
-    else if (p == Waste)   { *x = col_x(1); *y = row_y; }
-    else if (p < Tab0)     { *x = col_x(3 + (p - Found0)); *y = row_y; }
+    if (p == Stock)        { *x = col_x(stock_col()); *y = row_y; }
+    else if (p == Waste)   { *x = col_x(waste_col()); *y = row_y; }
+    else if (p < Tab0)     { *x = col_x(found_col(p - Found0)); *y = row_y; }
     else                   { *x = col_x(p - Tab0); *y = tab_y; }
 }
 
@@ -177,20 +190,25 @@ int card_y(int p, int i)
 
 // The waste shows up to three cards fanned (Draw 3) or just the top one
 int waste_shown() { return S->g.draw == 3 ? (S->g.pile[Waste].n < 3 ? S->g.pile[Waste].n : 3) : (S->g.pile[Waste].n ? 1 : 0); }
-int waste_top_x()  { const int k = waste_shown(); return col_x(1) + (k > 1 ? (k - 1) * fan : 0); }
+// x of the i-th shown waste card (0 = the oldest of k shown)
+int waste_x(int i, int k) { return rh ? col_x(5) - (k - 1 - i) * fan : col_x(1) + i * fan; }
+int waste_top_x()  { const int k = waste_shown(); return k ? waste_x(k - 1, k) : col_x(waste_col()); }
+int waste_left_x() { const int k = waste_shown(); return k ? waste_x(0, k) : col_x(waste_col()); }
 
 // What's under a tap: pile and card index (-1 = the empty pile / its area)
 bool hit(int px, int py, int* pile, int* idx)
 {
     const Game& g = S->g;
     if (py >= row_y && py < row_y + ch) {
-        if (px >= col_x(0) && px < col_x(0) + cw) { *pile = Stock; *idx = -1; return true; }
-        if (px >= col_x(1) && px < waste_top_x() + cw && px < col_x(3) - 2) {
+        const int sx = col_x(stock_col());
+        if (px >= sx && px < sx + cw) { *pile = Stock; *idx = -1; return true; }
+        const int wr = (rh ? col_x(5) : waste_top_x()) + cw;
+        if (px >= waste_left_x() && px < wr && (rh ? px > col_x(3) + cw + 1 : px < col_x(3) - 2)) {
             *pile = Waste; *idx = g.pile[Waste].n - 1; return true;
         }
-        // the foundation row: one wide target from the first pile to the right edge
-        if (px >= col_x(3) - pitch / 3) {
-            int f = (px - col_x(3) + (pitch - cw) / 2) / pitch;
+        // the foundation row: one wide target from the first pile to the far edge
+        if (rh ? px < col_x(3) + cw + pitch / 3 : px >= col_x(3) - pitch / 3) {
+            int f = (px - col_x(found_col(0)) + (pitch - cw) / 2) / pitch;
             f = f < 0 ? 0 : f > 3 ? 3 : f;
             *pile = Found0 + f; *idx = g.pile[Found0 + f].n - 1;
             return true;
@@ -223,27 +241,28 @@ void draw_cb(lv_event_t* e)
     kit::fill_rect(layer, a.x1, a.y1, a.x2, a.y2, cards::felt(), 0);
     const int ox = a.x1, oy = a.y1;
     // Stock
-    if (g.pile[Stock].n) cards::draw_back(layer, ox + col_x(0), oy + row_y, cw, ch);
+    const int sx = ox + col_x(stock_col());
+    if (g.pile[Stock].n) cards::draw_back(layer, sx, oy + row_y, cw, ch);
     else {
-        cards::draw_slot(layer, ox + col_x(0), oy + row_y, cw, ch);
+        cards::draw_slot(layer, sx, oy + row_y, cw, ch);
         if (g.can_draw()) kit::text(layer, LV_SYMBOL_REFRESH, &lv_font_montserrat_20, pal().stone_light,
-                                    ox + col_x(0), oy + row_y, cw, ch);
+                                    sx, oy + row_y, cw, ch);
     }
     if (hint_to == Stock)
-        kit::fill_rect(layer, ox + col_x(0), oy + row_y + ch - 4, ox + col_x(0) + cw - 1, oy + row_y + ch - 1, pal().target, 2);
+        kit::fill_rect(layer, sx, oy + row_y + ch - 4, sx + cw - 1, oy + row_y + ch - 1, pal().target, 2);
     // Waste
     const int k = waste_shown();
-    if (!k) cards::draw_slot(layer, ox + col_x(1), oy + row_y, cw, ch);
+    if (!k) cards::draw_slot(layer, ox + col_x(waste_col()), oy + row_y, cw, ch);
     for (int i = 0; i < k; ++i) {
         const Stack& w = g.pile[Waste];
         const int ci = w.n - k + i;
         const bool picked = sel_pile == Waste && i == k - 1;
-        cards::draw_face(layer, ox + col_x(1) + i * fan, oy + row_y, cw, ch, Game::card(w.c[ci]), picked);
+        cards::draw_face(layer, ox + waste_x(i, k), oy + row_y, cw, ch, Game::card(w.c[ci]), picked);
     }
     // Foundations
     for (int f = 0; f < 4; ++f) {
         const Stack& s = g.pile[Found0 + f];
-        const int x = ox + col_x(3 + f), y = oy + row_y;
+        const int x = ox + col_x(found_col(f)), y = oy + row_y;
         if (s.n) cards::draw_face(layer, x, y, cw, ch, Game::card(s.top()), sel_pile == Found0 + f);
         else     cards::draw_slot(layer, x, y, cw, ch, kFoundSuit[f]);    // the suit it takes
         if (hint_to == Found0 + f) kit::fill_rect(layer, x, y + ch - 4, x + cw - 1, y + ch - 1, pal().target, 2);
@@ -584,6 +603,7 @@ void build()
     key_label(again_k, "Play Again", menu_font());
     lv_obj_set_pos(again_k, pad, ky);
 
+    rh = right_handed();
     const int mg = m.large ? 4 : 2;
     pitch = (m.w - 2 * mg) / 7;
     cw = pitch - (m.large ? 4 : 3);

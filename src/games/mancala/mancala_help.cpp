@@ -10,7 +10,7 @@ using games::kHelpTwoPlayer;
 const HelpPage kPages[] = {
     {"The Idea",
         "Kalah, the classic Mancala: six pits a side with four seeds each, and a store for each player.\n"
-        "Your pits run down the left; your store is at the bottom of the middle. Most seeds in your store at the end wins."},
+        "Seeds go round: down the left column into the bottom store, up the right one into the top store. Most seeds in your store at the end wins."},
     {"A Move",
         "Tap one of your pits: its seeds are sown one at a time into the next pits - down your side, into your store, up the other side - skipping the other player's store.\n"
         "Last seed in your store: you go again.\n"
@@ -18,7 +18,7 @@ const HelpPage kPages[] = {
     {"The End",
         "When either side's pits are all empty, the game ends: the other player puts the seeds left on their side into their store.\n"
         "The pit last sown from is lit; your pits light up when it's your turn.\n"
-        "vs Computer, the board turns so your pits are always on the left."},
+        "Your pits are on your stylus hand's side (Settings: Right Hand or Left Hand)."},
     {"New Games", kHelpTwoPlayer},
 };
 

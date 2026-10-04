@@ -39,6 +39,7 @@ struct UiSettings {
     uint8_t   splash_next = 0;                 // which splash image the next boot shows
     uint8_t   card_back = 3;                   // card games: cards::Back design (shared); 3 = Blue Lattice
     bool      flip = false;                    // screen turned 180 degrees (USB cord the other way)
+    bool      left_handed = false;             // layouts put the most-tapped things on the left
 };
 constexpr uint8_t kMinBrightness = 20;         // never let the screen go fully dark
 

@@ -12,7 +12,7 @@ const HelpPage kPages[] = {
     {"Playing",
         "Tap a card in a column's top run: it and the cards on it are picked. Then tap the column they go to. Tap the picked card again to send it to the best column.\n"
         "An empty column takes any card or run.\n"
-        "Tap the stock (top right) to deal one card onto every column; every column must have a card first."},
+        "Tap the stock (a top corner) to deal one card onto every column; every column must have a card first."},
     {"Levels And Score",
         "1 Suit (all spades) is the gentle start; 2 Suits and 4 Suits get much harder.\n"
         "Score: 500 to start, 1 off for every move or deal, 100 for every run taken off.\n"

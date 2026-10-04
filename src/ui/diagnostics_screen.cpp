@@ -16,7 +16,7 @@ namespace ui {
 
 namespace {
 
-enum : intptr_t { kTouch = 1, kLog, kBack, kPrev, kNext, kClear, kCopy, kSend };
+enum : intptr_t { kTouch = 1, kLog, kBack, kPrev, kNext, kClear, kCopy, kSend, kRecal };
 
 // The log while its screen is up: lines joined with '\n', page starts.
 char*  text = nullptr;
@@ -225,6 +225,10 @@ void key_cb(lv_event_t* e)
         case kTouch: settings_open_touch_test(); break;
         case kLog:   status = nullptr; device_log_open(); break;
         case kSend:  send_log_open(); break;
+        case kRecal:
+            app_save_current();
+            if (H.recalibrate_touch) H.recalibrate_touch();
+            break;
         case kBack:
             if (text) diagnostics_open();                    // from the log
             else settings_reopen();
@@ -253,11 +257,9 @@ void diagnostics_open()
     const Shell& H = shell();
     free_text();
     overlay_begin("Diagnostics");
-    if (H.raw_touch)
-        overlay_pair("Touch Test", key_cb, kTouch, H.log_read ? "Device Log" : nullptr, key_cb, kLog);
-    else if (H.log_read)
-        overlay_pair("Device Log", key_cb, kLog, nullptr, nullptr, 0);
-    if (H.log_read) overlay_pair("Send Log", key_cb, kSend, nullptr, nullptr, 0);
+    // Touch: test and recalibrate side by side; then the log
+    overlay_pair(H.raw_touch ? "Touch Test" : nullptr, key_cb, kTouch, "Recalibrate", key_cb, kRecal);
+    if (H.log_read) overlay_pair("Device Log", key_cb, kLog, "Send Log", key_cb, kSend);
 
     char info[200];
     int n = snprintf(info, sizeof info, "Board: %s\nFirmware: %s%s%s%s",

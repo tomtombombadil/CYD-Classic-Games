@@ -1,8 +1,9 @@
 // Spider solitaire: registry entry, save file and screen. Rules in
 // spider_core.*; cards and the win show in common/cards.*.
 //
-// Screen: top bar (clock, score, ☰); the table: finished runs (top left,
-// one King each), the stock (top right, one back per deal left), the ten
+// Screen: top bar (clock, score, ☰); the table: finished runs (one King
+// each) and the stock (one back per deal left) - the stock in the top
+// corner on the stylus hand's side (Settings), the runs in the other - the ten
 // columns; Undo | Hint. Tap a card in a column's top run (it and the cards
 // on it are picked), then tap the column it goes to; tap the picked card
 // again to send it to the best column (its own suit first). Tap the stock
@@ -110,7 +111,12 @@ int card_y(int c, int i)
 }
 
 int deals_left() { return S->g.stock_n / kCols; }
-int stock_x()    { return col_x(kCols - 1) - (deals_left() > 0 ? deals_left() - 1 : 0) * (cw / 4); }
+// The stock goes in the top corner on the stylus hand's side, the finished
+// runs in the other one (Settings -> Right Hand / Left Hand)
+bool rh = true;
+int stock_w()    { return cw + (deals_left() > 0 ? deals_left() - 1 : 0) * (cw / 4); }
+int stock_x()    { return rh ? col_x(kCols - 1) + cw - stock_w() : col_x(0); }
+int run_x(int k) { return (rh ? col_x(0) : col_x(kCols - 1) - 7 * (cw / 2 + 1)) + k * (cw / 2 + 1); }
 
 // ---- Drawing -------------------------------------------------------------------------------------
 void draw_cb(lv_event_t* e)
@@ -124,14 +130,14 @@ void draw_cb(lv_event_t* e)
     const int ox = a.x1, oy = a.y1;
     // Finished runs: their Kings, overlapping
     for (int k = 0; k < 8; ++k) {
-        const int x = ox + col_x(0) + k * (cw / 2 + 1);
+        const int x = ox + run_x(k);
         if (k < g.done) cards::draw_face(layer, x, oy + row_y, cw, ch, uint8_t(g.done_suit[k] * 13 + 12));
         else if (k == g.done) cards::draw_slot(layer, x, oy + row_y, cw, ch);
     }
     // Stock: a back for each deal left
     const int dl = deals_left();
     for (int k = 0; k < dl; ++k) cards::draw_back(layer, ox + stock_x() + k * (cw / 4), oy + row_y, cw, ch);
-    if (hint_deal && dl) kit::fill_rect(layer, ox + stock_x(), oy + row_y + ch - 4, ox + col_x(kCols - 1) + cw - 1, oy + row_y + ch - 1, pal().target, 2);
+    if (hint_deal && dl) kit::fill_rect(layer, ox + stock_x(), oy + row_y + ch - 4, ox + stock_x() + stock_w() - 1, oy + row_y + ch - 1, pal().target, 2);
     if (note_empty) kit::text(layer, "Fill every column first", &lv_font_montserrat_12, pal().stone_light,
                               ox + col_x(0), oy + row_y + ch + 1, col_x(kCols - 1) + cw - col_x(0), 14);
     // Columns
@@ -219,7 +225,7 @@ void after_change(uint8_t done_before)
         int n = 0;
         for (int r = 13; r >= 1; --r)
             for (int k = 0; k < 8; ++k)
-                list[n++] = cards::Launch{int16_t(a.x1 + col_x(0) + k * (cw / 2 + 1)), int16_t(a.y1 + row_y),
+                list[n++] = cards::Launch{int16_t(a.x1 + run_x(k)), int16_t(a.y1 + row_y),
                                           uint8_t(g.done_suit[k] * 13 + r - 1),
                                           uint8_t(r > 1 ? g.done_suit[k] * 13 + r - 2 : 0xFE)};
         cards::celebrate(list, n, cw, ch, show_done);
@@ -240,7 +246,7 @@ void table_cb(lv_event_t*)
     const int x = pt.x - a.x1, y = pt.y - a.y1;
     Game& g = S->g;
     const uint8_t done_before = g.done;
-    if (y >= row_y && y < row_y + ch && x >= stock_x() && deals_left()) {
+    if (y >= row_y && y < row_y + ch && (rh ? x >= stock_x() : x < stock_x() + stock_w()) && deals_left()) {
         clear_marks();
         if (g.deal_row()) {after_change(done_before); }
         else { note_empty = true; sound(Sound::Error); update_status(); }
@@ -319,6 +325,7 @@ void build()
     lv_obj_set_pos(again_k, pad, ky);
 
     const int mg = m.large ? 3 : 1;
+    rh = right_handed();
     pitch = (m.w - 2 * mg) / kCols;
     cw = pitch - 2;
     ch = cw * 7 / 5;

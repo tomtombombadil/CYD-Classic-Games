@@ -8,10 +8,10 @@ using games::HelpPage;
 const HelpPage kPages[] = {
     {"The Idea",
         "Every card is face up from the start, and nearly every deal can be won.\n"
-        "Move all the cards onto the foundations (top right: Spades, Hearts, Clubs, Diamonds), each from Ace to King.\n"
+        "Move all the cards onto the foundations (Spades, Hearts, Clubs, Diamonds), each from Ace to King.\n"
         "On the columns, cards go down in alternating colors. An empty column takes any card."},
     {"Free Cells",
-        "The four free cells (top left) each hold one card while you dig out the one you need.\n"
+        "The four free cells (top row, on your stylus hand's side) each hold one card while you dig out the one you need.\n"
         "A run of cards moves together if there's room: one card per empty free cell plus one, doubled for each empty column.\n"
         "Cards nothing else needs go up to the foundations by themselves."},
     {"Playing",

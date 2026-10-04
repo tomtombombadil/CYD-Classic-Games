@@ -15,7 +15,7 @@ namespace {
 
 void (*back_fn)() = nullptr;
 
-enum Action : intptr_t { kTheme, kInvert, kSwapRb, kFlip, kRecal, kDiagnostics, kBack };
+enum Action : intptr_t { kTheme, kInvert, kSwapRb, kFlip, kDiagnostics, kBack, kRight, kLeft };
 
 void brightness_cb(lv_event_t* e)
 {
@@ -218,10 +218,16 @@ void action_cb(lv_event_t* e)
             save_settings();
             set_checked(lv_event_get_target_obj(e), settings().flip);
             break;
-        case kRecal:
-            app_save_current();
-            if (H.recalibrate_touch) H.recalibrate_touch();
+        case kRight:
+        case kLeft: {
+            const bool left = reinterpret_cast<intptr_t>(lv_event_get_user_data(e)) == kLeft;
+            if (settings().left_handed == left) break;
+            settings().left_handed = left;
+            save_settings();
+            app_theme_changed();             // the open game lays itself out again
+            settings_reopen();
             break;
+        }
         case kDiagnostics: diagnostics_open(); break;
         case kBack:
             if (back_fn) back_fn();
@@ -251,13 +257,21 @@ void settings_open(void (*back)())
     lv_obj_add_event_cb(volume_label, volume_mute_cb, LV_EVENT_CLICKED, nullptr);
     volume_text();
 
+    // Which hand holds the stylus: games put the things tapped most on that
+    // side, so the hand doesn't cover the play area (Tom, 2026-10-04). The
+    // lit key is the choice.
+    overlay_pair("Right Hand", action_cb, kRight, "Left Hand", action_cb, kLeft);
+    lv_obj_t* hands = lv_obj_get_child(overlay(), -1);
+    set_checked(lv_obj_get_child(hands, 0), !S.left_handed);
+    set_checked(lv_obj_get_child(hands, 1), S.left_handed);
+
     // Full width: "Swap Red/Blue" doesn't fit half a row at the menu font.
     overlay_pair("Swap Red/Blue", action_cb, kSwapRb, nullptr, nullptr, 0);
-    // A toggle, lit while the screen is turned: the USB cord can leave
-    // either end of the board (board and firmware moved to Diagnostics)
-    lv_obj_t* flip = overlay_button(overlay(), "Rotate Screen 180", action_cb, kFlip);
-    set_checked(flip, S.flip);
-    overlay_pair("Recalibrate", action_cb, kRecal, "Diagnostics", action_cb, kDiagnostics);
+    // Rotate 180 is a toggle, lit while the screen is turned: the USB cord can
+    // leave either end of the board. Recalibrate sits in Diagnostics, next to
+    // the Touch Test (board and firmware are there too).
+    overlay_pair("Rotate 180", action_cb, kFlip, "Diagnostics", action_cb, kDiagnostics);
+    set_checked(lv_obj_get_child(lv_obj_get_child(overlay(), -1), 0), S.flip);
     overlay_button(overlay(), "Back", action_cb, kBack, true);
 }
 

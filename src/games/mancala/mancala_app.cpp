@@ -2,11 +2,12 @@
 // turns, the computer, menus and stats come from the shared two-player
 // controller (games/common/match.*).
 //
-// Portrait board, three columns: your pits down the left (sown top to
-// bottom), the two stores in the middle (yours at the bottom), the other
-// side's pits up the right. Sowing runs round that loop, so a move is
-// shown seed by seed. vs Computer the board turns so your pits are always
-// on the left; pass-and-play keeps Gold on the left.
+// Portrait board, three columns: the left side's pits down the left (sown
+// top to bottom), the two stores in the middle (the left side's at the
+// bottom), the right side's pits up the right. Sowing runs round that loop,
+// so a move is shown seed by seed. Your pits are on the stylus hand's side
+// (Settings -> Right Hand / Left Hand): vs Computer the board turns
+// for it; pass-and-play puts Gold there.
 #include <cstdio>
 #include <cstring>
 #include <new>
@@ -45,8 +46,11 @@ struct Anim {
 // Geometry, in board-object coordinates
 int col_w = 0, store_w = 0, row_h = 0, gap = 0;
 
-bool flipped() { return match::state().mode == twoplayer::Mode::Computer && match::state().human_side == 1; }
-int  left_side() { return flipped() ? 1 : 0; }
+// Your pits go on the stylus hand's side (Settings): right-handed the
+// right column, left-handed the left one. Pass-and-play puts Gold
+// (who starts) there.
+int  near_side() { return match::state().mode == twoplayer::Mode::Computer ? match::state().human_side : 0; }
+int  left_side() { return right_handed() ? 1 - near_side() : near_side(); }
 
 // ---- Rules for the controller ---------------------------------------------------------------
 int  result() { return B->result(); }

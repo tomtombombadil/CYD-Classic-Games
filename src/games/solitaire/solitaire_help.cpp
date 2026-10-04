@@ -7,11 +7,11 @@ using games::HelpPage;
 
 const HelpPage kPages[] = {
     {"The Idea",
-        "Move every card onto the four foundations (top right), one pile per suit, from Ace up to King.\n"
+        "Move every card onto the four foundations, one pile per suit, from Ace up to King.\n"
         "On the seven columns, cards go down in alternating colors: a red 6 on a black 7. Only a King goes into an empty column. A face-down card left on top turns up by itself."},
     {"Playing",
         "Tap a face-up card to pick it up (with the cards on it), then tap where it goes. Tap the picked card again to send it to a foundation, or else to a column that takes it.\n"
-        "Tap the stock (top left) to turn 1 or 3 cards; when it's empty, tap it to turn the waste back over."},
+        "Tap the stock (the face-down pile, in the top corner on your stylus hand's side) to turn 1 or 3 cards; when it's empty, tap it to turn the waste back over."},
     {"Keys And Finish",
         "Undo takes back moves, Hint shows a good one (a green bar marks where it goes).\n"
         "Once every card is face up and the stock is empty, the rest go up by themselves and the cards bounce off the table. Tap to stop the show."},

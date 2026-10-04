@@ -130,6 +130,7 @@ static void shot(const std::string& path, bool keep = false)
 
 // ---- Fake device services --------------------------------------------------------
 static std::map<std::string, std::vector<uint8_t>> files;    // game saves
+static std::map<std::string, std::vector<uint8_t>> mid_saves; // part-way games for the left-handed shots
 static uint32_t seed() { return 4242; }
 
 static size_t load_game(const char* id, uint8_t* buf, size_t cap)
@@ -844,6 +845,7 @@ int main(int argc, char** argv)
             }
             mancala_preview::finish();
             shot(out + "_light_60_mancala.ppm");
+            mid_saves["mancala"] = files["mancala"];
         }
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Dark);
@@ -1150,6 +1152,7 @@ int main(int argc, char** argv)
         stage(g, 251, false);
         run(30);
         shot(out + "_light_39_nonogram.ppm");
+        mid_saves["nonogram"] = files["nonogram"];
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Dark);
         Game h; Rng r2(5); h.start(1, r2);
@@ -1186,6 +1189,7 @@ int main(int argc, char** argv)
         stage(*g, 223, 0);
         run(30);
         shot(out + "_light_45_solitaire.ppm");
+        mid_saves["solitaire"] = files["solitaire"];
         kit_preview_menu();
         shot(out + "_light_45_solitaire_menu.ppm");
         ui::close_overlays();
@@ -1383,6 +1387,18 @@ int main(int argc, char** argv)
         ui::close_overlays();
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Left-handed: the games whose layout follows the stylus hand
+        ui::settings().left_handed = true;
+        for (const char* id : {"solitaire", "golf", "pyramid", "spider", "freecell", "mancala", "nonogram", "yahtcyd"}) {
+            if (mid_saves.count(id)) files[id] = mid_saves[id];
+            ui::app_open_game_now(games::find(id));
+            run(30);
+            shot(out + "_light_70_lh_" + id + ".ppm");
+            ui::app_go_home_now();
+        }
+        ui::settings().left_handed = false;
     }
 
     // 5. "All games": back to the picker, which now offers the last game

@@ -5,6 +5,8 @@
 // then the stock and the waste (bigger cards); Undo | Hint. Tap an
 // uncovered card to pick it (amber), then its partner that makes 13; a
 // King goes as soon as you tap it. Tap the stock to turn a card.
+// The stock sits on the stylus hand's side, the waste inside it (Settings ->
+// Right Hand / Left Hand).
 //
 // Sounds: none while playing (card games are quiet) except a soft "aww"
 // (Error) for a pair that doesn't make 13; Fanfare when won.
@@ -306,8 +308,11 @@ void build()
     bh = table_h - low_y - (m.large ? 26 : 20);
     bw = bh * 5 / 7;
     if (bw > cw * 2) { bw = cw * 2; bh = bw * 7 / 5; }
-    stock_x = m.w / 2 - bw - (m.large ? 24 : 14);
-    waste_x = m.w / 2 + (m.large ? 24 : 14);
+    // The stock on the stylus hand's side, the waste inside it (Settings)
+    const int off = m.large ? 24 : 14;
+    const bool rh = right_handed();
+    stock_x = rh ? m.w / 2 + off : m.w / 2 - bw - off;
+    waste_x = rh ? m.w / 2 - bw - off : m.w / 2 + off;
     clock_ = kit::Clock{};
     update_status();
 }

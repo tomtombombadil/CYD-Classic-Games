@@ -138,8 +138,8 @@ write("nonogram", [
 ])
 
 write("solitaire", [
- ("The Idea", "Move every card onto the four foundations (top right), one pile per suit, from Ace up to King.\nOn the seven columns, cards go down in alternating colors: a red 6 on a black 7. Only a King goes into an empty column. A face-down card left on top turns up by itself."),
- ("Playing", "Tap a face-up card to pick it up (with the cards on it), then tap where it goes. Tap the picked card again to send it to a foundation, or else to a column that takes it.\nTap the stock (top left) to turn 1 or 3 cards; when it's empty, tap it to turn the waste back over."),
+ ("The Idea", "Move every card onto the four foundations, one pile per suit, from Ace up to King.\nOn the seven columns, cards go down in alternating colors: a red 6 on a black 7. Only a King goes into an empty column. A face-down card left on top turns up by itself."),
+ ("Playing", "Tap a face-up card to pick it up (with the cards on it), then tap where it goes. Tap the picked card again to send it to a foundation, or else to a column that takes it.\nTap the stock (the face-down pile, in the top corner on your stylus hand's side) to turn 1 or 3 cards; when it's empty, tap it to turn the waste back over."),
  ("Keys And Finish", "Undo takes back moves, Hint shows a good one (a green bar marks where it goes).\nOnce every card is face up and the stock is empty, the rest go up by themselves and the cards bounce off the table. Tap to stop the show."),
  ("Options", "Draw 1 or Draw 3 (default).\nStandard scoring: +5 to a column from the waste, +10 to a foundation, +5 for turning a card up, -15 back off a foundation, a time bonus when you win.\nVegas: a deal costs $52, each foundation card pays $5, the total carries on. Or no score."),
 ])
@@ -151,18 +151,18 @@ write("golf", [
 
 write("pyramid", [
  ("The Idea", "Take the pyramid apart. Remove two cards that add up to 13: Ace = 1, Jack = 11, Queen = 12. A King is 13 by itself and goes as soon as you tap it.\nOnly uncovered cards can go: a card is uncovered once both cards resting on it from below are gone."),
- ("Playing", "Tap a card (amber edge), then its partner. The top card of the waste (bottom right) can pair too.\nTap the stock to turn its next card onto the waste. You can go through the stock three times.\nUndo takes back moves; Hint shows a pair, a King or the stock."),
+ ("Playing", "Tap a card (amber edge), then its partner. The top card of the waste (next to the stock) can pair too.\nTap the stock to turn its next card onto the waste. You can go through the stock three times.\nUndo takes back moves; Hint shows a pair, a King or the stock."),
 ])
 
 write("spider", [
  ("The Idea", "Two decks in ten columns. Build runs from King down to Ace in one suit: a full run comes off by itself. Take off all eight runs to win.\nA card goes on any card one rank higher, any suit. But only cards in one suit going down by one move together, so same-suit builds are worth more."),
- ("Playing", "Tap a card in a column's top run: it and the cards on it are picked. Then tap the column they go to. Tap the picked card again to send it to the best column.\nAn empty column takes any card or run.\nTap the stock (top right) to deal one card onto every column; every column must have a card first."),
+ ("Playing", "Tap a card in a column's top run: it and the cards on it are picked. Then tap the column they go to. Tap the picked card again to send it to the best column.\nAn empty column takes any card or run.\nTap the stock (a top corner) to deal one card onto every column; every column must have a card first."),
  ("Levels And Score", "1 Suit (all spades) is the gentle start; 2 Suits and 4 Suits get much harder.\nScore: 500 to start, 1 off for every move or deal, 100 for every run taken off.\nUndo takes back moves; Hint shows a good move or the stock."),
 ])
 
 write("freecell", [
- ("The Idea", "Every card is face up from the start, and nearly every deal can be won.\nMove all the cards onto the foundations (top right: Spades, Hearts, Clubs, Diamonds), each from Ace to King.\nOn the columns, cards go down in alternating colors. An empty column takes any card."),
- ("Free Cells", "The four free cells (top left) each hold one card while you dig out the one you need.\nA run of cards moves together if there's room: one card per empty free cell plus one, doubled for each empty column.\nCards nothing else needs go up to the foundations by themselves."),
+ ("The Idea", "Every card is face up from the start, and nearly every deal can be won.\nMove all the cards onto the foundations (Spades, Hearts, Clubs, Diamonds), each from Ace to King.\nOn the columns, cards go down in alternating colors. An empty column takes any card."),
+ ("Free Cells", "The four free cells (top row, on your stylus hand's side) each hold one card while you dig out the one you need.\nA run of cards moves together if there's room: one card per empty free cell plus one, doubled for each empty column.\nCards nothing else needs go up to the foundations by themselves."),
  ("Playing", "Tap a card (it turns gold), then tap where it goes: a column, the free-cell row, or the foundation row.\nTap the picked card again to send it to its foundation, or else to a column or a free cell.\nUndo takes back moves; Hint shows one."),
 ])
 
@@ -187,9 +187,9 @@ write("farkle", [
 ], two_player=True)
 
 write("mancala", [
- ("The Idea", "Kalah, the classic Mancala: six pits a side with four seeds each, and a store for each player.\nYour pits run down the left; your store is at the bottom of the middle. Most seeds in your store at the end wins."),
+ ("The Idea", "Kalah, the classic Mancala: six pits a side with four seeds each, and a store for each player.\nSeeds go round: down the left column into the bottom store, up the right one into the top store. Most seeds in your store at the end wins."),
  ("A Move", "Tap one of your pits: its seeds are sown one at a time into the next pits - down your side, into your store, up the other side - skipping the other player's store.\nLast seed in your store: you go again.\nLast seed in an empty pit of yours: it and the seeds opposite go to your store."),
- ("The End", "When either side's pits are all empty, the game ends: the other player puts the seeds left on their side into their store.\nThe pit last sown from is lit; your pits light up when it's your turn.\nvs Computer, the board turns so your pits are always on the left."),
+ ("The End", "When either side's pits are all empty, the game ends: the other player puts the seeds left on their side into their store.\nThe pit last sown from is lit; your pits light up when it's your turn.\nYour pits are on your stylus hand's side (Settings: Right Hand or Left Hand)."),
  TP,
 ], two_player=True)
 

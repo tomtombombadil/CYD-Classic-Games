@@ -2,7 +2,8 @@
 // nonogram_core.*.
 //
 // Screen: top bar (clock, size, ☰); the clues (column clues above the grid,
-// row clues to its left) and the grid, one custom-drawn object; Fill | Mark
+// row clues on the side away from the stylus hand - left of it for
+// right-handed players, right of it for left-handed, Settings) and the grid, one custom-drawn object; Fill | Mark
 // keys (Play Again once solved). Tap a cell to fill it, or in Mark mode to
 // put an X where you know there is no fill; tap again to clear. A clue
 // turns grey once its line matches it. The row and column of the last
@@ -45,6 +46,7 @@ lv_obj_t*   mark_k = nullptr;
 lv_obj_t*   again_k = nullptr;
 int         cell = 0, gx = 0, gy = 0;          // grid origin inside board_obj
 int         slot_w = 0, slot_h = 0;            // one clue number
+bool        rh = true;                         // row clues left of the grid (right-handed)
 const lv_font_t* clue_font = nullptr;
 int         last_r = -1, last_c = -1;
 uint32_t    last_save_ms = 0;
@@ -145,7 +147,7 @@ void draw_cb(lv_event_t* e)
     const int x0 = a.x1 + gx, y0 = a.y1 + gy, size = n * cell;
     // Tint the last tapped row and column, clues included
     if (last_r >= 0 && !g.solved()) {
-        kit::fill_rect(layer, a.x1, y0 + last_r * cell, x0 + size - 1, y0 + (last_r + 1) * cell - 1, P.peer, 0);
+        kit::fill_rect(layer, rh ? a.x1 : x0, y0 + last_r * cell, rh ? x0 + size - 1 : a.x2, y0 + (last_r + 1) * cell - 1, P.peer, 0);
         kit::fill_rect(layer, x0 + last_c * cell, a.y1, x0 + (last_c + 1) * cell - 1, y0 + size - 1, P.peer, 0);
     }
     char t[4];
@@ -159,14 +161,16 @@ void draw_cb(lv_event_t* e)
             kit::text(layer, t, clue_font, col, x0 + c * cell, y0 - (cnt - i) * slot_h - 2, cell, slot_h);
         }
     }
-    // Row clues, right-aligned left of each row
+    // Row clues: right-aligned left of each row (right-handed), left-aligned
+    // right of it (left-handed) - away from the stylus hand
     for (int r = 0; r < n; ++r) {
         const Clue& k = g.rows[r];
         const lv_color_t col = g.row_done(r) ? P.key_dim_text : P.ink;
         const int cnt = k.n ? k.n : 1;
         for (int i = 0; i < cnt; ++i) {
             snprintf(t, sizeof t, "%d", k.n ? k.run[i] : 0);
-            kit::text(layer, t, clue_font, col, x0 - (cnt - i) * slot_w - 3, y0 + r * cell, slot_w, cell);
+            const int tx = rh ? x0 - (cnt - i) * slot_w - 3 : x0 + size + 3 + i * slot_w;
+            kit::text(layer, t, clue_font, col, tx, y0 + r * cell, slot_w, cell);
         }
     }
     // Grid
@@ -241,6 +245,7 @@ void build()
     key_label(again_k, "Play Again", menu_font());
     lv_obj_set_pos(again_k, pad, ky);
 
+    rh = right_handed();
     // Clue room: the most clues a line of this size can have
     const int n = S->g.n, most = (n + 1) / 2;
     clue_font = n >= 10 ? (m.large ? &lv_font_montserrat_14 : &lv_font_montserrat_12)
@@ -260,7 +265,7 @@ void build()
     lv_obj_set_clickable(board_obj, true);
     lv_obj_add_event_cb(board_obj, draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
     lv_obj_add_event_cb(board_obj, tap_cb, LV_EVENT_PRESSED, nullptr);
-    gx = clue_w;
+    gx = rh ? clue_w : 0;
     gy = clue_h;
     clock_ = kit::Clock{};
     update_status();

@@ -154,10 +154,19 @@ and touch calibration are shared.
   through a speaker on the board's speaker connector, and only for what
   matters in a game: moves, the computer's reply, mistakes, hints and the
   end of a game. Plain button taps are silent.
-- **Rotate Screen 180** turns the picture (and touch) upside down, so the
-  USB cord can leave either end of the board. It's remembered.
-- **Brightness**, **Invert Colors**, **Swap Red/Blue**, **Recalibrate** (see
-  below) and **Diagnostics**: a **Touch Test** and the **Device Log** (see
+- **Right Hand / Left Hand:** the hand that holds the stylus. Games put
+  what you tap most on that side (or along the bottom), so your hand
+  doesn't cover the table: in Solitaire the stock sits in the top corner on
+  your side with the waste just inside it and the foundations across from
+  it; Golf, Pyramid and Spider put their stock on your side too, FreeCell
+  its free cells, Mancala your pits, and Nonograms keep the row clues on
+  the other side. Right Hand to start.
+- **Rotate 180** turns the picture (and touch) upside down, so the
+  USB cord can leave either end of the board. It's lit while on, and
+  remembered.
+- **Brightness**, **Invert Colors**, **Swap Red/Blue** and
+  **Diagnostics**: **Touch Test**, **Recalibrate** (see below), the
+  **Device Log** and **Send Log** (see
   [If the board crashes or misbehaves](#if-the-board-crashes-or-misbehaves)).
 
 ## Two-player games
@@ -220,7 +229,8 @@ to start with). **Edit Presets** changes names, lines, dice and modifiers.
 
 ## Yaht-CYD
 
-Five dice, 13 turns. Tap **Roll**, tap dice to hold them (held dice turn
+Five dice, 13 turns, the score card on top and the dice and **Roll** along
+the bottom (so your hand stays off the card). Tap **Roll**, tap dice to hold them (held dice turn
 gold) and roll again, up to three rolls. Then tap an empty box on the score
 card: after each roll the empty boxes show what they would score.
 
@@ -289,7 +299,10 @@ on the seven columns cards go down in alternating colors and only a King
 goes into an empty column. Tap a face-up card (and the cards on it) to pick
 it up (it turns gold), then tap where it goes; double-tap a card to send it
 to its foundation (or the first column that takes it). Tap the stock to turn
-cards. **Undo** and **Hint** sit under the table. When every card is face
+cards: it sits in the top corner on your stylus hand's side (Settings →
+Right Hand / Left Hand), with the waste just inside it and the foundations
+across the row, so your hand never covers the table. **Undo** and **Hint**
+sit under the table. When every card is face
 up the rest go up by themselves, and then the cards bounce off the table
 like the old Windows Solitaire (tap to stop).
 
@@ -319,14 +332,17 @@ of Jacks or better pays; a Royal Flush pays 4000 at a 5-credit bet.
 
 ## Mancala
 
-Kalah, the classic Mancala: six pits a side, four seeds in each. Your pits
-run down the left, your store is at the bottom of the middle. Tap one of
-your pits: its seeds are sown one at a time (you see them go) down your
-side, into your store, up the other side - never into the other store.
+Kalah, the classic Mancala: six pits a side, four seeds in each. Seeds go
+round the board: down the left column into the bottom store, up the right
+column into the top one. Your pits are the column on your stylus hand's
+side (Settings), your store the one your side runs into. Tap one of
+your pits: its seeds are sown one at a time (you see them go) along your
+side, into your store, along the other side - never into the other store.
 Last seed in your store: you go again. Last seed in an empty pit of yours:
 it and the seeds opposite go to your store. When either side runs out, the
 other side keeps what's left on its side; most seeds wins. vs Computer the
-board turns so your pits are always on the left.
+board turns so your pits are on your hand's side; pass and play puts Gold
+there.
 
 ## Nine Men's Morris
 
@@ -540,7 +556,7 @@ dark, and it's remembered.
 
 On first boot (or when the **BOOT** button is held while powering on), the
 screen shows corner arrows — tap each tip precisely. The calibration is saved
-to flash and reused. To redo it: **☰ → Settings → Recalibrate**.
+to flash and reused. To redo it: **☰ → Settings → Diagnostics → Recalibrate**.
 
 ## If the board crashes or misbehaves
 

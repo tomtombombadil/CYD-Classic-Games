@@ -4,6 +4,8 @@
 // Screen: top bar (clock, cards left, ☰); the table: seven columns of five
 // cards, then the stock and the waste (bigger cards); Undo | Hint. Tap a
 // column to play its top card onto the waste, tap the stock to turn a card.
+// The stock sits on the stylus hand's side, the waste inside it (Settings ->
+// Right Hand / Left Hand), so the hand turning cards covers neither.
 //
 // Sounds: none while playing (card games are quiet) except a soft "aww"
 // (Error) for a card that can't play; Fanfare when won.
@@ -276,8 +278,11 @@ void build()
     bh = table_h - low_y - (m.large ? 30 : 22);       // room for the stock count under it
     bw = bh * 5 / 7;
     if (bw > cw * 2) { bw = cw * 2; bh = bw * 7 / 5; }
-    stock_x = m.w / 2 - bw - (m.large ? 24 : 14);
-    waste_x = m.w / 2 + (m.large ? 24 : 14);
+    // The stock on the stylus hand's side, the waste inside it (Settings)
+    const int off = m.large ? 24 : 14;
+    const bool rh = right_handed();
+    stock_x = rh ? m.w / 2 + off : m.w / 2 - bw - off;
+    waste_x = rh ? m.w / 2 - bw - off : m.w / 2 + off;
     clock_ = kit::Clock{};
     update_status();
 }

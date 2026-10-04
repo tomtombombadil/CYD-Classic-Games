@@ -255,7 +255,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   portrait board: the left side's pits down the left column, stores in
   the middle (left side's at the bottom), the other side's pits up the
   right - sowing runs round that loop; vs computer the board turns so the
-  player is on the left; each move is shown seed by seed (130 ms a seed,
+  player's pits are on the stylus hand's side (was: always left), pass-and-
+  play puts Gold there; each move is shown seed by seed (130 ms a seed,
   taps wait); capture = last seed in an empty own pit with seeds opposite
   (both go to the store); a side out of seeds ends it, the other sweeps
   its own; computer: Easy 1 move ahead, Medium 5, Hard deepening within
@@ -346,6 +347,26 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   SHORT_CLICKED + LVGL's 400 ms long-press.
 
 ## UI rules (Tom's, all games)
+- Handedness (Tom, 2026-10-04): the hand holding the stylus covers the
+  screen below and to that side of the tap. Settings -> [Right Hand | Left
+  Hand] (`UiSettings::left_handed`, UIS2 `flags` bit 1, default right;
+  `ui::right_handed()`; changing it rebuilds the open game via restyle).
+  Put what's tapped most on the hand's side or along the bottom edge, so
+  the hand doesn't hide what the player is looking at; read-only info goes
+  on the other side / the top. Key rows at the bottom aren't mirrored
+  (nothing below them to cover). Every new layout must follow this.
+  Done so far (review 2026-10-04): Solitaire (RH: foundations left, waste,
+  stock in the top right corner; the waste's top card stays next to the
+  stock and the older two fan to its left - a card's index is on its left;
+  LH: the old layout, stock top left), Golf and Pyramid (stock on the hand
+  side of centre, waste inside it), Spider (stock in the hand-side top
+  corner, finished runs opposite), FreeCell (free cells on the hand side,
+  foundations opposite), Mancala (your pits in the hand-side column vs
+  computer; pass-and-play puts Gold there), Nonograms (row clues on the
+  side away from the hand), Yaht-CYD (score card on top, dice and Roll on
+  the bottom - both hands). The other games were checked and need nothing:
+  symmetric boards with keys/palettes/keyboards along the bottom. The
+  preview renders the changed games left-handed (`*_70_lh_*`).
 - Portrait by default (comfortable one-handed). Tom is not married to it:
   a game where landscape clearly works better may use it - a CYD is easy to
   rotate in the hand. Rotation is fixed at boot today (`CYD_ROTATION`,
@@ -405,15 +426,16 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   placement, the other side's reply, mistakes, hints, game end, and one
   sample when the Volume slider is released.
 - Settings (☰ → Settings, shared): [Theme | Invert Colors], Brightness
-  slider, Volume slider, Swap Red/Blue, Rotate Screen 180 (Tom,
-  2026-10-03: USB cord out either end; a toggle, lit while on; UIS2
-  `flags` bit 0, applied before the splash; `lvgl_port_set_rotation()`
-  turns panel + touch at run time, calibration is rotation-independent),
-  [Recalibrate | Diagnostics], Back. Board/firmware line moved to
-  Diagnostics (no room).
-  Diagnostics (`src/ui/diagnostics_screen.cpp`): [Touch Test | Device
-  Log], [Send Log], board, firmware (version + build commit), free memory,
-  uptime, Back. Device Log: paged
+  slider, Volume slider, [Right Hand | Left Hand] (the lit key is the
+  choice; "Right-Handed" didn't fit half a row at 320x480), Swap Red/Blue,
+  [Rotate 180 | Diagnostics], Back. Rotate 180 (Tom, 2026-10-03, was
+  "Rotate Screen 180": USB cord out either end; a toggle, lit while on;
+  UIS2 `flags` bit 0, applied before the splash; `lvgl_port_set_rotation()`
+  turns panel + touch at run time, calibration is rotation-independent).
+  Board/firmware line moved to Diagnostics (no room).
+  Diagnostics (`src/ui/diagnostics_screen.cpp`): [Touch Test |
+  Recalibrate], [Device Log | Send Log], board, firmware (version + build
+  commit), free memory, uptime, Back. Device Log: paged
   with < > (opens on the newest page), [Clear Log | Copy To SD], [< Back >].
 - Device log (Tom, 2026-10-03: "we need a way to pull logs"):
   `src/app/device_log.*` (device only). `/log.txt` + `/log.old` on

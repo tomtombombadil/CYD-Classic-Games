@@ -1,7 +1,8 @@
 // Yaht-CYD: registry entry, save file and screen. Top to bottom: top bar,
-// five dice (tap one to hold it between rolls; held dice turn gold), the
-// Roll key, and the score card in two columns (upper boxes left, lower boxes
-// right). After a roll, empty boxes show what they would score; tap one to
+// the score card in two columns (upper boxes left, lower boxes right), five
+// dice (tap one to hold it between rolls; held dice turn gold) and the Roll
+// key on the bottom edge - what's tapped most lowest, so the hand doesn't
+// cover the card. After a roll, empty boxes show what they would score; tap one to
 // take it. The dice row and the score card are each one custom-drawn object.
 #include <cstdio>
 #include <new>
@@ -295,34 +296,38 @@ void build()
     const Metrics& m = metrics();
     lv_obj_t* scr = lv_screen_active();
     const int pad = 4;
-    int y = bar.h + (m.large ? 6 : 3);
-    // Dice
+    // Bottom up: the Roll key on the bottom edge, the dice above it, the
+    // score card above them. The things tapped most sit lowest, so the hand
+    // never covers the score card while picking dice (Tom, 2026-10-04).
+    const int kh = menu_btn_h();
+    const int roll_y = m.h - pad - kh;
     die_gap = m.large ? 10 : 6;
     die = (m.w - 2 * pad - 4 * die_gap) / 5;
     const int cap = m.large ? 56 : 40;
     if (die > cap) die = cap;
-    dice_obj = lv_obj_create(scr);
-    lv_obj_remove_style_all(dice_obj);
-    lv_obj_set_size(dice_obj, 5 * die + 4 * die_gap, die);
-    lv_obj_set_pos(dice_obj, (m.w - (5 * die + 4 * die_gap)) / 2, y);
-    lv_obj_set_clickable(dice_obj, true);
-    lv_obj_add_event_cb(dice_obj, dice_draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
-    lv_obj_add_event_cb(dice_obj, dice_press_cb, LV_EVENT_PRESSED, nullptr);
-    y += die + (m.large ? 10 : 6);
-    // Roll key
-    roll_k = make_key(scr, m.w - 2 * pad, menu_btn_h(), roll_cb, 0);
-    lv_obj_set_pos(roll_k, pad, y);
-    roll_l = key_label(roll_k, "Roll", menu_font());
-    y += menu_btn_h() + (m.large ? 10 : 5);
-    // Score card fills the rest
-    row_h = (m.h - pad - y) / 8;
+    const int dice_y = roll_y - (m.large ? 10 : 6) - die;
+    // Score card fills the top
+    const int card_y = bar.h + (m.large ? 6 : 3);
+    row_h = (dice_y - (m.large ? 10 : 5) - card_y) / 8;
     card_obj = lv_obj_create(scr);
     lv_obj_remove_style_all(card_obj);
     lv_obj_set_size(card_obj, m.w - 2 * pad, 8 * row_h);
-    lv_obj_set_pos(card_obj, pad, y);
+    lv_obj_set_pos(card_obj, pad, card_y);
     lv_obj_set_clickable(card_obj, true);
     lv_obj_add_event_cb(card_obj, card_draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
     lv_obj_add_event_cb(card_obj, card_press_cb, LV_EVENT_SHORT_CLICKED, nullptr);
+    // Dice
+    dice_obj = lv_obj_create(scr);
+    lv_obj_remove_style_all(dice_obj);
+    lv_obj_set_size(dice_obj, 5 * die + 4 * die_gap, die);
+    lv_obj_set_pos(dice_obj, (m.w - (5 * die + 4 * die_gap)) / 2, dice_y);
+    lv_obj_set_clickable(dice_obj, true);
+    lv_obj_add_event_cb(dice_obj, dice_draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
+    lv_obj_add_event_cb(dice_obj, dice_press_cb, LV_EVENT_PRESSED, nullptr);
+    // Roll key
+    roll_k = make_key(scr, m.w - 2 * pad, kh, roll_cb, 0);
+    lv_obj_set_pos(roll_k, pad, roll_y);
+    roll_l = key_label(roll_k, "Roll", menu_font());
     clock_ = kit::Clock{};
     update_status();
 }

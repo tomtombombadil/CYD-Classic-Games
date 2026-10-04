@@ -1,8 +1,9 @@
 // FreeCell: registry entry, save file and screen. Rules in freecell_core.*;
 // cards and the win show in common/cards.*.
 //
-// Screen: top bar (clock, cards up, ☰); the table: four free cells (top
-// left), the foundations (top right: Spades, Hearts, Clubs, Diamonds), the
+// Screen: top bar (clock, cards up, ☰); the table: four free cells and the
+// foundations (Spades, Hearts, Clubs, Diamonds) - the cells on the stylus
+// hand's side (Settings; right-handed = cells top right), the
 // eight columns; Undo | Hint. Tap a card in a column's top run (or a free
 // cell's card) to pick it (gold), then tap where it goes: a column, the
 // free-cell row (the first empty cell), or the foundation row (its suit).
@@ -82,6 +83,11 @@ bool load(State& st)
 
 // ---- Geometry ----------------------------------------------------------------------------------
 int col_x(int i) { return x0 + i * pitch; }
+// The free cells (tapped most) go on the stylus hand's side, the
+// foundations on the other (Settings -> Right Hand / Left Hand)
+bool rh = true;
+int cell_col(int i)  { return rh ? 4 + i : i; }
+int found_col(int f) { return rh ? f : 4 + f; }
 
 int step_for(int c)
 {
@@ -105,13 +111,13 @@ void draw_cb(lv_event_t* e)
     kit::fill_rect(layer, a.x1, a.y1, a.x2, a.y2, cards::felt(), 0);
     const int ox = a.x1, oy = a.y1;
     for (int i = 0; i < 4; ++i) {
-        const int x = ox + col_x(i), y = oy + row_y;
+        const int x = ox + col_x(cell_col(i)), y = oy + row_y;
         if (g.cell[i] == 0xFF) cards::draw_slot(layer, x, y, cw, ch);
         else cards::draw_face(layer, x, y, cw, ch, g.cell[i], sel_pile == Cell0 + i);
         if (hint_to == Cell0 + i) kit::fill_rect(layer, x, y + ch - 4, x + cw - 1, y + ch - 1, pal().target, 2);
     }
     for (int f = 0; f < 4; ++f) {
-        const int x = ox + col_x(4 + f), y = oy + row_y;
+        const int x = ox + col_x(found_col(f)), y = oy + row_y;
         if (!g.found[f]) cards::draw_slot(layer, x, y, cw, ch, kFoundSuit[f]);
         else cards::draw_face(layer, x, y, cw, ch, uint8_t(kFoundSuit[f] * 13 + g.found[f] - 1));
         if (hint_to == Found0 + f) kit::fill_rect(layer, x, y + ch - 4, x + cw - 1, y + ch - 1, pal().target, 2);
@@ -197,7 +203,7 @@ void after_move()
         int n = 0;
         for (int r = 13; r >= 1; --r)
             for (int f = 0; f < 4; ++f)
-                list[n++] = cards::Launch{int16_t(a.x1 + col_x(4 + f)), int16_t(a.y1 + row_y), uint8_t(kFoundSuit[f] * 13 + r - 1),
+                list[n++] = cards::Launch{int16_t(a.x1 + col_x(found_col(f))), int16_t(a.y1 + row_y), uint8_t(kFoundSuit[f] * 13 + r - 1),
                                           uint8_t(r > 1 ? kFoundSuit[f] * 13 + r - 2 : 0xFF)};
         cards::celebrate(list, n, cw, ch, show_done);
         return;
@@ -214,8 +220,8 @@ bool hit(int x, int y, int* pile, int* idx)
     if (y >= row_y && y < row_y + ch) {
         const int k = (x - x0 + (pitch - cw) / 2) / pitch;
         if (k < 0 || k > 7) return false;
-        if (k < 4) { *pile = Cell0 + k; *idx = 0; }
-        else       { *pile = Found0 + (k - 4); *idx = 0; }
+        if ((k >= 4) == rh) { *pile = Cell0 + k % 4; *idx = 0; }
+        else                { *pile = Found0 + k % 4; *idx = 0; }
         return true;
     }
     if (y < tab_y - 3) return false;
@@ -318,6 +324,7 @@ void build()
     lv_obj_set_pos(again_k, pad, ky);
 
     const int mg = m.large ? 3 : 1;
+    rh = right_handed();
     pitch = (m.w - 2 * mg) / 8;
     cw = pitch - 2;
     ch = cw * 7 / 5;
