@@ -289,14 +289,35 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   screen metrics, `scratch_table()`: two shared heap tables for stats
   screens - never `static Table`, each costs ~1 KB of static RAM), `app_shell.cpp` (picker, game switching),
   `settings_screen.cpp` (Settings, themes + palette editor, touch test), `sound.*`, `theme.*`.
-- Game picker (after the splash): "Classic Games" title bar with ☰
-  (Settings), a "Continue <last game>" card (icon, title, the game's
+- Header bar (Tom, 2026-10-04; `src/ui/sysbar.*`): one bar on
+  `lv_layer_sys()` on every screen, games included, at the games' old bar
+  height (28 / 40 px; Tom: NOT a thin extra bar - icons must stay
+  finger-tappable). Built once (games keep pointers to its labels), then
+  only restyled. Left to right: **<** back (`sysbar_back()`: a page's back
+  key via `overlay_back()` / `sysbar_page_back()`, else the screen's back -
+  picker category -> list, game -> `app_go_home`, but a live wireless game
+  forfeits via `set_game_back_hook`), middle, **2P** (two head-and-
+  shoulders, filled = wireless session to resume/in progress, tap =
+  `wplay::resume_session()`), **wifi** (empty = 1P; dot + 0-3 arcs from
+  RSSI: >= -60 / -70 / -80 dBm; tap = Play settings), **gear** furthest
+  right (Settings; in a game it opens the game's menu - no ☰ anywhere,
+  Tom). The middle shows a page's title (picker home: "Classic Games" + the
+  version only if it fits - it doesn't on these widths; About has it), or
+  in a game (`kit::top_bar()` -> `sysbar_game()`) the left label and the
+  status: Tom - no game name, no difficulty, no clock in most games. Left
+  label: 0 hidden (default), 1 while room (Sudoku, Minesweeper clocks), 2
+  always (Blackjack / Video Poker chips). `top_bar_status(bar, text,
+  short_text)`: games give a short form where the full one is long ("Your
+  turn (Black)" -> "Your turn"). A better difficulty indicator is still
+  to be designed (Tom). metrics().h = height under the bar; the screen and
+  top layer get pad_top = the bar height. No big Back keys on pages: the
+  header's < is the back.
+- Game picker (after the splash): a "Continue <last game>" card (icon, title, the game's
   summary line), then the categories as a text list (Tom, 2026-10-02):
   Puzzle Games, Strategy Games, Card Games (added 2026-10-03 for the card
   games), Word Games, Dice Games (Other Games dropped - Tom, 2026-10-03), each
-  with its game count, and last "Wireless Play" with its state (boards
-  with a radio). A category opens its own page of icon tiles, 2 per
-  row, with a back key in the top bar. Extra tiles go on pages switched
+  with its game count. A category opens its own page of icon tiles, 2 per
+  row (the header's < goes back). Extra tiles go on pages switched
   with big < > keys (no scrolling). `preview_paging` renders a long fake
   list.
 - Only one game is alive at a time. Leaving a game saves it and frees its
@@ -349,8 +370,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 
 ## UI rules (Tom's, all games)
 - Handedness (Tom, 2026-10-04): the hand holding the stylus covers the
-  screen below and to that side of the tap. Settings -> [Right Hand | Left
-  Hand] (`UiSettings::left_handed`, UIS2 `flags` bit 1, default right;
+  screen below and to that side of the tap. Settings -> Play -> the Left
+  Hand / Right Hand switch (`UiSettings::left_handed`, UIS2 `flags` bit 1, default right;
   `ui::right_handed()`; changing it rebuilds the open game via restyle).
   Put what's tapped most on the hand's side or along the bottom edge, so
   the hand doesn't hide what the player is looking at; read-only info goes
@@ -390,10 +411,10 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   first tap.
 - Strong highlight tints with distinct hues (cheap TN panels wash out pale
   tints at an angle). No shrinking fonts to squeeze labels in.
-- Each game: top bar with a 3-line hamburger menu (new game, restart,
+- Each game: the header's gear opens its menu (new game, restart,
   **How To Play** (Tom, 2026-10-03: every game; full-width key above
-  Stats | Settings, opens `kit::how_to_play()`: pages with < > keys and
-  Back To Menu), stats, Settings). Its LAST row, pinned to the bottom, is always
+  Stats | Settings, opens `kit::how_to_play()`: pages with < > keys, the
+  header's < back to the menu), stats, Settings). Its LAST row, pinned to the bottom, is always
   **Exit Menu** (bottom left, primary; closes the menu) | **Exit Game**
   (bottom right; saves and frees the game, back to the picker) - Tom's
   rule, use `ui::overlay_exit_row()`. The picker reopens the last game in
@@ -426,18 +447,22 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   picking up a piece, holding a die, looking at a piece's moves. Sounding: a move or
   placement, the other side's reply, mistakes, hints, game end, and one
   sample when the Volume slider is released.
-- Settings (☰ → Settings, shared): [Theme | Invert Colors], Brightness
-  slider, Volume slider, [Right Hand | Left Hand] (the lit key is the
-  choice; "Right-Handed" didn't fit half a row at 320x480), Swap Red/Blue,
-  [Rotate 180 | Diagnostics], Back. Rotate 180 (Tom, 2026-10-03, was
-  "Rotate Screen 180": USB cord out either end; a toggle, lit while on;
-  UIS2 `flags` bit 0, applied before the splash; `lvgl_port_set_rotation()`
+- Settings (Tom, 2026-10-04: a page per area, header gear): **Display,
+  Sound, Touch, Play, About** (no Back key - the header's <).
+  Display: Brightness slider, Invert Colors, Swap Red/Blue, Rotate 180,
+  Themes (`theme_screen.cpp`, back -> `settings_open_display()`). Rotate 180
+  (Tom, 2026-10-03: USB cord out either end; a toggle, lit while on; UIS2
+  `flags` bit 0, applied before the splash; `lvgl_port_set_rotation()`
   turns panel + touch at run time, calibration is rotation-independent).
-  Board/firmware line moved to Diagnostics (no room).
-  Diagnostics (`src/ui/diagnostics_screen.cpp`): [Touch Test |
-  Recalibrate], [Device Log | Send Log], board, firmware (version + build
-  commit), free memory, uptime, Back. Device Log: paged
-  with < > (opens on the newest page), [Clear Log | Copy To SD], [< Back >].
+  Sound: Volume slider + Mute toggle (remembers the volume to go back to).
+  Touch: Touch Test, Recalibrate. Play (= `wplay::open_menu`): a switch
+  "Left Hand  (o)  Right Hand" (an lv_switch pointing at the hand, both
+  sides the same colour - a choice, not on/off; small text words - Tom),
+  then "Play Mode" with "1P (o) 2P" (2P = available to play = radio on),
+  then Find Players / Games I'll Play / Change Name (dimmed and inert in
+  1P). About (`src/ui/diagnostics_screen.cpp`): [Device Log | Send Log],
+  board, firmware (version + build commit), free memory, uptime. Device
+  Log: paged with < > (opens on the newest page), [Clear Log | Copy To SD].
 - Device log (Tom, 2026-10-03: "we need a way to pull logs"):
   `src/app/device_log.*` (device only). `/log.txt` + `/log.old` on
   LittleFS, 8 KB each, every line also to serial (115200). Each boot logs
@@ -504,19 +529,20 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 ## Two-player games (Tom, 2026-10-02)
 - Every two-player game offers all three: vs computer (levels), pass-and-play
   (one CYD, two people take turns), and wireless CYD to CYD (below). The
-  new-game menu lists them; the Wireless key (-> Wireless Play) is greyed
+  new-game menu lists them; the Wireless key (-> Play settings) is greyed
   in a game without it (Farkle, for now).
 - Tom, 2026-10-02: finish more games before building wireless play.
 
 ## Multiplayer (CYD to CYD) - built 2026-10-04; redesigned per Tom the same day (v0.18.0)
 - Tom's model (2026-10-04): players may not see or talk to each other, so
-  the boards find partners and games. **Wireless Play** (`common/wplay.*`,
-  a service ticked from `app_tick` everywhere + its overlays; reached from
-  the picker's last row "Wireless Play  Off/On/N nearby/Playing" and a
-  two-player game's Wireless key): Available To Play toggle (radio on,
+  the boards find partners and games. Wireless play (`common/wplay.*`,
+  a service ticked from `app_tick` everywhere + its overlays; its page is
+  Settings -> Play, also the header's wifi icon and a two-player game's
+  Wireless key; v0.19.0 replaced the picker row and the Available To Play
+  key): Play Mode 2P (radio on,
   beacons, offers pop up anywhere with `Sound::Call`; saved), Games I'll
   Play (toggle key per kNetwork game + All Games; only lit games are
-  announced/askable), Find Players (turns Available on; list with "N
+  announced/askable), Find Players (2P only; list with "N
   games" / "playing X" / "other version"; tap -> "Play With Bob" grid of
   Bob's games -> tap = offer, Asking screen with Stop Asking), Change Name
   (shared keyboard). Offer pop-up: "Bob would like to play Chess with you.
@@ -537,7 +563,7 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   other; acts at once, no confirmation), How To Play, Stats | Settings,
   Exit Menu | Exit Game (= pause). Game over: [Play Again | Done]; both
   Play Again = next game (first mover alternates); Done = both boards back
-  to Wireless Play (`wplay::back_after_game`, a note on each). Forfeited /
+  to the Play page (`wplay::back_after_game`, a note on each). Forfeited /
   ended: one "Wireless Play" key. Results are recorded once
   (`handled_end`), also lazily when an ended session's game is next opened
   (a forfeit while paused = a win on opening). Wireless results: mode
@@ -590,7 +616,7 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 - Touch filter (fixed a first-tap offset on the 4.0"): a press starts only
   after two consecutive readings agree within 8 px and ends after two empty
   readings; ESP32-32E touch clock 1 MHz. Keep both. Diagnostic: Settings >
-  Diagnostics > Touch Test; `-D CYD_TOUCH_DEBUG` logs raw touches to serial.
+  Settings > Touch > Touch Test; `-D CYD_TOUCH_DEBUG` logs raw touches to serial.
 - Panel inversion / red-blue order differ between production runs. Fixed
   per unit on the device (`src/hal/panel_prefs.*`), not with build flags.
 - Before the screen comes up, quiet the RGB LED and audio amp
@@ -627,8 +653,8 @@ Backgammon, most chess engines) are reference only. Update
   gets its own number. Started at 0.9.0 (2026-10-03); 1.0.0 is Tom's call.
 - `tools/version.py` (PlatformIO pre-script) defines `CYD_GAMES_VERSION`
   ("v0.9.0") and `CYD_GAMES_BUILD` (git commit) for every build, local or
-  CI. The picker title shows "Classic Games v0.9.0"; Diagnostics, the
-  log and the flasher show the version (log/Diagnostics add the commit).
+  CI. About (Settings), the log and the flasher show the version (log /
+  About add the commit); the picker's header adds it only where it fits.
 
 ## Releases and web flasher
 - Every push to main: CI runs the host tests, builds every env that has

@@ -143,8 +143,8 @@ def scenario_offer_and_play(A, B):
     print("Offer, accept, play, rematch")
     A.cmd("wplay")
     B.cmd("wplay")
-    A.press("Available To Play: Off")
-    B.press("Available To Play: Off")
+    A.cmd("twop 1")
+    B.cmd("twop 1")
     run(1500)
     expect(A, "Find Players (1 Nearby)")
     A.press("Find Players")
@@ -188,7 +188,7 @@ def scenario_link_loss_and_pause(A, B):
     run(500)
     blocked.add(B)
     run(4000)
-    expect(A, "Waiting for %s" % B.name)
+    expect(A, "Waiting")
     expect(A, "out of range")
     check(not A.may(), "A can't move while B is out of range")
     blocked.discard(B)
@@ -199,7 +199,8 @@ def scenario_link_loss_and_pause(A, B):
     run(1500)
     expect(B, "closed Tic-Tac-Toe for now")
     shot(B, "paused")
-    expect(A, "Playing")                                # the picker's Wireless Play row
+    check("2p=1" in A.cmd("icons")[0], "Ann's 2P icon is filled (a game to resume)")
+    check("wifi=3" in A.cmd("icons")[0], "Ann's wifi icon shows a strong signal")
     A.cmd("wplay")
     expect(A, "Resume Tic-Tac-Toe With " + B.name)
     A.press("Resume")
@@ -222,7 +223,7 @@ def scenario_forfeit(A, B):
     B.press("Forfeit Game")
     run(1500)
     expect(B, "You forfeited Tic-Tac-Toe with " + A.name)
-    expect(B, "Wireless Play")
+    expect(B, "Play Mode")                               # back on the Play page
     expect(A, "You win!")
     expect(A, "%s forfeited the game" % B.name)
     shot(A, "forfeit")
@@ -258,8 +259,8 @@ def scenario_decline(A, B):
     A.press("Reversi")
     run(31000)                                           # nobody answers
     expect(A, "didn't answer")
-    B.press("Back")
-    B.press("Back")
+    B.cmd("back")
+    B.cmd("back")
 
 
 def scenario_offer_over_solo_game(A, B):
@@ -284,7 +285,7 @@ def scenario_offer_over_solo_game(A, B):
     run(1500)
     expect(B, "Thanks for playing!")
     expect(A, "%s is done playing. Thanks for the game!" % B.name)
-    expect(A, "Wireless Play")
+    expect(A, "Play Mode")
     shot(A, "done")
 
 
@@ -302,7 +303,7 @@ def scenario_reboot(A, B):
     # B switches off and on again: its saved session carries on
     B.stop()
     run(2000)
-    expect(A, "Waiting for %s" % B.name)
+    expect(A, "Waiting")
     B.start()
     run(500)
     B.cmd("wplay")
@@ -434,7 +435,7 @@ def scenario_crossed_offers(A, B):
     A.press("Play")
     run(2000)
     expect(A, "%s's turn" % B.name)
-    expect(B, "Your turn (Black)")
+    expect(B, "Your turn")
     check("Your turn" not in A.dump(), "Ann is White (Bob asked)")
     B.cmd("menu")
     B.press("Forfeit Game")
@@ -448,7 +449,7 @@ def scenario_three_boards(A, B):
     C = Board("Cy", 3)
     boards.append(C)
     C.cmd("wplay")
-    C.press("Available To Play: Off")
+    C.cmd("twop 1")
     offer(A, B, "FourConnect")
     run(1500)
     C.press("Find Players")
@@ -456,13 +457,15 @@ def scenario_three_boards(A, B):
     C.press(A.name)
     expect(C, "%s is playing FourConnect now" % A.name)
     shot(C, "busy")
-    # C asks B straight after the game ends
-    A.cmd("menu")
-    A.press("Forfeit Game")
+    # C asks B straight after the game ends. A leaves with the header's
+    # back arrow: in a wireless game that is a forfeit
+    A.cmd("back")
+    run(500)
+    expect(A, "You forfeited FourConnect")
     run(1500)
     B.press("Wireless Play")
     run(5000)
-    C.press("Back")
+    C.cmd("back")
     run(1000)
     C.press(B.name)
     C.press("Mancala")

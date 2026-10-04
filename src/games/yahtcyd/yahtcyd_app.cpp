@@ -71,15 +71,15 @@ void update_status()
 {
     if (!bar.center) return;
     const Game& g = S->g;
-    char t[16], s[40];
+    char t[16], s[40], sh[24] = "";
     twoplayer::format_time(t, sizeof t, S->seconds);
     lv_label_set_text(bar.left, t);
     if (g.over())            snprintf(s, sizeof s, "Final score %d", g.total());
     else if (clock_.paused)  snprintf(s, sizeof s, "Paused");
     else if (g.rolls == 0)   snprintf(s, sizeof s, "Turn %d of 13", g.turn());
-    else if (g.rolls < 3)    snprintf(s, sizeof s, "Turn %d, roll %d of 3", g.turn(), g.rolls);
-    else                     snprintf(s, sizeof s, "Turn %d: pick a box", g.turn());
-    kit::top_bar_status(bar, s);
+    else if (g.rolls < 3)    { snprintf(s, sizeof s, "Turn %d, roll %d of 3", g.turn(), g.rolls); snprintf(sh, sizeof sh, "Roll %d of 3", g.rolls); }
+    else                     { snprintf(s, sizeof s, "Turn %d: pick a box", g.turn()); snprintf(sh, sizeof sh, "Pick a box"); }
+    kit::top_bar_status(bar, s, sh[0] ? sh : nullptr);
     char r[24];
     if (g.over())            snprintf(r, sizeof r, "Play Again");
     else if (g.rolls == 0)   snprintf(r, sizeof r, "Roll");

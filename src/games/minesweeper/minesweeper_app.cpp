@@ -338,7 +338,7 @@ void again_cb(lv_event_t*) { start_new(G->b.level); }
 void build()
 {
     kit::screen_begin();
-    bar = kit::top_bar([](lv_event_t*) { open_menu(); });
+    bar = kit::top_bar([](lv_event_t*) { open_menu(); }, 1);
     const Metrics& m = metrics();
     lv_obj_t* scr = lv_screen_active();
     const int pad = m.large ? 8 : 4, kh = menu_btn_h(), gap = m.large ? 8 : 6;

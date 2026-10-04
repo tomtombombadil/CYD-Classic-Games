@@ -10,6 +10,7 @@
 #include "ui/shell.h"
 #include "ui/sound.h"
 #include "ui/theme.h"
+#include "ui/sysbar.h"
 #include "ui/widgets.h"
 
 namespace sudoku_ui {
@@ -59,10 +60,10 @@ void update_status()
     char t[16];
     stats::format_time(t, sizeof t, G->elapsed_s());
     lv_label_set_text(clock_l, t);
-    if (finished())          lv_label_set_text(center_l, "Solved!");
-    else if (idle_paused)    lv_label_set_text(center_l, "Paused");
-    else if (hint_cell >= 0) lv_label_set_text(center_l, "Tap Hint to fill");
-    else                     lv_label_set_text(center_l, sudoku::difficulty_name(G->difficulty()));
+    if (finished())          sysbar_status("Solved!");
+    else if (idle_paused)    sysbar_status("Paused");
+    else if (hint_cell >= 0) sysbar_status("Tap Hint to fill", "Tap Hint");
+    else                     sysbar_status("");
 }
 
 void celebrate();
@@ -345,7 +346,7 @@ void stats_action_cb(lv_event_t* e)
 }
 
 // ---- Layout -------------------------------------------------------------------
-// Top to bottom: top bar (clock, difficulty, menu), board, tool row (Undo,
+// Top to bottom (under the header bar: clock, difficulty, gear = menu): board, tool row (Undo,
 // Notes, input mode, Hint), digit row. Sizes come from the screen resolution:
 // the board gets the largest cell that leaves the controls their minimum
 // height, then any spare height goes back to the controls.
@@ -364,7 +365,7 @@ void build_layout()
     const bool counters = large();
     const int m = large() ? 2 : 1;        // outer margin
     const int g = large() ? 4 : 2;        // gap between rows
-    int top_h  = large() ? 34 : 23;
+    int top_h  = large() ? 2 : 1;         // the header bar (clock, level, gear) is above
     int tool_h = large() ? 40 : 28;
     int key_h  = large() ? 54 : 34;
 
@@ -377,24 +378,13 @@ void build_layout()
     auto grow = [&spare](int& v, int cap) { const int add = (cap - v) < spare ? (cap - v) : spare; if (add > 0) { v += add; spare -= add; } };
     grow(key_h, 64);
     grow(tool_h, 48);
-    grow(top_h, 40);
     const int extra_gap = spare / 4;      // whatever is left: a little air
 
-    // Top bar
+    // The header bar: clock and level; its gear opens the menu
     int y = m;
-    const lv_font_t* bf = bar_font();
-    const int ty = y + (top_h - lv_font_get_line_height(bf)) / 2;
-    clock_l = lv_label_create(scr);
-    lv_obj_set_style_text_font(clock_l, bf, 0);
-    lv_obj_set_style_text_color(clock_l, P.muted, 0);
-    lv_obj_set_pos(clock_l, m + 6, ty);
-    center_l = lv_label_create(scr);
-    lv_obj_set_style_text_font(center_l, bf, 0);
-    lv_obj_set_style_text_color(center_l, P.ink, 0);
-    lv_obj_align(center_l, LV_ALIGN_TOP_MID, 0, ty);
-    const int hb_w = top_h * 3 / 2;
-    lv_obj_t* hb = make_hamburger(scr, hb_w, top_h, tool_cb, 4);
-    lv_obj_set_pos(hb, scr_w - m - hb_w, y);
+    sysbar_game(tool_cb, 4, 1);
+    clock_l = sysbar_left();
+    center_l = sysbar_center();
     y += top_h + g + extra_gap;
 
     // Board

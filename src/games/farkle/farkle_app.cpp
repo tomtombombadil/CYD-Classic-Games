@@ -270,15 +270,18 @@ void update_status()
 {
     if (!bar.center || !S) return;
     const Game& g = S->g;
-    char t[16], s[48];
+    char t[16], s[48], sh[24] = "";
     twoplayer::format_time(t, sizeof t, S->seconds);
     lv_label_set_text(bar.left, t);
-    if (g.over()) snprintf(s, sizeof s, "%s %ld to %ld", name_of(g.winner), long(g.score[g.winner]), long(g.score[g.winner ^ 1]));
-    else if (g.last_turn_for >= 0) snprintf(s, sizeof s, "%s: last turn!", name_of(g.turn));
+    if (g.over()) {
+        snprintf(s, sizeof s, "%s %ld to %ld", name_of(g.winner), long(g.score[g.winner]), long(g.score[g.winner ^ 1]));
+        snprintf(sh, sizeof sh, "%s won", name_of(g.winner));
+    }
+    else if (g.last_turn_for >= 0) { snprintf(s, sizeof s, "%s: last turn!", name_of(g.turn)); snprintf(sh, sizeof sh, "Last turn!"); }
     else if (computer_turn()) snprintf(s, sizeof s, "Computer's turn");
     else if (S->mode == Mode::PassAndPlay) snprintf(s, sizeof s, "%s's turn", name_of(g.turn));
-    else snprintf(s, sizeof s, "Your turn, to %ld", long(kTarget));
-    kit::top_bar_status(bar, s);
+    else { snprintf(s, sizeof s, "Your turn, to %ld", long(kTarget)); snprintf(sh, sizeof sh, "Your turn"); }
+    kit::top_bar_status(bar, s, sh[0] ? sh : nullptr);
     // Keys
     char r[24], b[24];
     const bool mine = !computer_turn();

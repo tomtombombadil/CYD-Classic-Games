@@ -86,6 +86,21 @@ constexpr const char* kSessionFile = "wl_session";
 constexpr size_t kSessionBytes = 4 + 16 + net::Link::kSaveBytes;
 
 bool live() { return S && !S->link.ended(); }
+
+// Signal for the header's wifi icon: the partner's while a session is
+// going, else the strongest board heard in the last few seconds
+int8_t   sig_rssi = -127;
+uint32_t sig_ms = 0;
+void heard_signal(const net::Mac& from, int8_t rssi, uint32_t now)
+{
+    const bool partner = S && !S->link.ended() && from == S->link.peer();
+    const bool stale = now - sig_ms > 3000;
+    if (partner || (!(S && !S->link.ended()) && (stale || rssi > sig_rssi))) {
+        // smoothed, so the bars don't flicker
+        sig_rssi = stale ? rssi : int8_t((sig_rssi * 3 + rssi) / 4);
+        sig_ms = now;
+    }
+}
 // In a game that is still going: others can't ask this board
 bool playing() { return live() && !S->over; }
 
@@ -162,7 +177,7 @@ bool      keyboard_up = false;
 lv_obj_t* picker_label = nullptr;
 
 enum Key : intptr_t {
-    kBack = 1, kChangeName, kAvailable, kFind, kMyGames, kResume, kAllGames, kStop,
+    kBack = 1, kChangeName, kAvailable, kFind, kMyGames, kResume, kAllGames, kStop, kHand,
     kPlay, kNotNow, kOtherGame, kGame0 = 100, kPlayer0 = 200,
 };
 
@@ -224,23 +239,8 @@ lv_obj_t* grid_key(lv_obj_t* r, const char* text, intptr_t id, bool on, bool dim
 
 int grid_h() { return 2 * lv_font_get_line_height(menu_font()) + (metrics().large ? 12 : 8); }
 
-// Bottom row: Back (primary) and an optional second key
-void bottom(const char* second, intptr_t second_id)
-{
-    const int kh = menu_btn_h();
-    lv_obj_t* r = row(kh);
-    lv_obj_set_ignore_layout(r, true);
-    lv_obj_align(r, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_obj_t* b = make_key(r, 10, kh, key_cb, kBack);
-    lv_obj_set_flex_grow(b, 2);
-    lv_obj_add_state(b, LV_STATE_CHECKED);
-    key_label(b, "Back", menu_font());
-    if (second) {
-        lv_obj_t* k = make_key(r, 10, kh, key_cb, second_id);
-        lv_obj_set_flex_grow(k, 3);
-        key_label(k, second, menu_font());
-    }
-}
+// The header's back arrow (no Back key on the page)
+void bottom(const char*, intptr_t) { overlay_back(key_cb, kBack); }
 
 int nearby_available()
 {
@@ -263,42 +263,73 @@ void note_text()
     if (note[0]) overlay_text(note, false);
 }
 
+// A choice between two words, with a switch pointing at the chosen one
+void switch_row(const char* left, const char* right, bool right_on, intptr_t id)
+{
+    const int kh = menu_btn_h();
+    lv_obj_t* r = row(kh);
+    lv_obj_set_flex_align(r, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(r, metrics().large ? 14 : 10, 0);
+    const lv_font_t* f = &lv_font_montserrat_14;
+    lv_obj_t* l = lv_label_create(r);
+    lv_label_set_text(l, left);
+    lv_obj_set_style_text_font(l, f, 0);
+    lv_obj_set_style_text_color(l, right_on ? pal().muted : pal().ink, 0);
+    lv_obj_t* sw = lv_switch_create(r);
+    lv_obj_set_size(sw, kh * 3 / 2, kh / 2);
+    static const lv_part_t kParts[] = {LV_PART_MAIN, LV_PART_INDICATOR};
+    for (lv_part_t part : kParts) {
+        // Both sides are a choice, not on/off: the track looks the same
+        lv_obj_set_style_bg_color(sw, pal().key_on, part);
+        lv_obj_set_style_bg_color(sw, pal().key_on, part | LV_STATE_CHECKED);
+        lv_obj_set_style_bg_opa(sw, LV_OPA_COVER, part);
+    }
+    lv_obj_set_style_bg_color(sw, pal().ink, LV_PART_KNOB);
+    lv_obj_set_style_pad_all(sw, -2, LV_PART_KNOB);
+    lv_obj_set_ext_click_area(sw, 6);
+    if (right_on) lv_obj_add_state(sw, LV_STATE_CHECKED);
+    lv_obj_add_event_cb(sw, key_cb, LV_EVENT_VALUE_CHANGED, reinterpret_cast<void*>(id));
+    lv_obj_t* rl = lv_label_create(r);
+    lv_label_set_text(rl, right);
+    lv_obj_set_style_text_font(rl, f, 0);
+    lv_obj_set_style_text_color(rl, right_on ? pal().ink : pal().muted, 0);
+}
+
+// Play settings: the stylus hand, then 1P / 2P (2P = wireless play: the
+// radio on, others can find this board) and the 2P keys under it
 void build_main()
 {
     char t[112];
-    overlay_begin("Wireless Play", on_closed);
-    snprintf(t, sizeof t, "You are %s.", P.name);
-    overlay_text(t, false);
-    if (!radio_present()) {
-        overlay_text("This board has no radio for wireless play.", false);
-        bottom(nullptr, 0);
-        return;
-    }
-    lv_obj_t* av = overlay_button(overlay(), P.available ? "Available To Play: On" : "Available To Play: Off",
-                                  key_cb, kAvailable);
-    set_checked(av, P.available);
+    overlay_begin("Play", on_closed);
+    switch_row("Left Hand", "Right Hand", right_handed(), kHand);
+    overlay_text("Play Mode", true);
+    switch_row("1P", "2P", P.available, kAvailable);
+    const bool on = P.available && radio_present();
     if (playing()) {
         snprintf(t, sizeof t, "Resume %s With %s", games::get(S->reg).title, S->link.peer_name());
         overlay_button(overlay(), t, key_cb, kResume, true);
     } else {
         const int n = nearby_available();
-        if (n) snprintf(t, sizeof t, "Find Players (%d Nearby)", n);
-        else   snprintf(t, sizeof t, "Find Players");
-        overlay_button(overlay(), t, key_cb, kFind);
+        if (on && n) snprintf(t, sizeof t, "Find Players (%d Nearby)", n);
+        else         snprintf(t, sizeof t, "Find Players");
+        set_dim(overlay_button(overlay(), t, key_cb, kFind), !on);
     }
     snprintf(t, sizeof t, "Games I'll Play (%d of %d)", count_on(), game_count());
-    overlay_button(overlay(), t, key_cb, kMyGames);
+    set_dim(overlay_button(overlay(), t, key_cb, kMyGames), !on);
+    snprintf(t, sizeof t, "Change Name (%s)", P.name);
+    set_dim(overlay_button(overlay(), t, key_cb, kChangeName), !on);
     if (note[0]) note_text();
+    else if (!radio_present()) overlay_text("This board has no radio for 2-player play.", true);
     else if (radio_failed) overlay_text("The radio couldn't start: the board is low on memory.", false);
     else if (playing()) {
-        snprintf(t, sizeof t, "Your %s game with %s is waiting. Finish it (or forfeit it in its menu) to play another.",
+        snprintf(t, sizeof t, "Your %s game with %s is waiting. Finish it, or forfeit it in its menu, to play another.",
                  games::get(S->reg).title, S->link.peer_name());
         overlay_text(t, true);
     } else if (P.available)
-        overlay_text("Players nearby can see you and ask you to play, wherever you are on this board.", true);
+        overlay_text("2P: players nearby can find you and ask you to play, wherever you are on this board.", true);
     else
-        overlay_text("Turn on Available To Play so boards nearby can find you. Find Players turns it on too.", true);
-    bottom("Change Name", kChangeName);
+        overlay_text("2P turns on wireless play with boards nearby.", true);
+    bottom(nullptr, 0);
 }
 
 void build_games()
@@ -411,6 +442,7 @@ void build_asking()
     snprintf(t, sizeof t, "%s's board rings and shows your offer. Waiting for an answer.", who_name);
     overlay_text(t, true);
     overlay_button(overlay(), "Stop Asking", key_cb, kStop);
+    bottom(nullptr, 0);
 }
 
 void build_offer()
@@ -428,6 +460,7 @@ void build_offer()
     }
     overlay_button(overlay(), "Play", key_cb, kPlay, true);
     overlay_pair("Not Now", key_cb, kNotNow, "Other Game", key_cb, kOtherGame);
+    bottom(nullptr, 0);
 }
 
 void show(Ui u)
@@ -476,6 +509,14 @@ void key_cb(lv_event_t* e)
             switch (ui_now) {
                 case Ui::Games: case Ui::Players: show(Ui::Main); return;
                 case Ui::Player: show(Ui::Players); return;
+                case Ui::Asking:                     // = Stop Asking
+                    if (pres) pres->cancel(now);
+                    show(Ui::Player);
+                    return;
+                case Ui::Offer:                      // = Not Now
+                    if (pres && pres->asked()) pres->decline(net::Reason::NotNow, now);
+                    show(before_offer);
+                    return;
                 default: {
                     void (*back)() = menu_back;
                     menu_back = nullptr;
@@ -484,7 +525,14 @@ void key_cb(lv_event_t* e)
                     return;
                 }
             }
+        case kHand:
+            settings().left_handed = !settings().left_handed;
+            save_settings();
+            app_theme_changed();                 // the open game lays itself out again
+            show(Ui::Main);
+            return;
         case kChangeName:
+            if (!P.available) return;
             keyboard_up = true;
             ui_now = Ui::None;
             keyboard_open("Your Name", P.name, net::kNameMax, name_done);
@@ -495,14 +543,11 @@ void key_cb(lv_event_t* e)
             show(Ui::Main);
             return;
         case kFind:
+            if (!P.available) return;            // 2P first
             note[0] = 0;
-            if (!P.available) {
-                set_available(true);
-                set_note("You're available to play now, so others can find you too.");
-            }
             show(Ui::Players);
             return;
-        case kMyGames: note[0] = 0; show(Ui::Games); return;
+        case kMyGames: if (!P.available) return; note[0] = 0; show(Ui::Games); return;
         case kResume:
             if (S) {
                 show(Ui::None);
@@ -697,8 +742,10 @@ void tick(uint32_t now)
         uint8_t buf[net::kPacketMax];
         net::Mac from;
         for (int k = 0; k < 16; ++k) {
-            const size_t n = shell().radio_recv(from.b, buf, sizeof buf);
+            int8_t rssi = -100;
+            const size_t n = shell().radio_recv(from.b, buf, sizeof buf, &rssi);
             if (!n) break;
+            heard_signal(from, rssi, now);
             const uint32_t s = net::status_session(buf, n);
             if (S && s && s == S->link.session()) S->link.receive(from, buf, n, now);
             else if (pres) pres->receive(from, buf, n, now);
@@ -791,6 +838,28 @@ void picker_status(char* buf, size_t cap)
 }
 
 void set_picker_label(lv_obj_t* label) { picker_label = label; }
+
+int wifi_level()
+{
+    if (!radio_on || (!P.available && !live())) return -1;     // 1P: off
+    if (lv_tick_get() - sig_ms > 4000) return 0;                // nobody heard: the dot
+    if (sig_rssi >= -60) return 3;
+    if (sig_rssi >= -70) return 2;
+    if (sig_rssi >= -80) return 1;
+    return 0;
+}
+
+int two_player_state() { return playing() ? 1 : 0; }
+
+void resume_session()
+{
+    if (!playing() || app_current_game() == S->reg) return;
+    show(Ui::None);
+    close_overlays();
+    app_open_game(S->reg);
+}
+
+void set_two_player(bool on) { set_available(on); }
 
 void debug_state(char* buf, size_t cap)
 {

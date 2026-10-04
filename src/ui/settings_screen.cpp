@@ -8,6 +8,7 @@
 #include "sound.h"
 #include "theme.h"
 #include "widgets.h"
+#include "games/common/wplay.h"
 
 namespace ui {
 
@@ -15,7 +16,6 @@ namespace {
 
 void (*back_fn)() = nullptr;
 
-enum Action : intptr_t { kTheme, kInvert, kSwapRb, kFlip, kDiagnostics, kBack, kRight, kLeft };
 
 void brightness_cb(lv_event_t* e)
 {
@@ -42,14 +42,6 @@ void volume_cb(lv_event_t* e)
         save_settings();
         sound(Sound::Place);
     }
-}
-
-void volume_mute_cb(lv_event_t*)
-{
-    settings().volume = 0;
-    if (volume_slider) lv_slider_set_value(volume_slider, 0, LV_ANIM_OFF);
-    volume_text();
-    save_settings();
 }
 
 // One row: label (fixed width, so the sliders line up) and a slider
@@ -186,7 +178,7 @@ void tt_stop()
     TT = nullptr;
 }
 
-void tt_done_cb(lv_event_t*) { diagnostics_open(); }
+void tt_done_cb(lv_event_t*) { settings_open_touch(); }
 
 } // namespace
 
@@ -197,82 +189,132 @@ void settings_open_touch_test()
     tt_n = tt_misses = tt_log_n = tt_dot_next = 0;
     delete TT;
     TT = new (std::nothrow) TouchTest();       // zeroed: no dots yet
-    overlay_bottom_button("Done", tt_done_cb, 0);
+    overlay_back(tt_done_cb, 0);                // the header's arrow: back to Touch
     tt_timer = lv_timer_create(tt_timer_cb, 10, nullptr);
 }
 
 namespace {
 
-// ---- Buttons ------------------------------------------------------------------
+// ---- Pages ----------------------------------------------------------------------
+// Settings: Display, Sound, Touch, Play, About - each its own page; the
+// header's back arrow goes up one level (Tom, 2026-10-04)
+enum Action : intptr_t {
+    kDisplay = 100, kSound, kTouch, kPlay, kAbout,
+    kTheme, kInvert, kSwapRb, kFlip, kMute, kTouchTest, kRecal, kMainBack, kPageBack,
+};
+
+uint8_t unmute_to = kDefaultVolume;         // Mute off goes back to this
+
+void display_page();
+void sound_page();
+void touch_page();
+
 void action_cb(lv_event_t* e)
 {
     const Shell& H = shell();
+    lv_obj_t* key = lv_event_get_target_obj(e);
     switch (reinterpret_cast<intptr_t>(lv_event_get_user_data(e))) {
-        case kTheme: theme_open(); break;
-        case kInvert: if (H.toggle_invert) H.toggle_invert(); break;
-        case kSwapRb: if (H.toggle_swap_rb) H.toggle_swap_rb(); break;
+        case kDisplay: display_page(); break;
+        case kSound:   sound_page(); break;
+        case kTouch:   touch_page(); break;
+        case kPlay:    wplay::open_menu(settings_reopen); break;
+        case kAbout:   diagnostics_open(); break;
+        case kTheme:   theme_open(); break;
+        case kInvert:  if (H.toggle_invert) H.toggle_invert(); break;
+        case kSwapRb:  if (H.toggle_swap_rb) H.toggle_swap_rb(); break;
         case kFlip:
             if (!H.set_flip) break;
             settings().flip = !settings().flip;
             H.set_flip(settings().flip);
             save_settings();
-            set_checked(lv_event_get_target_obj(e), settings().flip);
+            set_checked(key, settings().flip);
             break;
-        case kRight:
-        case kLeft: {
-            const bool left = reinterpret_cast<intptr_t>(lv_event_get_user_data(e)) == kLeft;
-            if (settings().left_handed == left) break;
-            settings().left_handed = left;
+        case kMute:
+            if (settings().volume) { unmute_to = settings().volume; settings().volume = 0; }
+            else settings().volume = unmute_to ? unmute_to : kDefaultVolume;
             save_settings();
-            app_theme_changed();             // the open game lays itself out again
-            settings_reopen();
+            if (volume_slider) lv_slider_set_value(volume_slider, settings().volume, LV_ANIM_OFF);
+            volume_text();
+            set_checked(key, settings().volume == 0);
+            if (settings().volume) sound(Sound::Place);
             break;
-        }
-        case kDiagnostics: diagnostics_open(); break;
-        case kBack:
+        case kTouchTest: settings_open_touch_test(); break;
+        case kRecal:
+            app_save_current();
+            if (H.recalibrate_touch) H.recalibrate_touch();
+            break;
+        case kPageBack: settings_reopen(); break;
+        case kMainBack:
             if (back_fn) back_fn();
             else close_overlays();
             break;
     }
 }
 
+lv_obj_t* toggle_key(const char* text, intptr_t id, bool on)
+{
+    lv_obj_t* k = overlay_button(overlay(), text, action_cb, id);
+    set_checked(k, on);
+    return k;
+}
+
+void display_page()
+{
+    volume_label = volume_slider = nullptr;
+    overlay_begin("Display");
+    lv_point_t sz;
+    lv_text_get_size(&sz, "Brightness", menu_font(), 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    slider_row("Brightness", sz.x, kMinBrightness, 255, settings().brightness, brightness_cb, nullptr);
+    overlay_button(overlay(), "Invert Colors", action_cb, kInvert);
+    overlay_button(overlay(), "Swap Red/Blue", action_cb, kSwapRb);
+    // A toggle, lit while the screen is turned: the USB cord can leave either end
+    toggle_key("Rotate 180", kFlip, settings().flip);
+    overlay_button(overlay(), "Themes", action_cb, kTheme);
+    overlay_text("Invert Colors and Swap Red/Blue fix panels that show colors wrong.", true);
+    overlay_back(action_cb, kPageBack);
+}
+
+void sound_page()
+{
+    volume_label = volume_slider = nullptr;
+    overlay_begin("Sound");
+    lv_point_t sz;
+    lv_text_get_size(&sz, "Volume", menu_font(), 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    volume_slider = slider_row("Volume", sz.x, 0, 100, settings().volume, volume_cb, &volume_label);
+    volume_text();
+    toggle_key("Mute", kMute, settings().volume == 0);
+    overlay_text("Sounds play for moves, the other side's reply, mistakes and the end of a game. "
+                 "Keys are silent.", true);
+    overlay_back(action_cb, kPageBack);
+}
+
+void touch_page()
+{
+    overlay_begin("Touch");
+    overlay_button(overlay(), "Touch Test", action_cb, kTouchTest);
+    overlay_button(overlay(), "Recalibrate", action_cb, kRecal);
+    overlay_text("Recalibrate shows a target in each corner: tap each tip with the stylus. "
+                 "Touch Test shows where taps land.", true);
+    overlay_back(action_cb, kPageBack);
+}
+
 } // namespace
 
 void settings_reopen() { settings_open(back_fn); }
+void settings_open_display() { display_page(); }
+void settings_open_touch() { touch_page(); }
 
 void settings_open(void (*back)())
 {
     volume_label = volume_slider = nullptr;
     back_fn = back;
-    const UiSettings& S = settings();
     overlay_begin("Settings");
-    overlay_pair("Theme", action_cb, kTheme, "Invert Colors", action_cb, kInvert);
-
-    // Brightness and Volume: applied while dragging, saved on release
-    lv_point_t sz;
-    lv_text_get_size(&sz, "Brightness", menu_font(), 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
-    slider_row("Brightness", sz.x, kMinBrightness, 255, S.brightness, brightness_cb, nullptr);
-    volume_slider = slider_row("Volume", sz.x, 0, 100, S.volume, volume_cb, &volume_label);
-    lv_obj_set_clickable(volume_label, true);   // tap the label = mute
-    lv_obj_add_event_cb(volume_label, volume_mute_cb, LV_EVENT_CLICKED, nullptr);
-    volume_text();
-
-    // Which hand holds the stylus: games put the things tapped most on that
-    // side, so the hand doesn't cover the play area (Tom, 2026-10-04). The
-    // lit key is the choice.
-    overlay_pair("Right Hand", action_cb, kRight, "Left Hand", action_cb, kLeft);
-    lv_obj_t* hands = lv_obj_get_child(overlay(), -1);
-    set_checked(lv_obj_get_child(hands, 0), !S.left_handed);
-    set_checked(lv_obj_get_child(hands, 1), S.left_handed);
-
-    // Full width: "Swap Red/Blue" doesn't fit half a row at the menu font.
-    overlay_pair("Swap Red/Blue", action_cb, kSwapRb, nullptr, nullptr, 0);
-    // Rotate 180 is a toggle, lit while the screen is turned: the USB cord can
-    // leave either end of the board. Recalibrate sits in Diagnostics, next to
-    // the Touch Test (board and firmware are there too).
-    overlay_pair("Rotate 180", action_cb, kFlip, "Diagnostics", action_cb, kDiagnostics);
-    set_checked(lv_obj_get_child(lv_obj_get_child(overlay(), -1), 0), S.flip);
-    overlay_button(overlay(), "Back", action_cb, kBack, true);
+    overlay_button(overlay(), "Display", action_cb, kDisplay);
+    overlay_button(overlay(), "Sound", action_cb, kSound);
+    overlay_button(overlay(), "Touch", action_cb, kTouch);
+    overlay_button(overlay(), "Play", action_cb, kPlay);
+    overlay_button(overlay(), "About", action_cb, kAbout);
+    overlay_back(action_cb, kMainBack);
 }
 
 } // namespace ui

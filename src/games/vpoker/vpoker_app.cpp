@@ -130,20 +130,23 @@ enum KeyId : intptr_t { kBetOne = 0, kBetMax, kHint, kMain };
 void update_status()
 {
     if (!bar.center) return;
-    char s[48], left[24];
+    char s[48], left[24], sh[24] = "";
     snprintf(left, sizeof left, "%ld", long(G->credits));
     lv_label_set_text(bar.left, left);
     if (G->phase == Phase::Dealt) {
         const Rank r = G->current();
         if (r != Nothing) snprintf(s, sizeof s, "%s", rank_name(r));
-        else snprintf(s, sizeof s, "Hold, then Draw");
+        else { snprintf(s, sizeof s, "Hold, then Draw"); snprintf(sh, sizeof sh, "Hold, Draw"); }
     } else if (G->phase == Phase::Done) {
-        if (G->last_win) snprintf(s, sizeof s, "%s! Win %ld", rank_name(G->last_rank), long(G->last_win));
+        if (G->last_win) {
+            snprintf(s, sizeof s, "%s! Win %ld", rank_name(G->last_rank), long(G->last_win));
+            snprintf(sh, sizeof sh, "Win %ld", long(G->last_win));
+        }
         else snprintf(s, sizeof s, "No win");
     } else {
         snprintf(s, sizeof s, "Bet %d", int(G->bet));
     }
-    kit::top_bar_status(bar, s);
+    kit::top_bar_status(bar, s, sh[0] ? sh : nullptr);
     const bool dealt = G->phase == Phase::Dealt;
     char bt[16];
     snprintf(bt, sizeof bt, "Bet %d", int(G->bet));
@@ -211,7 +214,7 @@ void key_cb(lv_event_t* e)
 void build()
 {
     kit::screen_begin();
-    bar = kit::top_bar([](lv_event_t*) { open_menu(); });
+    bar = kit::top_bar([](lv_event_t*) { open_menu(); }, 2);
     const Metrics& m = metrics();
     lv_obj_t* scr = lv_screen_active();
     const int pad = m.large ? 8 : 4, gap = m.large ? 8 : 6;

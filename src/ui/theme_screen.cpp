@@ -66,7 +66,7 @@ enum ListAction : intptr_t { kEdit = 100, kBack = 101 };
 void list_cb(lv_event_t* e)
 {
     const intptr_t id = reinterpret_cast<intptr_t>(lv_event_get_user_data(e));
-    if (id == kBack) { settings_reopen(); return; }
+    if (id == kBack) { settings_open_display(); return; }
     if (id == kEdit) { theme_open_editor(custom_slot(theme())); return; }
     app_set_theme(static_cast<Theme>(id));
     theme_open();
@@ -197,7 +197,7 @@ void theme_open_palette(int slot, Role role)
     lv_obj_set_ignore_layout(r, true);
     lv_obj_align(r, LV_ALIGN_BOTTOM_MID, 0, 0);
     grow_key(r, "Default", palette_cb, kDefault, false);
-    grow_key(r, "Back", palette_cb, kPaletteBack, true);
+    overlay_back(palette_cb, kPaletteBack);           // the header's arrow
 }
 
 } // namespace ui

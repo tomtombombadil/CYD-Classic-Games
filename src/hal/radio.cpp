@@ -18,6 +18,7 @@ constexpr int     kQueueLen = 16;
 
 struct Rx {
     uint8_t mac[6];
+    int8_t  rssi;
     uint8_t len;
     uint8_t data[kMaxPacket];
 };
@@ -32,6 +33,7 @@ void on_recv(const esp_now_recv_info_t* info, const uint8_t* data, int len)
     if (!rx_queue || !info || len <= 0 || len > int(kMaxPacket)) return;
     Rx r;
     memcpy(r.mac, info->src_addr, 6);
+    r.rssi = info->rx_ctrl ? int8_t(info->rx_ctrl->rssi) : -100;
     r.len = uint8_t(len);
     memcpy(r.data, data, size_t(len));
     xQueueSend(rx_queue, &r, 0);              // a full queue drops it: the next status replaces it
@@ -90,13 +92,14 @@ bool radio_send(const uint8_t* data, size_t len)
     return esp_now_send(kBroadcast, data, len) == ESP_OK;
 }
 
-size_t radio_recv(uint8_t mac[6], uint8_t* buf, size_t cap)
+size_t radio_recv(uint8_t mac[6], uint8_t* buf, size_t cap, int8_t* rssi)
 {
     if (!rx_queue) return 0;
     Rx r;
     if (xQueueReceive(rx_queue, &r, 0) != pdTRUE) return 0;
     const size_t n = r.len < cap ? r.len : cap;
     memcpy(mac, r.mac, 6);
+    if (rssi) *rssi = r.rssi;
     memcpy(buf, r.data, n);
     return n;
 }

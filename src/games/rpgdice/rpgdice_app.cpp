@@ -464,7 +464,7 @@ void build()
     kit::screen_begin();
     bar = kit::top_bar([](lv_event_t*) { open_menu(); });
     lv_label_set_text(bar.left, "");
-    kit::top_bar_status(bar, "RPG Dice");
+    kit::top_bar_status(bar, "");
     const Metrics& m = metrics();
     lv_obj_t* scr = lv_screen_active();
     const int pad = m.large ? 6 : 4, gap = m.large ? 6 : 4;
@@ -563,10 +563,7 @@ void open_presets()
     lv_obj_t* ed = make_key(row, 10, kh, preset_cb, 100);
     lv_obj_set_flex_grow(ed, 1);
     key_label(ed, edit_mode ? "Done Editing" : "Edit Presets", menu_font());
-    lv_obj_t* back = make_key(row, 10, kh, preset_cb, 101);
-    lv_obj_set_flex_grow(back, 1);
-    lv_obj_add_state(back, LV_STATE_CHECKED);
-    key_label(back, "Back", menu_font());
+    overlay_back(preset_cb, 101);                     // the header's arrow
 }
 
 // Preset editor: name, its lines, Add Line, [Delete | Done]
@@ -813,10 +810,9 @@ void open_history(int page)
         if (!on) set_dim(b, true);
         return b;
     };
-    nav_key(nav, LV_SYMBOL_LEFT, -1, false, page > 0);
-    lv_obj_t* back = nav_key(nav, "Back", 0, true, true);
-    lv_obj_add_state(back, LV_STATE_CHECKED);
-    nav_key(nav, LV_SYMBOL_RIGHT, 1, false, page + 1 < pages);
+    nav_key(nav, LV_SYMBOL_LEFT, -1, true, page > 0);
+    nav_key(nav, LV_SYMBOL_RIGHT, 1, true, page + 1 < pages);
+    overlay_back(hist_cb, 0);                         // the header's arrow
     lv_obj_t* r2 = lv_obj_create(overlay());
     lv_obj_remove_style_all(r2);
     lv_obj_set_size(r2, lv_pct(100), kh);

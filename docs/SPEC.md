@@ -40,13 +40,25 @@ Budget (CYD-Sudoku v1.0.0 as the baseline):
 - **Game picker**: "Continue <last game>" at the top, then the categories
   as a text list: Puzzle Games, Strategy Games, Card Games, Word Games, Dice Games
   (no Other Games - Tom, 2026-10-03). A category opens a page of game icons (paged if needed).
-- Inside a game, the ☰ menu has: new game, restart, stats, Settings,
-  All games.
-- **Settings** is shared: Theme, Volume slider (50 % default, far left = muted), brightness,
-  invert colors, swap red/blue, recalibrate, Diagnostics (touch test,
-  device log), player name (once multiplayer exists).
+- **Header bar** on every screen, games included (Tom, 2026-10-04; the
+  games' standard bar height, icons as tall as it): **<** back (closes a
+  page, leaves a category or a game; in a wireless game in progress =
+  Forfeit), the middle (a page's title, or in a game only the live status:
+  no game name, no level, a clock only in Sudoku and Minesweeper, chips in
+  Blackjack / Video Poker), **2P** (filled = a wireless game in progress or
+  to resume; tap = back to it), **wifi** (empty = 1P; dot + 0-3 arcs =
+  signal of the boards nearby; tap = Play settings), **gear** (Settings; in
+  a game the game's menu - no ☰).
+- Inside a game, the gear's menu has: new game, restart, How To Play,
+  stats, Settings, Exit Menu | Exit Game.
+- **Settings** is shared, a page per area: **Display** (brightness, invert
+  colors, swap red/blue, rotate 180, themes), **Sound** (volume slider, 50 %
+  default; Mute), **Touch** (touch test, recalibrate), **Play** (Left Hand
+  / Right Hand switch, Play Mode 1P / 2P switch; 2P = wireless play: Find
+  Players, Games I'll Play, Change Name), **About** (board, firmware,
+  memory, device log, send log). No Back keys: the header's < goes back.
 - **Device log**: boots, reset reasons, crash reports (reason, address,
-  backtrace, last step) kept in flash, shown under Diagnostics, copied to
+  backtrace, last step) kept in flash, shown under About, copied to
   SD on request, and echoed to the serial port.
 - **Themes**: Light, Dark, and three Custom themes. A custom theme starts
   from Light or Dark; the player picks colors for 10 roles (background,
@@ -117,14 +129,15 @@ Chinese checkers, Dots and Boxes (thin tap targets).
   radio on, N KB free").
 - Tom's design (2026-10-04): the players may not see or be able to talk to
   each other, so finding a partner and a game is done by the boards.
-  **Wireless Play** (first screen row + a two-player game's Wireless key):
-  - **Available To Play** toggle: radio on, the board beacons its name, the
+  Settings -> **Play** (also the header's wifi icon and a two-player
+  game's Wireless key):
+  - **Play Mode 1P | 2P** switch (2P = available to play): radio on, the board beacons its name, the
     games it will play and whether it is in a game; offers reach it
     anywhere (picker, solo games, menus) as a pop-up with a ding-dong.
     Saved, so it stays on after a restart.
   - **Games I'll Play**: a toggle key per wireless game + All Games; only
     lit games are announced and can be asked for.
-  - **Find Players** (turns Available on): players nearby with their game
+  - **Find Players** (2P only, like the keys below): players nearby with their game
     count, or "playing <game>" / "other version" greyed. Tap a player ->
     their games -> tap one = an offer ("Asking Bob to play Chess...",
     Stop Asking). Answers: Play (the game opens on both boards; the asker
@@ -132,12 +145,12 @@ Chinese checkers, Dots and Boxes (thin tap targets).
     Other Game ("would rather play another game"), automatic Busy / game
     switched off, no answer in 30 s, or the board went away.
 - In a game: "Waiting for <name>..." when the other board is out of range
-  or has the game closed (no moves then). Exit Game pauses; Resume (Wireless
-  Play) / Continue carries on, also after a restart (`/games/wl_session.bin`).
-  **Forfeit Game** in the menu: a loss for that player, a win for the other,
-  the forfeiter goes back to Wireless Play. Game over: **[Play Again | Done]**
+  or has the game closed (no moves then). Exit Game pauses; the 2P icon /
+  Resume (Play page) / Continue carries on, also after a restart (`/games/wl_session.bin`).
+  **Forfeit Game** in the menu (or the header's <): a loss for that player,
+  a win for the other, the forfeiter goes back to the Play page. Game over: **[Play Again | Done]**
   - the next game starts once both tapped Play Again (first mover
-  alternates); Done takes both boards back to Wireless Play ("Bob is done
+  alternates); Done takes both boards back to the Play page ("Bob is done
   playing. Thanks for the game!"). A board whose game is over isn't busy:
   accepting a new offer ends that session.
 - Protocol (`src/net/wireless.*`, plain C++): no acks; every board repeats

@@ -126,56 +126,74 @@ starts). Tap anywhere to go on to the game picker.
   left off, in one tap. It shows how far along that game is.
 - Below it, the categories: **Puzzle Games, Strategy Games, Card Games,
   Word Games, Dice Games**, each with how many games it has. Tap one to see its
-  games as icons, and tap a game to play. The **<** key in the top bar goes
-  back. Categories without games yet say "soon".
-- **☰ menu:** Settings, shared by every game.
-- Every game's ☰ menu ends with two keys side by side: **Exit Menu**
-  (bottom left) closes the menu and goes back to the game; **Exit Game**
-  (bottom right) saves the game and comes back here.
+  games as icons, and tap a game to play. Categories without games yet say
+  "soon".
 
-Every game has **How To Play** in its ☰ menu: a few short pages on the
+**The header bar** runs along the top of every screen, the games too:
+
+- **<** (top left) goes back: closes a page, leaves a category, or leaves a
+  game (saved for Continue). In a wireless game that is still going it
+  forfeits - a loss.
+- In the middle: the page's name, or in a game just what matters now
+  ("Your turn", "Score 45", "Solved!"). Sudoku and Minesweeper show their
+  clock; Blackjack and Video Poker your chips.
+- **2P** (two people): filled while a wireless game is going or waiting to
+  be resumed; tap it to go back to that game.
+- **Wifi**: empty while wireless play is off (1P); a dot and up to three
+  arcs for the signal of the boards nearby. Tap it for Play settings.
+- **Gear** (top right): Settings - and in a game, the game's menu (New
+  Game, Restart, How To Play, Stats, Settings...). Every game's menu ends
+  with **Exit Menu** (bottom left, back to the game) and **Exit Game**
+  (bottom right, saves the game and comes back here).
+
+Every game has **How To Play** in its menu: a few short pages on the
 idea, the rules and how its screen works. Every game saves itself and
 keeps its own stats. Theme, sound, brightness
 and touch calibration are shared.
 
 ## Settings
 
-**☰ → Settings** (from the picker or any game):
+The **gear** (on the picker, or Settings in a game's menu) opens Settings:
+**Display, Sound, Touch, Play, About**. The **<** in the header goes back.
 
-- **Theme:** Light, Dark, or one of three **Custom** themes. Pick Custom 1, 2
-  or 3, then **Edit** it: each of the 10 color buttons (background, board,
-  grid lines, text, your marks, selected, matching, row/column, buttons,
-  accent) opens a palette of 48 colors. Tap one and the change shows at
-  once, in every game. **Default** puts a color back; **Reset: Light /
-  Dark** starts the theme over from Light or Dark.
-- **Volume:** a slider, like Brightness. It starts at 50 % (tiny speakers
-  distort near the top). Tap the word **Volume** (or just left
-  of the slider) for **Muted**, silent
-  play. A sound plays at the new level when you let go. Sounds come
+<img src="docs/screenshots/small_settings_dark.png" width="240" alt="Settings: Display, Sound, Touch, Play, About">
+<img src="docs/screenshots/small_settings_display.png" width="240" alt="Display settings">
+<img src="docs/screenshots/small_settings_sound.png" width="240" alt="Sound settings">
+
+- **Display:** **Brightness**, **Invert Colors** and **Swap Red/Blue** (for
+  panels that show colors wrong), **Rotate 180** (the picture and touch
+  upside down, so the USB cord can leave either end; lit while on,
+  remembered) and **Themes**: Light, Dark, or one of three **Custom**
+  themes. Pick Custom 1, 2 or 3, then **Edit** it: each of the 10 color
+  buttons (background, board, grid lines, text, your marks, selected,
+  matching, row/column, buttons, accent) opens a palette of 48 colors. Tap
+  one and the change shows at once, in every game. **Default** puts a color
+  back; **Reset: Light / Dark** starts the theme over from Light or Dark.
+- **Sound:** a **Volume** slider (it starts at 50 % - tiny speakers distort
+  near the top; a sound plays at the new level when you let go) and
+  **Mute** (lit while muted; tap again for the volume you had). Sounds come
   through a speaker on the board's speaker connector, and only for what
   matters in a game: moves, the computer's reply, mistakes, hints and the
   end of a game. Plain button taps are silent.
-- **Right Hand / Left Hand:** the hand that holds the stylus. Games put
-  what you tap most on that side (or along the bottom), so your hand
-  doesn't cover the table: in Solitaire the stock sits in the top corner on
-  your side with the waste just inside it and the foundations across from
-  it; Golf, Pyramid and Spider put their stock on your side too, FreeCell
-  its free cells, Mancala your pits, and Nonograms keep the row clues on
-  the other side. Right Hand to start.
-- **Rotate 180** turns the picture (and touch) upside down, so the
-  USB cord can leave either end of the board. It's lit while on, and
-  remembered.
-- **Brightness**, **Invert Colors**, **Swap Red/Blue** and
-  **Diagnostics**: **Touch Test**, **Recalibrate** (see below), the
-  **Device Log** and **Send Log** (see
-  [If the board crashes or misbehaves](#if-the-board-crashes-or-misbehaves)).
+- **Touch:** **Touch Test** and **Recalibrate** (see below).
+- **Play:** a switch between **Left Hand** and **Right Hand** (the hand
+  that holds the stylus - the switch points at it). Games put what you tap
+  most on that side (or along the bottom), so your hand doesn't cover the
+  table: in Solitaire the stock sits in the top corner on your side with
+  the waste just inside it and the foundations across from it; Golf,
+  Pyramid and Spider put their stock on your side too, FreeCell its free
+  cells, Mancala your pits, and Nonograms keep the row clues on the other
+  side. Right Hand to start. Below it, **Play Mode: 1P | 2P** - 2P is
+  wireless play, and its keys below (see [Wireless play](#wireless-play-cyd-to-cyd)).
+- **About:** board, firmware, memory, uptime, the **Device Log** and **Send
+  Log** (see [If the board crashes or misbehaves](#if-the-board-crashes-or-misbehaves)).
 
 ## Two-player games
 
 Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala and Nine
 Men's Morris share one menu: **New Game vs Computer** (Easy, Medium, Hard),
 **Pass and Play** (two people share one board and take turns), and
-**Wireless** (two boards: Wireless Play, below). Farkle has the first two. Against the computer
+**Wireless** (two boards: Wireless play, below). Farkle has the first two. Against the computer
 you and the computer take turns going first, game by game. The computer
 thinks on the board's second processor core, so the screen never freezes.
 Its levels look ahead fewer or more moves (and think longer); it never
@@ -308,7 +326,7 @@ sit under the table. When every card is face
 up the rest go up by themselves, and then the cards bounce off the table
 like the old Windows Solitaire (tap to stop).
 
-**☰ → Options:** Draw 1 or Draw 3 (default), Standard scoring, Vegas
+**Menu (gear) → Options:** Draw 1 or Draw 3 (default), Standard scoring, Vegas
 scoring (a deal costs $52, each foundation card pays $5, the balance
 carries over) or none, and the **Card Back** (12 designs, shared by every
 card game; Blue Lattice to start). The card games are quiet while you play
@@ -339,24 +357,24 @@ passwords, no setup, as far as a house's walls allow. The players don't
 need to see or talk to each other: the boards do the finding and asking.
 
 <img src="docs/screenshots/small_wireless_lobby.png" width="240" alt="Players nearby: who is available and what they play">
-<img src="docs/screenshots/small_wireless_menu.png" width="240" alt="Wireless Play: Available To Play, Find Players, Games I'll Play">
+<img src="docs/screenshots/small_wireless_menu.png" width="240" alt="Play settings: Left/Right Hand, Play Mode 1P/2P, Find Players, Games I'll Play">
 <img src="docs/screenshots/small_wireless_game.png" width="240" alt="A wireless chess game">
 <img src="docs/screenshots/small_wireless_offer.png" width="240" alt="Someone nearby asks to play">
 
-**Wireless Play** is the last row on the first screen (it shows Off, On, how
-many players are nearby, or Playing) and the Wireless key in a two-player
-game's menu.
+It all lives on the **Play** settings page: tap the **wifi icon** in the
+header (or Settings → Play, or Wireless in a two-player game's menu).
 
-- **Available To Play** turns the radio on and lets boards nearby see you
+- **Play Mode 2P** turns the radio on and lets boards nearby see you
   and ask you to play - wherever you are on your board: the picker, a
   solo game, a menu. Someone asking rings (a ding-dong) and shows "Bob would
   like to play Chess with you. Bob moves first." with **Play**, **Not Now**
   or **Other Game**. Not Now and Other Game send a polite answer back
   ("Tom can't play right now. Thanks for asking!" / "...would rather play
-  another game"). It stays on until you turn it off, even after a restart.
+  another game"). It stays on until you switch back to 1P, even after a
+  restart. The wifi icon shows the signal of the boards nearby.
 - **Games I'll Play**: a key per game (lit = willing), and All Games. Others
   only see, and can only ask for, your lit games.
-- **Find Players**: everyone nearby with Available To Play on, with how many
+- **Find Players**: everyone nearby in 2P, with how many
   games they'll play - or "playing Reversi" / "other version" (both boards
   need the same version: flash both from the web flasher). Tap a player to
   see their games; tap a game to ask them. No answer in 30 seconds, or
@@ -370,13 +388,15 @@ In the game:
   arrive by themselves, each checked against this board's own rules.
 - Out of range or switched off: "Waiting for Bob..." until the board is
   heard again. **Exit Game** pauses the game (the other board shows "Bob
-  closed Chess for now"); **Resume** in Wireless Play, or Continue on the
-  first screen, carries on - even after a restart.
-- **☰ → Forfeit Game** ends it at once: a loss for you, a win for the other
-  player, and both go on from there (you to Wireless Play).
+  closed Chess for now"); the filled **2P** icon in the header (or Resume
+  on the Play page, or Continue on the first screen) carries on - even
+  after a restart.
+- **Forfeit Game** in the game's menu (the gear), or the header's **<**,
+  ends it at once: a loss for you, a win for the other player, and both go
+  on from there (you to the Play page).
 - At the end, **Play Again** starts the next game once both players tapped
   it (the other player moves first then); **Done** takes both boards back to
-  Wireless Play. A board whose game is over can be asked again by anyone.
+  the Play page. A board whose game is over can be asked again by anyone.
 - Finished games are recorded on both boards (Stats: the Wireless row).
 
 ## Mancala
@@ -482,7 +502,7 @@ their home spot are tinted. 3x3 (Easy), 4x4 (the classic 15-Puzzle) and
 
 ## Sudoku
 
-The screen, top to bottom: clock, difficulty and the **☰ menu**; the board;
+The screen, top to bottom: the header bar (the clock; the gear opens the menu); the board;
 the tool row (**Undo**, **Notes**, input mode, **Hint**); the digits 1-9.
 
 - **Input mode** — the third button shows the current mode; tap it to switch.
@@ -512,8 +532,8 @@ the tool row (**Undo**, **Notes**, input mode, **Hint**); the digits 1-9.
   stops and the top bar says **Paused**; the next touch starts it again. It
   stops while a menu is open.
 - **Solving** flashes the screen (colors invert a few times) and leaves the
-  finished board on screen. Open the ☰ menu when you're ready for a new game.
-- **☰ menu:** new game (Easy, Medium, Hard, Expert), **Restart This
+  finished board on screen. Open the menu (the gear) when you're ready for a new game.
+- **Menu (the gear):** new game (Easy, Medium, Hard, Expert), **Restart This
   Puzzle**, **Stats**, **Settings**, then **Exit Menu** | **Exit Game**.
   Buttons act on the first tap; nothing asks "are you sure".
 
@@ -598,20 +618,20 @@ Garbled or blank screen: install the other 2.8" version.
 
 ## Brightness
 
-**☰ → Settings → Brightness** sets the backlight. It never goes fully
+**Settings → Display → Brightness** sets the backlight. It never goes fully
 dark, and it's remembered.
 
 ## Touch calibration
 
 On first boot (or when the **BOOT** button is held while powering on), the
 screen shows corner arrows — tap each tip precisely. The calibration is saved
-to flash and reused. To redo it: **☰ → Settings → Diagnostics → Recalibrate**.
+to flash and reused. To redo it: **Settings → Touch → Recalibrate**.
 
 ## If the board crashes or misbehaves
 
 The board keeps a small log: each start, why it last restarted (power on,
 crash, watchdog, power dip) and, after a crash, a short crash report. Read
-it on the board under **☰ → Settings → Diagnostics → Device Log** (pages
+it on the board under **Settings → About → Device Log** (pages
 with < >; newest at the end). Boards with a working SD slot also keep a
 copy at `/CYD-Classic-Games/log.txt` whenever a card is in (**Copy To SD**
 does it on demand).
@@ -619,7 +639,7 @@ does it on demand).
 **Sending the log to the developer** - either way opens a page with the log
 and an **Email the Log** button (to cyd.classic.games.logs@gmail.com):
 
-- **Phone:** **☰ → Settings → Diagnostics → Send Log** shows the log
+- **Phone:** **Settings → About → Send Log** shows the log
   (compressed, the newest few hundred lines) as a QR code. Point the phone's
   camera at it.
 - **Computer (Chrome or Edge):** plug the board in and use **Read Log Over
@@ -643,7 +663,7 @@ release) in PowerShell:
 
 ## Colors look wrong?
 
-Panels vary between production runs. Open **☰ → Settings**: use
+Panels vary between production runs. Open **Settings → Display**: use
 **Invert Colors** if colors look like a photo negative, and **Swap Red/Blue**
 if blue shows as red. The fix is saved on the board.
 For a dark screen on purpose, use **Theme: Dark** instead.

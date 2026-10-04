@@ -62,7 +62,8 @@ struct Shell {
     bool   (*radio_on)();                      // false = couldn't start (memory)
     void   (*radio_off)();
     bool   (*radio_send)(const uint8_t* data, size_t len);
-    size_t (*radio_recv)(uint8_t mac[6], uint8_t* buf, size_t cap);   // 0 = nothing came
+    // 0 = nothing came; rssi (may be nullptr) = its signal strength, dBm
+    size_t (*radio_recv)(uint8_t mac[6], uint8_t* buf, size_t cap, int8_t* rssi);
     void   (*radio_mac)(uint8_t mac[6]);
 
     const char* firmware_version;              // "v1.2.3" (VERSION file)
@@ -104,6 +105,8 @@ void diagnostics_open();                       // from Settings
 void device_log_open(int page = -1);           // from Diagnostics; -1 = newest page
 void send_log_open();                          // from Diagnostics: the log as a QR code
 void settings_reopen();                        // Settings again, same Back
+void settings_open_display();                  // Settings > Display (Themes come back here)
+void settings_open_touch();                    // Settings > Touch
 // Theme screens (src/ui/theme_screen.cpp), reached from Settings
 void theme_open();
 void theme_open_editor(int slot);
@@ -112,7 +115,10 @@ void theme_open_palette(int slot, Role role);
 // ---- PC preview: stage screenshots without the deferred switch -------------
 void app_open_game_now(int index);
 void app_go_home_now();
-void picker_open_menu();
+void picker_open_menu();                       // = Settings (the header's gear)
+// The open game's say on the header's back arrow: true = it handled it
+// (a wireless game going forfeits); else the game is left. nullptr = none.
+void set_game_back_hook(bool (*hook)());
 void picker_open_category(int category);      // -1 = the category list
 void picker_next_page();
 

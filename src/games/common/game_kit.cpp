@@ -1,4 +1,5 @@
 #include "game_kit.h"
+#include "ui/sysbar.h"
 
 #include <cstdio>
 #include <cstring>
@@ -156,38 +157,22 @@ lv_obj_t* screen_begin()
     return scr;
 }
 
-TopBar top_bar(lv_event_cb_t menu_cb)
+TopBar top_bar(lv_event_cb_t menu_cb, int show_left)
 {
-    const Metrics& m = metrics();
-    lv_obj_t* scr = lv_screen_active();
+    // The header bar holds it: clock on the left, status in the middle;
+    // the gear opens the game's menu (Tom, 2026-10-04: no ☰)
+    sysbar_game(menu_cb, 0, show_left);
     TopBar t;
-    const int margin = m.large ? 2 : 1;
-    const int bh = m.large ? 36 : 26;
-    const lv_font_t* f = bar_font();
-    const int ty = margin + (bh - lv_font_get_line_height(f)) / 2;
-    t.left = lv_label_create(scr);
-    lv_obj_set_style_text_font(t.left, f, 0);
-    lv_obj_set_style_text_color(t.left, pal().muted, 0);
-    lv_obj_set_pos(t.left, margin + 6, ty);
-    lv_label_set_text(t.left, "");
-    t.center = lv_label_create(scr);
-    lv_obj_set_style_text_font(t.center, f, 0);
-    lv_obj_set_style_text_color(t.center, pal().ink, 0);
-    lv_obj_align(t.center, LV_ALIGN_TOP_MID, 0, ty);
-    lv_label_set_text(t.center, "");
-    const int hb_w = bh * 3 / 2;
-    lv_obj_t* hb = make_hamburger(scr, hb_w, bh, menu_cb, 0);
-    lv_obj_set_pos(hb, m.w - margin - hb_w, margin);
-    t.h = margin + bh + (m.large ? 4 : 2);
-    t.text_y = ty;
+    t.left = sysbar_left();
+    t.center = sysbar_center();
+    t.h = metrics().large ? 4 : 2;      // the bar is above the screen: a little air
     return t;
 }
 
-void top_bar_status(const TopBar& t, const char* text)
+void top_bar_status(const TopBar& t, const char* text, const char* short_text)
 {
     if (!t.center) return;
-    lv_label_set_text(t.center, text);
-    lv_obj_align(t.center, LV_ALIGN_TOP_MID, 0, t.text_y);
+    sysbar_status(text, short_text);
 }
 
 // ---- Clock ----------------------------------------------------------------------------
@@ -332,7 +317,7 @@ void how_to_play(void (*back)(), int page)
     lv_obj_set_style_text_color(body, pal().ink, 0);
     lv_obj_set_style_text_line_space(body, large ? 2 : 1, 0);
 
-    // Bottom row: [<] [Back To Menu] [>]
+    // Bottom row: [<] [>]; the header's back arrow goes back to the menu
     lv_obj_t* r = lv_obj_create(overlay());
     lv_obj_remove_style_all(r);
     lv_obj_set_size(r, lv_pct(100), menu_btn_h());
@@ -341,10 +326,10 @@ void how_to_play(void (*back)(), int page)
     lv_obj_set_scrollable(r, false);
     lv_obj_set_ignore_layout(r, true);
     lv_obj_align(r, LV_ALIGN_BOTTOM_MID, 0, 0);
-    help_key(r, LV_SYMBOL_LEFT, -1, false, page > 0);
-    lv_obj_t* mid = help_key(r, "Back To Menu", 0, true, true);
-    lv_obj_add_state(mid, LV_STATE_CHECKED);
-    help_key(r, LV_SYMBOL_RIGHT, 1, false, page + 1 < n);
+    // [<] [>]; the header's arrow goes back to the menu
+    help_key(r, LV_SYMBOL_LEFT, -1, true, page > 0);
+    help_key(r, LV_SYMBOL_RIGHT, 1, true, page + 1 < n);
+    overlay_back(help_cb, 0);
 
 #ifdef CYD_PREVIEW
     // Every page must fit without scrolling: report text running into the keys

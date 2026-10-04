@@ -100,7 +100,7 @@ void update_status()
     lv_label_set_text(bar.left, t);
     if (g.solved())         snprintf(s, sizeof s, "Solved!");
     else if (clock_.paused) snprintf(s, sizeof s, "Paused");
-    else                    snprintf(s, sizeof s, "%s", kLevels[g.level]);
+    else                    s[0] = 0;
     kit::top_bar_status(bar, s);
     lv_obj_set_hidden(again_k, !g.solved());
     lv_obj_set_hidden(fill_k, g.solved());

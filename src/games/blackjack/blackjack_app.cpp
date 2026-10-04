@@ -186,18 +186,18 @@ void update_status()
 {
     if (!bar.center || !S) return;
     const Game& g = S->g;
-    char c[24], s[48];
+    char c[24], s[48], sh[24] = "";     // sh: shorter, when the header is tight
     snprintf(c, sizeof c, "$%ld", long(g.chips));
     lv_label_set_text(bar.left, c);
-    if (g.phase == Phase::Playing)   snprintf(s, sizeof s, "Hit or stand?");
-    else if (revealing())            snprintf(s, sizeof s, "Dealer plays...");
+    if (g.phase == Phase::Playing)   { snprintf(s, sizeof s, "Hit or stand?"); snprintf(sh, sizeof sh, "Your move"); }
+    else if (revealing())            { snprintf(s, sizeof s, "Dealer plays..."); snprintf(sh, sizeof sh, "Dealer..."); }
     else if (g.phase == Phase::Done) {
         const long n = long(g.net);
-        if (n > 0)       snprintf(s, sizeof s, "You win $%ld", n);
-        else if (n < 0)  snprintf(s, sizeof s, "You lose $%ld", -n);
+        if (n > 0)       { snprintf(s, sizeof s, "You win $%ld", n); snprintf(sh, sizeof sh, "+$%ld", n); }
+        else if (n < 0)  { snprintf(s, sizeof s, "You lose $%ld", -n); snprintf(sh, sizeof sh, "-$%ld", -n); }
         else             snprintf(s, sizeof s, "Even");
-    } else                           snprintf(s, sizeof s, "Place your bet");
-    kit::top_bar_status(bar, s);
+    } else                           { snprintf(s, sizeof s, "Place your bet"); snprintf(sh, sizeof sh, "Your bet"); }
+    kit::top_bar_status(bar, s, sh[0] ? sh : nullptr);
     update_keys();
     lv_obj_invalidate(table);
 }
@@ -329,7 +329,7 @@ void update_keys()
 void build()
 {
     kit::screen_begin();
-    bar = kit::top_bar([](lv_event_t*) { open_menu(); });
+    bar = kit::top_bar([](lv_event_t*) { open_menu(); }, 2);
     const Metrics& m = metrics();
     lv_obj_t* scr = lv_screen_active();
     const int pad = m.large ? 8 : 4, gap = m.large ? 8 : 6;

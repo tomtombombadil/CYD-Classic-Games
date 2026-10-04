@@ -113,6 +113,7 @@ void update_status()
     twoplayer::format_time(t, sizeof t, S.seconds);
     lv_label_set_text(bar.left, t);
     char st[40];
+    const char* short_st = nullptr;     // when the header has no room for it
     const int r = G.result();
     if (wl()) {
         net::Link* L = link();
@@ -123,8 +124,8 @@ void update_status()
         else if (L->end_reason() == End::PeerForfeited) snprintf(st, sizeof st, "You win!");
         else if (L->end_reason() == End::YouForfeited)  snprintf(st, sizeof st, "Forfeited");
         else if (L->ended())           snprintf(st, sizeof st, "Game ended");
-        else if (!L->up(now_ms) || L->peer_away()) snprintf(st, sizeof st, "Waiting for %s...", peer());
-        else if (G.turn() == S.human_side) snprintf(st, sizeof st, "Your turn (%s)", side_name(S.human_side));
+        else if (!L->up(now_ms) || L->peer_away()) { snprintf(st, sizeof st, "Waiting for %s...", peer()); short_st = "Waiting..."; }
+        else if (G.turn() == S.human_side) { snprintf(st, sizeof st, "Your turn (%s)", side_name(S.human_side)); short_st = "Your turn"; }
         else                           snprintf(st, sizeof st, "%s's turn", peer());
     } else if (S.mode == Mode::Computer) {
         if (r == 2)                    snprintf(st, sizeof st, "Draw");
@@ -132,14 +133,14 @@ void update_status()
         else if (r >= 0)               snprintf(st, sizeof st, "Computer wins");
         else if (clock_.paused)        snprintf(st, sizeof st, "Paused");
         else if (computer_to_move())   snprintf(st, sizeof st, start_failed ? "Low on memory..." : "Thinking...");
-        else                           snprintf(st, sizeof st, "Your turn (%s)", side_name(S.human_side));
+        else                           { snprintf(st, sizeof st, "Your turn (%s)", side_name(S.human_side)); short_st = "Your turn"; }
     } else {
         if (r == 2)                    snprintf(st, sizeof st, "Draw");
         else if (r >= 0)               snprintf(st, sizeof st, "%s wins!", side_name(r));
         else if (clock_.paused)        snprintf(st, sizeof st, "Paused");
         else                           snprintf(st, sizeof st, "%s's turn", side_name(G.turn()));
     }
-    kit::top_bar_status(bar, st);
+    kit::top_bar_status(bar, st, short_st);
 
     if (info_l) {
         char in[80], extra[48] = "", note[48] = "";
@@ -379,6 +380,13 @@ void attach(const Game& g)
 {
     G = g;
     attached = true;
+    // The header's back arrow leaves the game; in a wireless game that is
+    // still going it forfeits (Tom: going back may cost you the game)
+    set_game_back_hook([]() -> bool {
+        if (!attached || !wl_live()) return false;
+        forfeit();
+        return true;
+    });
 }
 
 void build_chrome(int* top, int* bottom)
@@ -454,6 +462,7 @@ void detach()
     bar = kit::TopBar{};
     info_l = again_k = done_k = nullptr;
     attached = false;
+    set_game_back_hook(nullptr);
 }
 
 void closed()

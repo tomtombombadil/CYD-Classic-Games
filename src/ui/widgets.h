@@ -14,8 +14,10 @@ namespace ui {
 // ---- Screen size -------------------------------------------------------------
 // Read from the LVGL display; call metrics_update() before building a screen.
 struct Metrics {
-    int  w = 0, h = 0;
+    int  w = 0, h = 0;                 // h = the height under the header bar (sysbar.h)
     bool large = false;                // 320-px-wide screens (3.5"/4.0")
+    int  top = 0;                      // the header bar's height: screens start there
+    int  full_h = 0;                   // the whole panel
 };
 void           metrics_update();
 const Metrics& metrics();
@@ -41,7 +43,8 @@ const lv_font_t* bar_font();
 const lv_font_t* title_font();
 
 // ---- Overlays ------------------------------------------------------------------
-// A full-screen panel on the top layer, flex column, with a title. Only one
+// A full-screen panel on the top layer (under the header bar, which shows
+// its title), flex column. Only one
 // is open at a time; opening one closes the previous. `on_close` (optional)
 // runs when it closes, e.g. to stop a timer the overlay uses.
 lv_obj_t* overlay_begin(const char* title, void (*on_close)() = nullptr);
@@ -54,7 +57,12 @@ lv_obj_t* overlay_button(lv_obj_t* parent, const char* text, lv_event_cb_t cb, i
 void      overlay_pair(const char* a, lv_event_cb_t cb_a, intptr_t ida,
                        const char* b, lv_event_cb_t cb_b, intptr_t idb);
 // A primary button pinned to the bottom of the overlay (outside the column flow)
+// A key named "Back" is not drawn: the header bar's arrow does it (Tom,
+// 2026-10-04: no big Back keys), and the same goes for overlay_button(overlay(), "Back", ...).
 lv_obj_t* overlay_bottom_button(const char* text, lv_event_cb_t cb, intptr_t user);
+// What the header's back arrow does on this page: runs cb(user). Returns an
+// invisible object at the page's bottom (others may align to it).
+lv_obj_t* overlay_back(lv_event_cb_t cb, intptr_t user);
 void      close_overlays();
 // The last row of every game's ☰ menu (Tom's layout): "Exit Menu" bottom
 // left (primary), "Exit Game" bottom right, pinned to the bottom.

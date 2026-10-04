@@ -66,7 +66,9 @@ void session_finished();
 void back_after_game(const char* note);
 
 // ---- Screens ----------------------------------------------------------------------------------
-// Wireless Play; `back` runs on its Back key (nullptr = just close)
+// Play settings (Settings > Play, the wifi icon, a game's Wireless key):
+// the stylus hand, Play Mode 1P / 2P and, in 2P, Find Players, Games I'll
+// Play, Change Name. `back` runs on the header's back arrow (nullptr = close).
 void open_menu(void (*back)() = nullptr);
 // The picker's row: "Off", "On", "2 nearby" or "Playing"
 void picker_status(char* buf, size_t cap);
@@ -74,5 +76,11 @@ bool available();
 // The picker's row label to keep current (nullptr when it goes)
 void set_picker_label(lv_obj_t* label);
 void debug_state(char* buf, size_t cap);    // one line for tests and the log
+// The header bar's icons (sysbar.*): wifi -1 = off (1P), 0 = on but no
+// signal (just the dot), 1-3 bars; 2P 1 = a wireless game going or paused
+int  wifi_level();
+int  two_player_state();
+void resume_session();                      // the 2P icon: open that game
+void set_two_player(bool on);               // Play Mode 1P / 2P (tests)
 
 } // namespace wplay

@@ -11,16 +11,18 @@
 namespace kit {
 
 // ---- Top bar ----------------------------------------------------------------------
-// Left: small info (clock or mode), center: status, right: ☰.
+// The game's part of the header bar (ui/sysbar.*): left = small info (the
+// clock), center = status; the bar's gear opens menu_cb (the game's menu).
 struct TopBar {
     lv_obj_t* left   = nullptr;
     lv_obj_t* center = nullptr;
-    int       h      = 0;          // height incl. margin; content starts below
-    int       text_y = 0;          // y of the labels (re-centre `center` with it)
+    int       h      = 0;          // the screen's content starts at this y
 };
-// Set the center text and keep it centred
-void top_bar_status(const TopBar& t, const char* text);
-TopBar top_bar(lv_event_cb_t menu_cb);
+// The status; `short_text` if the full one doesn't fit
+void top_bar_status(const TopBar& t, const char* text, const char* short_text = nullptr);
+// show_left (ui::sysbar_game): 0 = hidden (games may still write it),
+// 1 = while there's room (Minesweeper's clock), 2 = always (chips)
+TopBar top_bar(lv_event_cb_t menu_cb, int show_left = 0);
 
 // The screen, cleaned and painted for a new layout.
 lv_obj_t* screen_begin();
@@ -78,7 +80,7 @@ void menu_solo(const char* title, const char* const levels[3], const MenuHandler
 
 // ---- How To Play ----------------------------------------------------------------------
 // The open game's help pages (games.def / <id>_help.cpp), one per screen:
-// heading with "2 / 4", the text, and [<] [Back To Menu] [>] at the bottom.
+// heading with "2 / 4", the text, and [<] [>] at the bottom; the header's back arrow returns to the menu.
 // `back` reopens the game's menu.
 void how_to_play(void (*back)(), int page = 0);
 // The standard menu row that opens it (full width, above Stats | Settings);

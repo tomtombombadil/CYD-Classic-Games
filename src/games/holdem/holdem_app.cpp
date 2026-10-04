@@ -328,7 +328,7 @@ void update_status()
     char s[48];
     snprintf(s, sizeof s, "%s", "");
     if (g.hand_over()) {
-        if (g.hand_no == 0) snprintf(s, sizeof s, "%s table", kLevels[g.level]);
+        if (g.hand_no == 0) snprintf(s, sizeof s, "Ready to deal");
         else {
             int best = 0;
             for (int i = 1; i < kSeats; ++i) if (g.seat[i].won > g.seat[best].won) best = i;
@@ -340,7 +340,7 @@ void update_status()
     } else {
         snprintf(s, sizeof s, "%s is thinking", kNames[g.to_act]);
     }
-    kit::top_bar_status(bar, s);
+    kit::top_bar_status(bar, s, g.to_act == 0 && !g.hand_over() ? "Your turn" : nullptr);
     char left[16];
     if (g.hand_no) snprintf(left, sizeof left, "#%lu", (unsigned long)g.hand_no);
     else left[0] = 0;

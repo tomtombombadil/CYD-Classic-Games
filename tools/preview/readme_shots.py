@@ -51,6 +51,8 @@ SHOTS = {
     "s_light_40_help_twenty48_2": "small_help",
     "s_light_15_lightswitch": "small_lightswitch",
     "s_dark_0_settings": "small_settings_dark",
+    "s_dark_0_settings_Display": "small_settings_display",
+    "s_dark_0_settings_Sound": "small_settings_sound",
     "s_custom_0_editor": "small_theme_editor",
     # 320x480 boards (3.5" and 4.0")
     "l_light_0_picker": "large_picker_light",

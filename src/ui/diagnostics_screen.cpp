@@ -256,9 +256,7 @@ void diagnostics_open()
 {
     const Shell& H = shell();
     free_text();
-    overlay_begin("Diagnostics");
-    // Touch: test and recalibrate side by side; then the log
-    overlay_pair(H.raw_touch ? "Touch Test" : nullptr, key_cb, kTouch, "Recalibrate", key_cb, kRecal);
+    overlay_begin("About");
     if (H.log_read) overlay_pair("Device Log", key_cb, kLog, "Send Log", key_cb, kSend);
 
     char info[200];
@@ -336,10 +334,10 @@ void device_log_open(int page)
         snprintf(pg, sizeof pg, "Page %d / %d, newest at the end", page + 1, pages ? pages : 1);
         lv_label_set_text(sub, pg);
     }
-    key(nav, LV_SYMBOL_LEFT, kPrev, false, page > 0);
-    lv_obj_t* back = key(nav, "Back", kBack, true, true);
-    lv_obj_add_state(back, LV_STATE_CHECKED);
-    key(nav, LV_SYMBOL_RIGHT, kNext, false, page + 1 < pages);
+    // [<] [>]; the header's arrow goes back
+    key(nav, LV_SYMBOL_LEFT, kPrev, true, page > 0);
+    key(nav, LV_SYMBOL_RIGHT, kNext, true, page + 1 < pages);
+    overlay_back(key_cb, kBack);
 }
 
 } // namespace ui

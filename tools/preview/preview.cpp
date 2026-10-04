@@ -14,6 +14,7 @@
 #include <vector>
 #include "games/common/match.h"
 #include "games/common/wplay.h"
+#include "ui/sysbar.h"
 #include "games/common/puzzle_stats.h"
 #include "games/common/two_player.h"
 #include "games/lightswitch/lightswitch_core.h"
@@ -326,17 +327,8 @@ static bool press_key_prefix(lv_obj_t* o, const char* prefix)
     return ok;
 }
 // The solo menu of whatever game is open: its ☰ key is on the screen; tap it
-[[maybe_unused]] static void kit_preview_menu()
-{
-    lv_obj_t* scr = lv_screen_active();
-    for (uint32_t i = 0; i < lv_obj_get_child_count(scr); ++i) {
-        lv_obj_t* c = lv_obj_get_child(scr, (int32_t)i);
-        if (lv_obj_get_child_count(c) == 3 && lv_obj_is_clickable(c)) {   // the 3 bars
-            lv_obj_send_event(c, LV_EVENT_CLICKED, nullptr);
-            return;
-        }
-    }
-}
+// The game's menu: the header's gear
+[[maybe_unused]] static void kit_preview_menu() { ui::sysbar_gear(); }
 
 [[maybe_unused]] static void stage_sudoku_save()
 {
@@ -406,9 +398,10 @@ static bool fake_radio_send(const uint8_t* d, size_t n)
     }
     return true;
 }
-static size_t fake_radio_recv(uint8_t mac[6], uint8_t* buf, size_t cap)
+static size_t fake_radio_recv(uint8_t mac[6], uint8_t* buf, size_t cap, int8_t* rssi)
 {
     if (to_preview.empty()) return 0;
+    if (rssi) *rssi = -58;
     FakePacket p = to_preview.front();
     to_preview.erase(to_preview.begin());
     memcpy(mac, p.from.b, 6);
@@ -487,7 +480,7 @@ static void fake_boards_tick(uint32_t now)
 //   tick <ms>         run that long; prints each packet sent as "P <hex>"
 //   rx <mac> <hex>    a packet arrives (delivered on the next tick)
 //   press <prefix>    tap the key whose label starts so (overlay or screen)
-//   wplay | home | menu | open <game id> | move <n> | chess <e2e4>
+//   wplay | twop 0/1 | back | icons | home | menu | open <game id> | move <n> | chess <e2e4>
 //   dump              every label on screen: "D text | text | ..."
 //   may               "M 1" if this player may move
 //   stats             the stats lines recorded so far: "R <game> <line>"
@@ -601,8 +594,9 @@ static int agent_main(int argc, char** argv)
         agent_out.push_back(std::vector<uint8_t>(d, d + n));
         return true;
     };
-    sh.radio_recv = [](uint8_t m[6], uint8_t* buf, size_t cap) -> size_t {
+    sh.radio_recv = [](uint8_t m[6], uint8_t* buf, size_t cap, int8_t* rssi) -> size_t {
         if (!agent_radio || agent_in.empty()) return 0;
+        if (rssi) *rssi = -55;
         auto pk = agent_in.front();
         agent_in.erase(agent_in.begin());
         memcpy(m, pk.first.b, 6);
@@ -637,6 +631,8 @@ static int agent_main(int argc, char** argv)
             printf("K %d\n", press_prefix_anywhere(arg.c_str()) ? 1 : 0);
             run(20);
         } else if (cmd == "wplay") { wplay::open_menu(); run(20); }
+        else if (cmd == "twop") { wplay::set_two_player(arg == "1"); run(20); }
+        else if (cmd == "back") { ui::sysbar_back(); run(20); }
         else if (cmd == "home") { ui::app_go_home_now(); run(20); }
         else if (cmd == "menu") { kit_preview_menu(); run(20); }
         else if (cmd == "open") { ui::app_open_game_now(games::find(arg.c_str())); run(20); }
@@ -669,6 +665,7 @@ static int agent_main(int argc, char** argv)
             printf("B %08x %zu\n", h, f.size());
         } else if (cmd == "dump") {
             std::string o;
+            dump_labels(lv_layer_sys(), o);      // the header bar
             dump_labels(lv_screen_active(), o);
             dump_labels(lv_layer_top(), o);
             printf("D %s\n", o.c_str());
@@ -676,6 +673,8 @@ static int agent_main(int argc, char** argv)
             char b[512];
             wplay::debug_state(b, sizeof b);
             printf("W %s\n", b);
+        } else if (cmd == "icons") {           // the header's 2P and wifi icons
+            printf("I 2p=%d wifi=%d\n", wplay::two_player_state(), wplay::wifi_level());
         } else if (cmd == "may") {
             printf("M %d\n", match::human_may_move() ? 1 : 0);
         } else if (cmd == "stats") {
@@ -779,10 +778,15 @@ int main(int argc, char** argv)
         shot(out + (t ? "_dark" : "_light") + "_0_category2.ppm");
     }
     ui::app_begin(sh, played, themes);
-    ui::picker_open_menu();
-    shot(out + "_dark_0_picker_menu.ppm");
-    ui::settings_open(ui::picker_open_menu);
+    ui::settings_open(nullptr);                 // the header's gear
     shot(out + "_dark_0_settings.ppm");
+    for (const char* page : {"Display", "Sound", "Touch", "Play", "About"}) {
+        ui::settings_open(nullptr);
+        press_overlay_key(page);
+        run(20);
+        shot(out + "_dark_0_settings_" + page + ".ppm");
+    }
+    ui::settings_open_display();
     ui::theme_open();
     shot(out + "_dark_0_theme.ppm");
     ui::app_set_theme(ui::Theme::Custom1);
@@ -1764,7 +1768,7 @@ int main(int argc, char** argv)
         wplay::open_menu();
         run(50);
         shot(out + "_light_80_wl_off.ppm");
-        press_overlay_key("Available To Play: Off");
+        wplay::set_two_player(true);                  // Play Mode 1P -> 2P
         run(1500);
         shot(out + "_light_80_wl_main.ppm");
         press_overlay_prefix("Games I'll Play");
@@ -1773,7 +1777,7 @@ int main(int argc, char** argv)
         run(50);
         shot(out + "_light_80_wl_games.ppm");
         press_overlay_key("Mancala");
-        press_overlay_key("Back");
+        ui::sysbar_back();
         press_overlay_prefix("Find Players");
         run(200);
         shot(out + "_light_80_wl_players.ppm");
@@ -1829,7 +1833,7 @@ int main(int argc, char** argv)
         net_hook = nullptr;
         for (FakeBoard& b : fake_boards) b.on = b.in_game = false;
         wplay::open_menu();
-        press_overlay_key("Available To Play: On");   // off again for the shots that follow
+        wplay::set_two_player(false);                 // 1P again for the shots that follow
         ui::close_overlays();
         run(200);
         files.erase("chess");

@@ -98,7 +98,7 @@ void update_status()
     else if (clock_.paused) snprintf(s, sizeof s, "Paused");
     else if (hint_cell >= 0) snprintf(s, sizeof s, "Tap Hint to press");
     else                    snprintf(s, sizeof s, "Moves %u  Par %u", (unsigned)G->p.moves, (unsigned)G->p.par);
-    kit::top_bar_status(bar, s);
+    kit::top_bar_status(bar, s, hint_cell >= 0 && !G->p.solved() ? "Tap Hint" : nullptr);
     char in[48];
     if (G->p.solved()) snprintf(in, sizeof in, "%s solved in %u (par %u)", kLevels[G->level],
                                 (unsigned)G->p.moves, (unsigned)G->p.par);

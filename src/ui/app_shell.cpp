@@ -7,6 +7,7 @@
 #include "games/common/wplay.h"
 #include "games/registry.h"
 #include "shell.h"
+#include "sysbar.h"
 #include "theme.h"
 #include "widgets.h"
 
@@ -111,16 +112,7 @@ void category_cb(lv_event_t* e)
     rebuild_later();
 }
 
-void wireless_cb(lv_event_t*) { wplay::open_menu(); }
-void wireless_label_gone(lv_event_t*) { wplay::set_picker_label(nullptr); }
 
-void back_cb(lv_event_t*)
-{
-    cat_open = -1;
-    rebuild_later();
-}
-
-void menu_cb(lv_event_t* e);
 
 lv_obj_t* label(lv_obj_t* parent, const char* text, const lv_font_t* f, lv_color_t c)
 {
@@ -207,41 +199,14 @@ void screen_begin()
     lv_obj_set_scrollable(scr, false);
 }
 
-// Title bar: optional back key, title, ☰. Returns the y below it.
+// The header bar (sysbar.*) carries the title and the back arrow; the
+// picker's content starts right under it. Returns the y to start at.
+void picker_back() { cat_open = -1; rebuild_later(); }
+
 int title_bar(const char* title, bool back, const PickerGeom& g)
 {
-    const Metrics& m = metrics();
-    lv_obj_t* scr = lv_screen_active();
-    const int y = m.large ? 2 : 1;
-    int tx = g.pad;
-    if (back) {
-        const int bw = g.top_h * 3 / 2;
-        lv_obj_t* b = make_key(scr, bw, g.top_h, back_cb, 0);
-        lv_obj_set_pos(b, m.large ? 2 : 1, y);
-        key_label(b, LV_SYMBOL_LEFT, menu_font());
-        tx = bw + (m.large ? 10 : 6);
-    }
-    lv_obj_t* t = label(scr, title, title_font(), pal().ink);
-    const int ty = y + (g.top_h - lv_font_get_line_height(title_font())) / 2;
-    lv_obj_set_pos(t, tx, ty);
-    if (!back && H.firmware_version) {
-        // "Classic Games v1.2.0": the version in small type after the title,
-        // on the same baseline, in the largest size that clears the ☰ key
-        const int vx = tx + text_width(title, title_font()) + (m.large ? 8 : 5);
-        const int room = m.w - (m.large ? 2 : 1) - g.top_h * 3 / 2 - 4 - vx;
-        const lv_font_t* const sizes[3] = {menu_font(), &lv_font_montserrat_14, &lv_font_montserrat_12};
-        const lv_font_t* vf = sizes[2];
-        for (const lv_font_t* f : sizes)
-            if (text_width(H.firmware_version, f) <= room) { vf = f; break; }
-        lv_obj_t* v = label(scr, H.firmware_version, vf, pal().muted);
-        lv_obj_set_pos(v, vx,
-                       ty + (lv_font_get_line_height(title_font()) - title_font()->base_line)
-                          - (lv_font_get_line_height(vf) - vf->base_line));
-    }
-    const int hb_w = g.top_h * 3 / 2;
-    lv_obj_t* hb = make_hamburger(scr, hb_w, g.top_h, menu_cb, 0);
-    lv_obj_set_pos(hb, m.w - (m.large ? 2 : 1) - hb_w, y);
-    return y + g.top_h + g.gap;
+    sysbar_screen(title, back ? picker_back : nullptr, back ? nullptr : H.firmware_version);
+    return g.gap;
 }
 
 void build_category_list()
@@ -252,12 +217,9 @@ void build_category_list()
     int y = title_bar("Classic Games", false, g);
     y = make_continue(scr, y, g);
 
-    // The categories, then Wireless Play (when the board has a radio)
-    const bool radio = wplay::radio_present();
     const int n = games::kCategories;
-    const int rows = n + (radio ? 1 : 0);
     const int gap = m.large ? 8 : 5;
-    int key_h = (m.h - g.pad - y - (rows - 1) * gap) / rows;
+    int key_h = (m.h - g.pad - y - (n - 1) * gap) / n;
     const int cap = m.large ? 58 : 40;
     if (key_h > cap) key_h = cap;
     const lv_font_t* f = m.large ? &lv_font_montserrat_20 : &lv_font_montserrat_20;
@@ -275,23 +237,6 @@ void build_category_list()
         lv_obj_align(r, LV_ALIGN_RIGHT_MID, m.large ? -14 : -10, 0);
         if (!count) set_dim(k, true);
         y += key_h + gap;
-    }
-    if (radio) {
-        lv_obj_t* k = make_key(scr, m.w - 2 * g.pad, key_h, wireless_cb, 0);
-        lv_obj_set_pos(k, g.pad, y);
-        lv_obj_t* l = label(k, "Wireless Play", f, pal().ink);
-        lv_obj_align(l, LV_ALIGN_LEFT_MID, m.large ? 14 : 10, 0);
-        char st[48];
-        wplay::picker_status(st, sizeof st);
-        lv_obj_t* r = label(k, st, fc, pal().muted);
-        lv_obj_align(r, LV_ALIGN_RIGHT_MID, m.large ? -14 : -10, 0);
-        // The status follows the radio (nearby boards, a game going)
-        lv_obj_add_event_cb(r, [](lv_event_t* e) {
-            lv_obj_t* o = lv_event_get_target_obj(e);
-            lv_obj_align(o, LV_ALIGN_RIGHT_MID, metrics().large ? -14 : -10, 0);
-        }, LV_EVENT_SIZE_CHANGED, nullptr);
-        lv_obj_add_event_cb(r, wireless_label_gone, LV_EVENT_DELETE, nullptr);
-        wplay::set_picker_label(r);
     }
 }
 
@@ -341,20 +286,6 @@ void picker_build()
     else { cat_open = -1; build_category_list(); }
 }
 
-// ---- Picker menu ------------------------------------------------------------------
-enum MenuAction : intptr_t { kOpenMenu, kSettings, kClose };
-
-void back_to_picker_menu() { picker_open_menu(); }
-
-void menu_cb(lv_event_t* e)
-{
-    switch (reinterpret_cast<intptr_t>(lv_event_get_user_data(e))) {
-        case kOpenMenu: picker_open_menu(); break;
-        case kSettings: settings_open(back_to_picker_menu); break;
-        case kClose:    close_overlays(); break;
-    }
-}
-
 // ---- Switching ------------------------------------------------------------------------
 void close_current()
 {
@@ -366,6 +297,15 @@ void close_current()
         current = -1;
     }
     lv_obj_clean(lv_screen_active());
+}
+
+// The header's back arrow in a game: leave it (a wireless game going
+// forfeits - the game's hook says so and does it)
+bool (*game_back_hook)() = nullptr;
+void game_back()
+{
+    if (game_back_hook && game_back_hook()) return;
+    app_go_home();
 }
 
 void open_async(void* p) { app_open_game_now(static_cast<int>(reinterpret_cast<intptr_t>(p))); }
@@ -420,12 +360,14 @@ void app_begin(const Shell& shell, const UiSettings& settings, const CustomTheme
     current = -1;
     cat_open = -1;
     page = 0;
+    sysbar_build();
     picker_build();
 }
 
 void app_tick(uint32_t now_ms)
 {
     wplay::tick(now_ms);                 // wireless play runs everywhere: offers pop up anywhere
+    sysbar_tick(now_ms);
     if (current < 0) return;
     const games::GameOps* ops = games::get(current).ops;
     if (ops && ops->tick) ops->tick(now_ms);
@@ -451,6 +393,7 @@ void app_open_game_now(int index)
     }
     current = index;
     metrics_update();
+    sysbar_screen(gi.title, game_back);
     log_event("Open %s", gi.id);
     if (gi.ops && gi.ops->open) gi.ops->open();
 }
@@ -471,6 +414,7 @@ void app_save_current()
 
 void app_theme_changed()
 {
+    sysbar_build();
     if (current >= 0) {
         const games::GameOps* ops = games::get(current).ops;
         if (ops && ops->restyle) ops->restyle();
@@ -479,16 +423,9 @@ void app_theme_changed()
     }
 }
 
-void picker_open_menu()
-{
-    overlay_begin("CYD Classic Games");
-    overlay_button(overlay(), "Settings", menu_cb, kSettings);
-    overlay_button(overlay(), "Back", menu_cb, kClose, true);
-    char info[128];
-    snprintf(info, sizeof info, "%s, firmware %s", H.board_name ? H.board_name : "",
-             H.firmware_version ? H.firmware_version : "");
-    overlay_text(info, true);
-}
+void picker_open_menu() { settings_open(nullptr); }   // the gear does it now
+
+void set_game_back_hook(bool (*hook)()) { game_back_hook = hook; }
 
 void picker_open_category(int category)
 {

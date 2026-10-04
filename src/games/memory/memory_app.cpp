@@ -96,7 +96,7 @@ void update_status()
     char t[16], s[40];
     twoplayer::format_time(t, sizeof t, S->seconds);
     lv_label_set_text(bar.left, t);
-    if (g.solved())         snprintf(s, sizeof s, "All found in %u turns", (unsigned)g.turns);
+    if (g.solved())         snprintf(s, sizeof s, "Done in %u turns", (unsigned)g.turns);
     else if (clock_.paused) snprintf(s, sizeof s, "Paused");
     else                    snprintf(s, sizeof s, "Pairs %d of %d", g.found, g.pairs());
     kit::top_bar_status(bar, s);

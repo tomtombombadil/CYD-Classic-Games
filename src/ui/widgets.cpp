@@ -1,6 +1,8 @@
 #include "widgets.h"
 
 #include <cstdio>
+#include <cstring>
+#include "sysbar.h"
 #include "theme.h"
 
 namespace ui {
@@ -24,8 +26,14 @@ void metrics_update()
 {
     lv_display_t* d = lv_display_get_default();
     M.w = lv_display_get_horizontal_resolution(d);
-    M.h = lv_display_get_vertical_resolution(d);
+    M.full_h = lv_display_get_vertical_resolution(d);
     M.large = M.w >= 300;
+    // The header bar (sysbar.*) takes the top: screens and pages start
+    // under it (a top padding), and h is what is left for them
+    M.top = sysbar_height();
+    M.h = M.full_h - M.top;
+    lv_obj_set_style_pad_top(lv_screen_active(), M.top, 0);
+    lv_obj_set_style_pad_top(lv_layer_top(), M.top, 0);
 }
 
 const Metrics& metrics() { return M; }
@@ -150,16 +158,28 @@ lv_obj_t* overlay_begin(const char* title, void (*on_close)())
     lv_obj_set_style_bg_color(o, pal().screen, 0);
     lv_obj_set_style_bg_opa(o, LV_OPA_COVER, 0);
     lv_obj_set_style_pad_all(o, pad(), 0);
+    lv_obj_set_style_pad_top(o, M.large ? 10 : 6, 0);
     lv_obj_set_style_pad_row(o, M.large ? 10 : 6, 0);
     lv_obj_set_flex_flow(o, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_clickable(o, true);      // swallow taps behind it
     lv_obj_set_scrollable(o, false);
-
-    lv_obj_t* t = lv_label_create(o);
-    lv_label_set_text(t, title);
-    lv_obj_set_style_text_font(t, title_font(), 0);
-    lv_obj_set_style_text_color(t, pal().ink, 0);
+    // The title goes in the header bar; its back arrow closes the page
+    // unless the page names a back key (overlay_back)
+    sysbar_overlay(title, nullptr);
     return o;
+}
+
+lv_obj_t* overlay_back(lv_event_cb_t cb, intptr_t user)
+{
+    // No key on the page: the header's arrow presses this (invisible) one
+    lv_obj_t* k = lv_obj_create(overlay_obj);
+    lv_obj_remove_style_all(k);
+    lv_obj_set_size(k, lv_pct(100), 0);
+    lv_obj_set_ignore_layout(k, true);
+    lv_obj_align(k, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_add_event_cb(k, cb, LV_EVENT_CLICKED, reinterpret_cast<void*>(user));
+    sysbar_page_back(k);
+    return k;
 }
 
 lv_obj_t* overlay()      { return overlay_obj; }
@@ -179,6 +199,7 @@ lv_obj_t* overlay_text(const char* s, bool muted)
 lv_obj_t* overlay_button(lv_obj_t* parent, const char* text, lv_event_cb_t cb, intptr_t user,
                          bool primary)
 {
+    if (parent == overlay_obj && strcmp(text, "Back") == 0) return overlay_back(cb, user);
     lv_obj_t* b = make_key(parent, lv_pct(100), menu_btn_h(), cb, user);
     if (primary) lv_obj_add_state(b, LV_STATE_CHECKED);
     key_label(b, text, menu_font());
@@ -207,6 +228,7 @@ void overlay_pair(const char* a, lv_event_cb_t cb_a, intptr_t ida,
 
 lv_obj_t* overlay_bottom_button(const char* text, lv_event_cb_t cb, intptr_t user)
 {
+    if (strcmp(text, "Back") == 0) return overlay_back(cb, user);   // the header's arrow
     lv_obj_t* b = make_key(overlay_obj, lv_pct(100), menu_btn_h(), cb, user);
     lv_obj_add_state(b, LV_STATE_CHECKED);
     key_label(b, text, menu_font());
@@ -229,6 +251,7 @@ void overlay_exit_row(lv_event_cb_t cb, intptr_t exit_menu_id, intptr_t exit_gam
     lv_obj_set_flex_grow(a, 1);
     lv_obj_add_state(a, LV_STATE_CHECKED);
     key_label(a, "Exit Menu", menu_font());
+    sysbar_page_back(a);                       // the header's arrow = Exit Menu
     lv_obj_t* b = make_key(row, 10, menu_btn_h(), cb, exit_game_id);
     lv_obj_set_flex_grow(b, 1);
     key_label(b, "Exit Game", menu_font());
@@ -246,6 +269,7 @@ void close_overlays()
         // lives on the overlay being removed.
         lv_obj_delete_async(overlay_obj);
         overlay_obj = nullptr;
+        sysbar_overlay_closed();
     }
 }
 
