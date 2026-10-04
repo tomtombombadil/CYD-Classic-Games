@@ -496,7 +496,8 @@ void Link::send_status(uint32_t now, uint8_t extra)
 void Link::tick(uint32_t now)
 {
     // An ending this board made is repeated for a while, so the other board hears it
-    const bool saying_end = (ended_ == End::YouForfeited || ended_ == End::YouDone) && !linger_over(now);
+    const bool saying_end = (ended_ == End::YouForfeited || ended_ == End::YouDone || ended_ == End::YouLeft)
+                            && !linger_over(now);
     if (ended_ != End::None && !saying_end) return;
     if (int32_t(now - next_ms_) >= 0) send_status(now);
 }
@@ -649,6 +650,13 @@ void Link::forfeit(uint32_t now)
     send_status(now);
 }
 
+void Link::leave(uint32_t now)
+{
+    if (ended_ != End::None) return;
+    stop(End::YouLeft, now);
+    send_status(now);
+}
+
 void Link::done(uint32_t now)
 {
     if (ended_ != End::None) return;
@@ -688,7 +696,7 @@ bool Link::load(const uint8_t* buf, size_t len, const Air& air, uint32_t now)
     const uint8_t f = r.u8();
     l.inviter_ = f & 1;
     const uint8_t end = uint8_t(f >> 1);
-    if (end > uint8_t(End::OutOfStep)) return false;
+    if (end > uint8_t(End::YouLeft)) return false;
     l.ended_ = End(end);
     l.ended_ms_ = now - kLingerMs;            // an ending from before is said already
     l.game_no_ = r.u16();

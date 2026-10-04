@@ -386,11 +386,16 @@ In the game:
 
 - Each board shows the game from its own side; the other player's moves
   arrive by themselves, each checked against this board's own rules.
-- Out of range or switched off: "Waiting for Bob..." until the board is
-  heard again. **Exit Game** pauses the game (the other board shows "Bob
-  closed Chess for now"); the filled **2P** icon in the header (or Resume
-  on the Play page, or Continue on the first screen) carries on - even
-  after a restart.
+- Out of range: "Waiting for Bob..." until the board is heard again.
+  **Exit Game** pauses the game (the other board shows "Bob closed Chess
+  for now"); the filled **2P** icon in the header (or Resume on the Play
+  page, or Continue on the first screen) carries on.
+- A board that restarts drops its wireless game: nothing is recorded on
+  either board, and the other board shows "Ann's board ended this game".
+  Both are free to play again at once.
+- **Clear 2P Sessions** (Play page) is the way out of a wireless game that
+  can't go on - the other board gone for good, say. It ends the game
+  without recording it, on both boards.
 - **Forfeit Game** in the game's menu (the gear), or the header's **<**,
   ends it at once: a loss for you, a win for the other player, and both go
   on from there (you to the Play page).

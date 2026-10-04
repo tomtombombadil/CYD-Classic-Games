@@ -289,8 +289,24 @@ def scenario_offer_over_solo_game(A, B):
     shot(A, "done")
 
 
+def icons(board):
+    return board.cmd("icons")[0]
+
+
+def free_again(A, B, title):
+    """Both boards can start (and finish) a new game together."""
+    offer(A, B, title)
+    expect(A, "Your turn")
+    check("2p=1" in icons(A) and "2p=1" in icons(B), "%s: both 2P icons filled in the new game" % title)
+    A.cmd("menu")
+    A.press("Forfeit Game")
+    run(1500)
+    B.press("Wireless Play")
+    run(5000)
+
+
 def scenario_reboot(A, B):
-    print("A board restarts mid-game")
+    print("A board restarts mid-game: the session is cleared on both")
     A.cmd("wplay")
     A.press("Find Players")
     expect(A, B.name)
@@ -300,20 +316,56 @@ def scenario_reboot(A, B):
     B.press("Play")
     run(1500)
     tictactoe_moves(A, B, [0, 4])
-    # B switches off and on again: its saved session carries on
+    before_a = len(A.stats())
+    # B switches off and on again (Tom, 2026-10-04: a restart clears it)
     B.stop()
     run(2000)
     expect(A, "Waiting")
     B.start()
-    run(500)
+    before_b = len(B.stats())
+    run(3000)
+    check("2p=0" in icons(B), "B's 2P icon is empty after the restart")
+    expect(A, "%s's board ended this game" % B.name)
+    expect(A, "Game ended")
+    check(not A.may(), "A can't move in the ended game")
+    check("2p=0" in icons(A), "A's 2P icon is empty")
     B.cmd("wplay")
-    expect(B, "Resume Tic-Tac-Toe With " + A.name)
-    B.press("Resume")
-    run(2000)
-    expect(A, "Your turn (X)")
-    tictactoe_moves(A, B, [8, 2, 6, 3, 7])               # X: 0 8 6 7 - bottom row wins
-    expect(A, "You win!")
-    expect(B, "%s wins" % A.name)
+    check("Resume" not in B.dump(), "B has nothing to resume")
+    B.cmd("open tictactoe")
+    run(300)
+    expect(B, "Game ended")
+    check(not B.may(), "B can't move in the ended game")
+    check(len(A.stats()) == before_a and len(B.stats()) == before_b, "nothing recorded on either board")
+    A.cmd("home")
+    B.cmd("home")
+    run(1000)
+    free_again(A, B, "Tic-Tac-Toe")
+
+
+def scenario_clear(A, B):
+    print("Clear 2P Sessions while the other board is out of range")
+    offer(A, B, "FourConnect")
+    expect(A, "Your turn")
+    A.cmd("anymove")
+    run(500)
+    before_a, before_b = len(A.stats()), len(B.stats())
+    blocked.add(B)
+    run(4000)
+    expect(A, "Waiting")
+    A.cmd("wplay")
+    check(A.press("Clear 2P Sessions"), "A has a Clear 2P Sessions key")
+    run(300)
+    expect(A, "2P sessions cleared")
+    check("2p=0" in icons(A), "A's 2P icon is empty after clearing")
+    blocked.discard(B)
+    run(6000)                       # B's statuses get "gone" back
+    expect(B, "%s's board ended this game" % A.name)
+    check("2p=0" in icons(B), "B's 2P icon is empty")
+    check(len(A.stats()) == before_a and len(B.stats()) == before_b, "clearing records nothing")
+    A.cmd("home")
+    B.cmd("home")
+    run(1000)
+    free_again(A, B, "FourConnect")
 
 
 GAMES = [("fourconnect", "FourConnect"), ("tictactoe", "Tic-Tac-Toe"), ("reversi", "Reversi"),
@@ -489,6 +541,7 @@ def main():
         scenario_decline(A, B)
         scenario_offer_over_solo_game(A, B)
         scenario_reboot(A, B)
+        scenario_clear(A, B)
         scenario_paused_forfeit(A, B)
         scenario_crossed_offers(A, B)
         scenario_three_boards(A, B)

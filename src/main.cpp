@@ -25,6 +25,11 @@
 #define CYD_GAMES_BUILD ""         // git commit, for telling dev builds apart
 #endif
 
+// The main (loop) task's stack: 16 KB, not Arduino's 8 KB. LVGL's event
+// chains run deep (a wireless game starting: open -> build -> start ->
+// reset), and 8 KB overflowed - the board rebooted (2026-10-04).
+SET_LOOP_TASK_STACK_SIZE(16 * 1024);
+
 #ifndef CYD_ROTATION
 #define CYD_ROTATION 0             // 0 = portrait
 #endif
@@ -198,6 +203,23 @@ void setup()
     Serial.printf("[app] picker up, free heap %lu\n", (unsigned long)ESP.getFreeHeap());
 }
 
+// Logs the main task's stack once it gets tight (the least it has had
+// free), so a near-overflow shows in the device log before it bites
+static void stack_watch()
+{
+    static uint32_t next_ms = 0, logged = 16 * 1024;
+    const uint32_t now = millis();
+    if (int32_t(now - next_ms) < 0) return;
+    next_ms = now + 2000;
+    const uint32_t left = uxTaskGetStackHighWaterMark(nullptr);   // bytes on the ESP32
+    if (left < 4096 && left + 512 <= logged) {
+        logged = left;
+        char t[64];
+        snprintf(t, sizeof t, "Main stack tight: %lu bytes never used", (unsigned long)left);
+        device_log(t, true);
+    }
+}
+
 void loop()
 {
     const uint32_t wait_ms = lvgl_port_loop();
@@ -205,5 +227,6 @@ void loop()
     speaker_loop();
     device_log_loop();
     serial_commands();
+    stack_watch();
     delay(wait_ms < 5 ? wait_ms : 5);
 }

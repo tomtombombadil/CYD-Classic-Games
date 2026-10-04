@@ -491,7 +491,7 @@ void menu_pick(int id)
         stop_thinking();
         record_hand();
         const uint16_t rebuys = S->g.seat[0].rebuys;
-        S->g = Game{};
+        kit::renew(S->g);
         S->g.level = uint8_t(id);
         S->g.seat[0].rebuys = rebuys;
         S->recorded = 1;
@@ -512,7 +512,7 @@ void open()
 {
     S = new (std::nothrow) State();
     if (!S) { app_go_home(); return; }
-    if (!load(*S)) { S->g = Game{}; S->recorded = 1; }
+    if (!load(*S)) { kit::renew(S->g); S->recorded = 1; }
     thinking = false;
     next_at = 0;
     build();

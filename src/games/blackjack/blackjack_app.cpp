@@ -432,7 +432,7 @@ void menu_pick(int id)
     if (id == kit::kLevel0) {                  // New Game: a fresh 500 and a new shoe
         if (reveal_timer) { lv_timer_delete(reveal_timer); reveal_timer = nullptr; record_round(); }
         const uint16_t refills = S->g.refills;
-        S->g = Game{};
+        kit::renew(S->g);
         S->g.refills = refills;
         S->g.new_shoe(shell().random_seed ? shell().random_seed() : lv_tick_get());
         S->recorded = 1;
@@ -455,7 +455,7 @@ void open()
     S = new (std::nothrow) State();
     if (!S) { app_go_home(); return; }
     if (!load(*S)) {
-        S->g = Game{};
+        kit::renew(S->g);
         S->g.new_shoe(shell().random_seed ? shell().random_seed() : lv_tick_get());
         S->recorded = 1;
     }

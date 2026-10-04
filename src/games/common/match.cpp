@@ -68,13 +68,14 @@ void wireless_note(char* buf, size_t cap)
 {
     buf[0] = 0;
     net::Link* L = link();
-    if (!L) { snprintf(buf, cap, "Wireless game over. New games are in the menu"); return; }
+    if (!L) { snprintf(buf, cap, "This wireless game has ended. New Game is in the menu"); return; }
     switch (L->end_reason()) {
         case End::PeerForfeited: snprintf(buf, cap, "%s forfeited the game", peer()); return;
         case End::YouForfeited:  snprintf(buf, cap, "You forfeited the game"); return;
         case End::PeerDone:      snprintf(buf, cap, "%s is done playing. Thanks!", peer()); return;
         case End::YouDone:       snprintf(buf, cap, "Thanks for playing!"); return;
         case End::PeerGone:      snprintf(buf, cap, "%s's board ended this game", peer()); return;
+        case End::YouLeft:       snprintf(buf, cap, "This wireless game was cleared"); return;
         case End::OutOfStep:     snprintf(buf, cap, "The boards' games differ: it ended"); return;
         case End::None:          break;
     }
@@ -120,7 +121,7 @@ void update_status()
         if (r == 2)                    snprintf(st, sizeof st, "Draw");
         else if (r == S.human_side)    snprintf(st, sizeof st, "You win!");
         else if (r >= 0)               snprintf(st, sizeof st, "%s wins", peer());
-        else if (!L)                   snprintf(st, sizeof st, "Game over");
+        else if (!L)                   snprintf(st, sizeof st, "Game ended");
         else if (L->end_reason() == End::PeerForfeited) snprintf(st, sizeof st, "You win!");
         else if (L->end_reason() == End::YouForfeited)  snprintf(st, sizeof st, "Forfeited");
         else if (L->ended())           snprintf(st, sizeof st, "Game ended");
@@ -434,6 +435,9 @@ void restart_view()
         if (link()->ended() && handled_end != link()->session()) wl_ended(false);
     }
     if (take_wireless_start()) return;
+    // A session for this game that the game doesn't know about (it never
+    // switched to it - e.g. a crash in between): it can't be played; let it go
+    if (!wl() && wplay::session_for(G.id)) wplay::clear_sessions();
     if (computer_to_move()) think_after_ms = now_ms + kThinkPauseMs;
     update_status();
 }

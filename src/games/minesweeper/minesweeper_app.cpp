@@ -138,7 +138,7 @@ void start_new(int level)
     kit::flash_stop();
     if (!over() && !G->recorded && G->b.moves > 0) record(false, false);   // gave up
     const uint8_t mode = G->flag_mode;
-    *G = Game{};
+    kit::renew(*G);
     G->flag_mode = mode;
     G->b.start(level);
     dirty = true;
@@ -390,7 +390,7 @@ void open()
 {
     G = new (std::nothrow) Game();
     if (!G) { app_go_home(); return; }
-    if (!load(*G)) { *G = Game{}; G->b.start(0); }
+    if (!load(*G)) { kit::renew(*G); G->b.start(0); }
     dirty = false;
     build();
 }

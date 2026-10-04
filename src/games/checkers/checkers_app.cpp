@@ -39,7 +39,7 @@ uint64_t must_jump = 0;                // pieces that can jump, lit while the no
 int  result() { return G->result(); }
 int  turn()   { return G->turn(); }
 int  moves()  { return G->plies; }
-void reset()  { *G = Game{}; sel = -1; path_n = 0; }
+void reset()  { kit::renew(*G); sel = -1; path_n = 0; }
 void redraw();
 void play(int index)
 {
@@ -242,7 +242,7 @@ void open()
 {
     G = new (std::nothrow) Game();
     if (!G) { ui::app_go_home(); return; }
-    if (!load(*G, match::state())) { *G = Game{}; match::state() = match::State{}; }
+    if (!load(*G, match::state())) { kit::renew(*G); match::state() = match::State{}; }
     clear_pick();
     note_text[0] = 0; must_jump = 0;
     saved_plies = G->plies;

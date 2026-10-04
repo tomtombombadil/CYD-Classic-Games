@@ -461,6 +461,38 @@ void test_forfeit()
     CHECK(B.link.end_reason() == Link::End::PeerForfeited);
 }
 
+// Clear 2P Sessions / a restart: leave() ends it here, the other board hears
+// "gone" (unrecorded on both) - over a lossy air too
+void test_leave()
+{
+    for (double loss : {0.0, 0.4}) {
+        reset_air(loss, 0.1, 80);
+        Board A, B;
+        boards = {&A, &B};
+        A.setup(0, "Ann", "v1");
+        B.setup(1, "Bob", "v1");
+        pair_up(A, B);
+        run(3000);
+        A.link.leave(air.now);
+        CHECK(A.link.end_reason() == Link::End::YouLeft);
+        for (int t = 0; t < 6000 && !A.link.linger_over(air.now); t += 10) step();
+        CHECK(B.link.end_reason() == Link::End::PeerGone);
+    }
+    // An ended YouLeft link saves and loads (the session file between boots)
+    reset_air(0, 0, 0);
+    Board A, B;
+    boards = {&A, &B};
+    A.setup(0, "Ann", "v1");
+    B.setup(1, "Bob", "v1");
+    pair_up(A, B);
+    A.link.leave(air.now);
+    uint8_t buf[Link::kSaveBytes];
+    CHECK(A.link.save(buf, sizeof buf) == Link::kSaveBytes);
+    Link back;
+    CHECK(back.load(buf, sizeof buf, Air{}, air.now));
+    CHECK(back.end_reason() == Link::End::YouLeft);
+}
+
 void test_disagree()
 {
     reset_air(0, 0, 0);
@@ -519,6 +551,7 @@ int main()
     test_game_lossy(0.5, 0.2, 400, 3);
     test_link_down_and_reboot();
     test_forfeit();
+    test_leave();
     test_disagree();
     test_save_round_trip();
     if (failures) { printf("%d failed\n", failures); return 1; }

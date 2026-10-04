@@ -40,7 +40,7 @@ int  turn()   { return G->turn(); }
 int  moves()  { return G->plies; }
 void redraw() { if (board_obj) lv_obj_invalidate(board_obj); }
 void play(int code) { G->play(code); clear_pick(); redraw(); }
-void reset() { *G = Game{}; clear_pick(); }
+void reset() { kit::renew(*G); clear_pick(); }
 int  think(int level, uint32_t seed, volatile bool* stop) { return best_move(*G, level, seed, stop); }
 
 void score(char* buf, size_t cap)
@@ -278,7 +278,7 @@ void open()
 {
     G = new (std::nothrow) Game();
     if (!G) { app_go_home(); return; }
-    if (!load(*G)) { *G = Game{}; match::state() = match::State{}; }
+    if (!load(*G)) { kit::renew(*G); match::state() = match::State{}; }
     clear_pick();
     saved_plies = G->plies;
     build();

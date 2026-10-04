@@ -146,7 +146,14 @@ Chinese checkers, Dots and Boxes (thin tap targets).
     switched off, no answer in 30 s, or the board went away.
 - In a game: "Waiting for <name>..." when the other board is out of range
   or has the game closed (no moves then). Exit Game pauses; the 2P icon /
-  Resume (Play page) / Continue carries on, also after a restart (`/games/wl_session.bin`).
+  Resume (Play page) / Continue carries on while the board stays on
+  (`/games/wl_session.bin`). **A restart clears the session** (Tom,
+  2026-10-04, after a crash left two boards stuck in a game neither could
+  resume or leave): unrecorded, the other board is told "gone" and ends
+  its side unrecorded too. **Clear 2P Sessions** on the Play page does the
+  same by hand, any time there is a session. A game that finds a session
+  it never switched to (a crash in between) clears it; a game left in
+  wireless mode with no session shows "Game ended" (New Game in its menu).
   **Forfeit Game** in the menu (or the header's <): a loss for that player,
   a win for the other, the forfeiter goes back to the Play page. Game over: **[Play Again | Done]**
   - the next game starts once both tapped Play Again (first mover

@@ -177,7 +177,9 @@ private:
 // ---- Link -----------------------------------------------------------------------------------
 class Link {
 public:
-    enum class End : uint8_t { None, YouForfeited, PeerForfeited, YouDone, PeerDone, PeerGone, OutOfStep };
+    // YouLeft: this board dropped the session (Clear 2P Sessions): nothing is
+// recorded on either board; the other board is told "gone"
+    enum class End : uint8_t { None, YouForfeited, PeerForfeited, YouDone, PeerDone, PeerGone, OutOfStep, YouLeft };
 
     // Saved with the session, so a game can carry on later
     static constexpr size_t kSaveBytes = 4 + 6 + 6 + (kNameMax + 1) + 4 + 1 + 2 + 2 + 4 + 2 * kRecent + 4 * kRecent;
@@ -224,6 +226,7 @@ public:
     bool started_next();                     // cleared by reading
     void forfeit(uint32_t now);              // a loss here, a win there
     void done(uint32_t now);                 // no more games (after one is over)
+    void leave(uint32_t now);                // drop it, unrecorded ("gone" to the partner)
     void say_end(uint32_t now) { if (ended()) send_status(now); }   // repeat the ending now
 
 private:

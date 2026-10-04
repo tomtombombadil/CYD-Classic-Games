@@ -28,8 +28,8 @@
 //                     "Bob would like to play Chess with you" [Play],
 //                     [Not Now | Other Game] (and a ding-dong)
 //
-// One session at a time (saved as /games/wl_session.bin, so a paused game
-// carries on after a restart). A board in a session is busy: others see
+// One session at a time (/games/wl_session.bin; a paused game carries on
+// while the board stays on - a restart clears the session, Tom 2026-10-04). A board in a session is busy: others see
 // "playing Chess" and can't ask it. The session's game screen closed =
 // paused ("Bob closed the game for now" on the other board).
 #pragma once
@@ -64,6 +64,9 @@ void session_over(bool over);
 void session_finished();
 // Back to Wireless Play once a session is over (closes the game first)
 void back_after_game(const char* note);
+// Drop the session, unrecorded on both boards (Clear 2P Sessions; also done
+// at every start and when a game finds a session it doesn't agree with)
+void clear_sessions();
 
 // ---- Screens ----------------------------------------------------------------------------------
 // Play settings (Settings > Play, the wifi icon, a game's Wireless key):

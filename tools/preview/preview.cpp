@@ -1830,6 +1830,11 @@ int main(int argc, char** argv)
             if (!fake_boards[0].chess || fake_boards[0].chess->plies != 6) fprintf(stderr, "WIRELESS FAIL: Bob's board has %d plies\n", fake_boards[0].chess->plies);
         }
         shot(out + "_light_80_wl_game.ppm");
+        wplay::open_menu();                     // Play settings during a session: Clear lit
+        run(20);
+        shot(out + "_light_80_wl_main_session.ppm");
+        ui::close_overlays();
+        run(20);
         kit_preview_menu();
         shot(out + "_light_80_wl_game_menu.ppm");
         ui::close_overlays();

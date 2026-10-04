@@ -48,7 +48,7 @@ uint32_t tick_ms() { return lv_tick_get(); }
 int  result() { return G->result(); }
 int  turn()   { return G->turn(); }
 int  moves()  { return G->plies; }
-void reset()  { *G = Game{}; sel = -1; peek = false; }
+void reset()  { kit::renew(*G); sel = -1; peek = false; }
 void redraw();
 void play(int index) { G->play(index); sel = -1; peek = false; redraw(); }
 int  think(int level, uint32_t seed, volatile bool* stop) { return best_move(*G, level, seed, tick_ms, stop); }
@@ -237,7 +237,7 @@ void open()
 {
     G = new (std::nothrow) Game();
     if (!G) { ui::app_go_home(); return; }
-    if (!load(*G, match::state())) { *G = Game{}; match::state() = match::State{}; }
+    if (!load(*G, match::state())) { kit::renew(*G); match::state() = match::State{}; }
     clear_pick();
     promo_from = promo_to = -1;
     saved_plies = G->plies;

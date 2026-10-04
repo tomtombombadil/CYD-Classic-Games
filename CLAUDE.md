@@ -551,7 +551,14 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   GameOff answered by the board itself; 30 s no answer. Profile
   `/games/player.bin` "PLR2" (name 12 chars, games mask, available).
 - One session at a time, owned by the service (`/games/wl_session.bin`
-  "WLS1": game id, over flag, link); a game agreed opens on both boards
+  "WLS1": game id, over flag, link). Tom, 2026-10-04 (after a crash left
+  two boards stuck): **a restart clears the session** (`load_all` ->
+  `clear_session()`: `Link::leave()` = End::YouLeft, unrecorded, says
+  "gone" for kLingerMs so the partner ends PeerGone, unrecorded) and the
+  Play page has **Clear 2P Sessions** (lit while there is a session; same
+  thing by hand). `match::restart_view` clears a session for its game that
+  the game never switched to; a game in Wireless mode with no session
+  shows "Game ended" (no moves; New Game in the menu); a game agreed opens on both boards
   (`wplay::take_start` -> `match`), the old game is saved. Busy (not
   askable) only while its game is going: a board whose game is over can
   be asked, and accepting ends that session (Done sent). Game screen closed
@@ -581,13 +588,21 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   `src/hal/radio.*`: bare WiFi driver (`esp_wifi_init`, not Arduino WiFi.h:
   that pulled in the IP stack, +4 KB static RAM, +180 KB flash), receive
   callback -> FreeRTOS queue. Static RAM 36 -> 56 KB with WiFi linked.
+- Stack (2026-10-04 crash: v0.18/v0.19 rebooted both boards as a wireless
+  Chess game started): `*G = Game{}` built a 5.5 KB chess Game temporary
+  on the main task's 8 KB stack. Rules: reset state in place with
+  `kit::renew(x)`, big locals go on the heap; main.cpp sets the loop
+  task's stack to 16 KB (`SET_LOOP_TASK_STACK_SIZE`) and logs "Main stack
+  tight" when it ever has under 4 KB left; the preview build fails on any
+  function in src/ with a frame over 3 KB (`-Wstack-usage=3072`, build.sh).
 - Tests: `test_net.cpp` (lossy/duplicating/reordering fake air) and
   **`tools/preview/duo.py`** = 2-3 preview processes in agent mode
   (`preview --agent w h name macbyte dir`: commands tick/rx/press/dump/
   anymove/board/stats/wpstate on stdin) in lockstep, packets carried by
   the coordinator with optional loss; scenarios: offer+play+rematch,
   link loss + pause + resume, forfeit, Not Now / Other Game / no answer,
-  an offer over Sudoku + Done, a restart mid-game, forfeit while paused,
+  an offer over Sudoku + Done, a restart mid-game (session cleared on both,
+  nothing recorded, both free again), Clear 2P Sessions, forfeit while paused,
   crossed offers, a third board, random games of all 7 games (positions
   compared). CI job `wireless-duo` (clean + 30 % loss). Run it after any
   change to wireless code. `match::try_move()` = a legal move or nothing

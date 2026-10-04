@@ -126,6 +126,21 @@ void drop_session()
     save_session();
 }
 
+// End the session here, unrecorded: Clear 2P Sessions, a restart, or a
+// session the game doesn't agree with. The other board is told "gone"
+// while the ending lingers (the radio stays on that long), then it goes.
+void clear_session()
+{
+    if (!S) return;
+    const uint32_t now = lv_tick_get();
+    if (S->link.ended()) { drop_session(); return; }
+    S->link.leave(now);
+    S->noted = true;
+    S->over = true;
+    save_session();
+    log_step("Wireless: session cleared");
+}
+
 void load_all(uint32_t now)
 {
     the_air.send = air_send;
@@ -156,6 +171,12 @@ void load_all(uint32_t now)
             s->over = over;
             snprintf(s->id, sizeof s->id, "%s", games::get(reg).id);
             S = s;
+            // A session never outlives a restart (Tom, 2026-10-04: after a
+            // crash both boards were stuck in a game neither could resume
+            // or leave). It's dropped unrecorded; for a few seconds the
+            // other board is told "gone" (its side ends unrecorded too).
+            log_event("Wireless: %s with %s cleared at start", S->id, S->link.peer_name());
+            clear_session();
         } else {
             delete s;
         }
@@ -177,7 +198,7 @@ bool      keyboard_up = false;
 lv_obj_t* picker_label = nullptr;
 
 enum Key : intptr_t {
-    kBack = 1, kChangeName, kAvailable, kFind, kMyGames, kResume, kAllGames, kStop, kHand,
+    kBack = 1, kChangeName, kAvailable, kFind, kMyGames, kResume, kAllGames, kStop, kHand, kClear,
     kPlay, kNotNow, kOtherGame, kGame0 = 100, kPlayer0 = 200,
 };
 
@@ -263,14 +284,22 @@ void note_text()
     if (note[0]) overlay_text(note, false);
 }
 
-// A choice between two words, with a switch pointing at the chosen one
-void switch_row(const char* left, const char* right, bool right_on, intptr_t id)
+// A choice between two words, with a switch pointing at the chosen one;
+// `name` (optional) leads the row ("Play Mode  1P (o) 2P")
+void switch_row(const char* left, const char* right, bool right_on, intptr_t id, const char* name = nullptr)
 {
     const int kh = menu_btn_h();
     lv_obj_t* r = row(kh);
     lv_obj_set_flex_align(r, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(r, metrics().large ? 14 : 10, 0);
     const lv_font_t* f = &lv_font_montserrat_14;
+    if (name) {
+        lv_obj_t* n = lv_label_create(r);
+        lv_label_set_text(n, name);
+        lv_obj_set_style_text_font(n, f, 0);
+        lv_obj_set_style_text_color(n, pal().ink, 0);
+        lv_obj_set_style_margin_right(n, metrics().large ? 10 : 6, 0);
+    }
     lv_obj_t* l = lv_label_create(r);
     lv_label_set_text(l, left);
     lv_obj_set_style_text_font(l, f, 0);
@@ -302,8 +331,7 @@ void build_main()
     char t[112];
     overlay_begin("Play", on_closed);
     switch_row("Left Hand", "Right Hand", right_handed(), kHand);
-    overlay_text("Play Mode", true);
-    switch_row("1P", "2P", P.available, kAvailable);
+    switch_row("1P", "2P", P.available, kAvailable, "Play Mode");
     const bool on = P.available && radio_present();
     if (playing()) {
         snprintf(t, sizeof t, "Resume %s With %s", games::get(S->reg).title, S->link.peer_name());
@@ -318,15 +346,17 @@ void build_main()
     set_dim(overlay_button(overlay(), t, key_cb, kMyGames), !on);
     snprintf(t, sizeof t, "Change Name (%s)", P.name);
     set_dim(overlay_button(overlay(), t, key_cb, kChangeName), !on);
+    // The way out of a 2-player game that's stuck (Tom, 2026-10-04): works
+    // in 1P too; lit only while there is a session to clear
+    set_dim(overlay_button(overlay(), "Clear 2P Sessions", key_cb, kClear), !S);
     if (note[0]) note_text();
     else if (!radio_present()) overlay_text("This board has no radio for 2-player play.", true);
     else if (radio_failed) overlay_text("The radio couldn't start: the board is low on memory.", false);
     else if (playing()) {
-        snprintf(t, sizeof t, "Your %s game with %s is waiting. Finish it, or forfeit it in its menu, to play another.",
-                 games::get(S->reg).title, S->link.peer_name());
+        snprintf(t, sizeof t, "Your %s game with %s is waiting.", games::get(S->reg).title, S->link.peer_name());
         overlay_text(t, true);
     } else if (P.available)
-        overlay_text("2P: players nearby can find you and ask you to play, wherever you are on this board.", true);
+        overlay_text("Players nearby can find you and ask you to play.", true);
     else
         overlay_text("2P turns on wireless play with boards nearby.", true);
     bottom(nullptr, 0);
@@ -529,6 +559,13 @@ void key_cb(lv_event_t* e)
             settings().left_handed = !settings().left_handed;
             save_settings();
             app_theme_changed();                 // the open game lays itself out again
+            show(Ui::Main);
+            return;
+        case kClear:
+            if (S) {
+                clear_session();
+                set_note("2P sessions cleared.", 6000);
+            }
             show(Ui::Main);
             return;
         case kChangeName:
@@ -793,6 +830,8 @@ void session_over(bool over)
     S->over = over;
     save_session();
 }
+
+void clear_sessions() { clear_session(); }
 
 void session_finished()
 {

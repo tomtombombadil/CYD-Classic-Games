@@ -4,11 +4,18 @@
 #pragma once
 
 #include <cstdint>
+#include <new>
 #include <lvgl.h>
 #include "puzzle_stats.h"
 #include "two_player.h"
 
 namespace kit {
+
+// A game's state back to new, built in place. Never `*G = Game{}`: that
+// makes a whole temporary Game on the stack first - Chess's is 5.5 KB, and
+// starting a wireless Chess game that way overflowed the main task's stack
+// (v0.18/v0.19 reboots, 2026-10-04).
+template <class T> void renew(T& t) { t.~T(); new (&t) T(); }
 
 // ---- Top bar ----------------------------------------------------------------------
 // The game's part of the header bar (ui/sysbar.*): left = small info (the

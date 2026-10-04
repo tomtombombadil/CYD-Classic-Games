@@ -336,7 +336,7 @@ void menu_pick(int id)
 {
     if (id == kit::kLevel0) {                   // New Game: a fresh 500
         const uint16_t refills = G->refills;
-        *G = Game{};
+        kit::renew(*G);
         G->refills = refills;
         save();
         build();
@@ -355,7 +355,7 @@ void open()
 {
     G = new (std::nothrow) Game();
     if (!G) { app_go_home(); return; }
-    if (!load(*G)) *G = Game{};
+    if (!load(*G)) kit::renew(*G);
     build();
 }
 
