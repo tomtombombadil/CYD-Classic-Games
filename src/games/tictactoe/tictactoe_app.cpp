@@ -20,6 +20,7 @@ int  result()           { return B->result(); }
 int  turn()             { return B->turn(); }
 int  moves()            { return B->moves; }
 void play(int c)        { B->play(c); }
+bool legal(int c)       { return B->can_play(c); }
 void reset()            { *B = Board{}; }
 int  think(int level, uint32_t seed, volatile bool* stop)
 {
@@ -55,7 +56,9 @@ bool load(Board& b)
 
 void build()
 {
-    match::attach(kGame);
+    match::Game g = kGame;
+    g.legal = legal;
+    match::attach(g);
     tictactoe_ui::screen_build(*B);
     match::restart_view();
 }
@@ -74,6 +77,7 @@ void close()
     if (!B) return;
     match::detach();                    // stops the computer first
     save();
+    match::closed();
     tictactoe_ui::screen_destroy();
     delete B;
     B = nullptr;

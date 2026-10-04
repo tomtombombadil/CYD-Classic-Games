@@ -39,7 +39,7 @@ namespace {
 void result_text(char* out, size_t cap, const Record& r, const Sides& s)
 {
     if (r.result == Result::Draw) { snprintf(out, cap, "Draw"); return; }
-    if (r.mode == Mode::Computer) {
+    if (r.mode == Mode::Computer || r.mode == Mode::Wireless) {      // side 1 = this board's player
         snprintf(out, cap, "%s", r.result == Result::Side1 ? "Won" : "Lost");
         return;
     }
@@ -104,6 +104,10 @@ void Summary::add(const Record& r)
         if (r.result == Result::Side1)      ++won[l];
         else if (r.result == Result::Side2) ++lost[l];
         else                                ++drawn[l];
+    } else if (r.mode == Mode::Wireless) {
+        if (r.result == Result::Side1)      ++wl_won;
+        else if (r.result == Result::Side2) ++wl_lost;
+        else                                ++wl_drawn;
     } else {
         if (r.result == Result::Side1)      ++side1;
         else if (r.result == Result::Side2) ++side2;

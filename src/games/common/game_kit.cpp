@@ -33,6 +33,8 @@ void flash_cb(lv_timer_t*)
     }
 }
 
+bool wireless_ok = false;           // the open menu's Wireless key works
+
 void menu_cb(lv_event_t* e)
 {
     const intptr_t id = reinterpret_cast<intptr_t>(lv_event_get_user_data(e));
@@ -42,7 +44,9 @@ void menu_cb(lv_event_t* e)
         case kSettings:  settings_open(handlers.reopen); break;
         case kHowToPlay: how_to_play(handlers.reopen); break;
         case kExitMenu:  close_overlays(); if (handlers.back) handlers.back(); break;
-        case kWireless:  break;                       // stage 5 (multiplayer)
+        case kWireless:                               // Play Nearby opens its own overlay
+            if (wireless_ok && handlers.pick) handlers.pick(kWireless);
+            break;
         default:
             close_overlays();
             if (handlers.pick) handlers.pick(static_cast<int>(id));
@@ -219,9 +223,10 @@ void flash_stop()
 }
 
 // ---- Menus -----------------------------------------------------------------------------
-void menu_two_player(const char* title, const MenuHandlers& h)
+void menu_two_player(const char* title, const MenuHandlers& h, bool wireless)
 {
     handlers = h;
+    wireless_ok = wireless;
     overlay_begin(title);
     overlay_text("New Game vs Computer:", false);
     lv_obj_t* r1 = row(menu_btn_h());
@@ -229,7 +234,7 @@ void menu_two_player(const char* title, const MenuHandlers& h)
         row_key(r1, twoplayer::level_name(static_cast<twoplayer::Level>(l)), l);
     lv_obj_t* r2 = row(menu_btn_h());
     row_key(r2, "Pass and Play", kPassAndPlay);
-    set_dim(row_key(r2, "Wireless", kWireless), true);   // CYD to CYD comes in stage 5
+    set_dim(row_key(r2, "Wireless", kWireless), !wireless);   // CYD to CYD (not every game has it)
     menu_tail();
 }
 
@@ -370,7 +375,11 @@ void stats_two_player(const char* game_id, const twoplayer::Sides& sides, void (
             snprintf(c, sizeof c, "%lu", (unsigned long)sum.drawn[l]);
             table_add(t, twoplayer::level_name(static_cast<twoplayer::Level>(l)), a, b, c);
         }
-        const char* const head[4] = {"Vs Computer", "Won", "Lost", "Draw"};
+        snprintf(a, sizeof a, "%lu", (unsigned long)sum.wl_won);
+        snprintf(b, sizeof b, "%lu", (unsigned long)sum.wl_lost);
+        snprintf(c, sizeof c, "%lu", (unsigned long)sum.wl_drawn);
+        table_add(t, "Wireless", a, b, c);
+        const char* const head[4] = {"Opponent", "Won", "Lost", "Draw"};
         static const int8_t pct[4] = {46, 18, 18, 18};
         table_show(t, head, pct, hf, bf);
 

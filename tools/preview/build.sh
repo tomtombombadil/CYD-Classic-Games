@@ -21,9 +21,9 @@ for f in $(find "$LVGL/src" -name '*.c'); do
 done
 wait
 [ ! -e "$OUT/obj/FAILED" ] || { echo "LVGL compile failed" >&2; exit 1; }
-# Everything under src/ui and src/games except device-only files (the ones
+# Everything under src/ui, src/games and src/net except device-only files (the ones
 # that include Arduino.h; preview_stubs.cpp stands in for them).
-SRC="$(find "$ROOT/src/ui" "$ROOT/src/games" -name '*.cpp' ! -name registry.cpp | xargs grep -L '<Arduino.h>' | sort | tr '\n' ' ') $ROOT/tools/preview/preview_stubs.cpp"
+SRC="$(find "$ROOT/src/ui" "$ROOT/src/games" "$ROOT/src/net" -name '*.cpp' ! -name registry.cpp | xargs grep -L '<Arduino.h>' | sort | tr '\n' ' ') $ROOT/tools/preview/preview_stubs.cpp"
 # C files under src/games (generated fonts)
 for f in $(find "$ROOT/src/games" -name '*.c'); do
   gcc -c -O1 -w -DLV_CONF_INCLUDE_SIMPLE -I"$ROOT/include" -I"$LVGL" "$f" -o "$OUT/obj/game_$(basename "$f" .c).o"

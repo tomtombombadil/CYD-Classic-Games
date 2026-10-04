@@ -6,6 +6,7 @@ namespace {
 
 using games::HelpPage;
 using games::kHelpTwoPlayer;
+using games::kHelpWireless;
 
 const HelpPage kPages[] = {
     {"The Idea",
@@ -20,6 +21,7 @@ const HelpPage kPages[] = {
         "Tap your new man again to take that move back.\n"
         "The last move is tinted; a red ring on an empty point shows where a man was taken. 50 moves each with nothing taken is a draw."},
     {"New Games", kHelpTwoPlayer},
+    {"Wireless", kHelpWireless},
 };
 
 } // namespace

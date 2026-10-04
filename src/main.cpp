@@ -12,6 +12,7 @@
 #include "hal/lvgl_port.h"
 #include "boards/board_select.h"
 #include "hal/panel_prefs.h"
+#include "hal/radio.h"
 #include "hal/speaker.h"
 #include "hal/splash.h"
 #include "hal/touch_cal.h"
@@ -185,6 +186,11 @@ void setup()
     sh.log_copy_sd       = device_log_copy_sd;
 #endif
     sh.memory            = device_memory;
+    sh.radio_on          = radio_on;
+    sh.radio_off         = radio_off;
+    sh.radio_send        = radio_send;
+    sh.radio_recv        = radio_recv;
+    sh.radio_mac         = radio_mac;
     sh.firmware_version  = CYD_GAMES_VERSION;
     sh.firmware_build    = CYD_GAMES_BUILD;
     sh.board_name        = BOARD_NAME;

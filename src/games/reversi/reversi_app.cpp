@@ -40,6 +40,7 @@ match::Game make_game()
     match::Game g{kId, "Reversi", {"Black", "White"}, result, turn, moves, play, reset, think, redraw};
     g.score = score;
     g.note = note;
+    g.legal = [](int sq) { return B->can_play(sq); };
     return g;
 }
 
@@ -128,6 +129,7 @@ void close()
     if (!B) return;
     match::detach();
     save();
+    match::closed();
     board8::forget();
     delete B;
     B = nullptr;

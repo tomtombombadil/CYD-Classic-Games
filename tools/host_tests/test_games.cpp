@@ -1898,8 +1898,14 @@ static void test_stats()
     snprintf(full, sizeof full, "5,%s", line);
     CHECK(parse_line(full, back, sides) && back.mode == Mode::PassAndPlay && back.result == Result::Side2);
     CHECK(!parse_line(kCsvHeader, back, sides));
-    Summary s; s.add(r); s.add(p);
-    CHECK(s.lost[2] == 1 && s.side2 == 1 && s.total == 2);
+    Record w; w.mode = Mode::Wireless; w.result = Result::Side1; w.moves = 41; w.seconds = 600;
+    format_body(line, sizeof line, w, sides);
+    CHECK(strcmp(line, "Wireless,-,Won,41,600,10:00\n") == 0);
+    snprintf(full, sizeof full, "6,%s", line);
+    Record wb;
+    CHECK(parse_line(full, wb, sides) && wb.mode == Mode::Wireless && wb.result == Result::Side1 && wb.moves == 41);
+    Summary s; s.add(r); s.add(p); s.add(wb);
+    CHECK(s.lost[2] == 1 && s.side2 == 1 && s.wl_won == 1 && s.side1 == 0 && s.total == 3);
 
     const char* const names[3] = {"3x3", "4x4", "5x5"};
     puzzle::Record q; q.level = 1; q.moves = 112; q.seconds = 185;

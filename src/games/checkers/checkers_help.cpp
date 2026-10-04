@@ -6,6 +6,7 @@ namespace {
 
 using games::HelpPage;
 using games::kHelpTwoPlayer;
+using games::kHelpWireless;
 
 const HelpPage kPages[] = {
     {"The Idea",
@@ -21,6 +22,7 @@ const HelpPage kPages[] = {
         "A double jump is tapped one landing at a time.\n"
         "Tap one of the other side's pieces to see where it can go; the next tap clears that."},
     {"New Games", kHelpTwoPlayer},
+    {"Wireless", kHelpWireless},
 };
 
 } // namespace

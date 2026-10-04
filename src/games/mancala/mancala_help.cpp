@@ -6,6 +6,7 @@ namespace {
 
 using games::HelpPage;
 using games::kHelpTwoPlayer;
+using games::kHelpWireless;
 
 const HelpPage kPages[] = {
     {"The Idea",
@@ -20,6 +21,7 @@ const HelpPage kPages[] = {
         "The pit last sown from is lit; your pits light up when it's your turn.\n"
         "Your pits are on your stylus hand's side (Settings: Right Hand or Left Hand)."},
     {"New Games", kHelpTwoPlayer},
+    {"Wireless", kHelpWireless},
 };
 
 } // namespace

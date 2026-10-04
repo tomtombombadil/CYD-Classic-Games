@@ -67,6 +67,12 @@ match::Game make_game()
     g.score = score;
     g.note = note;
     g.ai_stack = 24 * 1024;
+    g.legal = [](int code) {
+        MoveList l;
+        G->legal(l);
+        for (int k = 0; k < l.n; ++k) if (l.m[k].code() == code) return true;
+        return false;
+    };
     return g;
 }
 
@@ -283,6 +289,7 @@ void close()
     if (!G) return;
     match::detach();
     save();
+    match::closed();
     board_obj = nullptr;
     delete G;
     G = nullptr;

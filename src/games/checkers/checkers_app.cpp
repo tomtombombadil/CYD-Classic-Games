@@ -64,6 +64,7 @@ match::Game make_game()
     g.score = score;
     g.note = note;
     g.ai_stack = 40 * 1024;
+    g.legal = [](int index) { MoveList l; G->legal(l); return index >= 0 && index < l.n; };
     return g;
 }
 
@@ -216,7 +217,7 @@ bool load(Game& g, match::State& st)
     return ok;
 }
 
-bool flipped() { return match::state().mode == twoplayer::Mode::Computer && match::state().human_side == 1; }
+bool flipped() { return match::my_side() == 1; }        // your side at the bottom
 
 void build()
 {
@@ -253,6 +254,7 @@ void close()
     if (!G) return;
     match::detach();
     save();
+    match::closed();
     board8::forget();
     delete G;
     G = nullptr;

@@ -111,9 +111,10 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Farkle | Dice Games | Push-your-luck dice to 10,000, vs computer (Easy / Medium / Hard) or pass-and-play |
 | RPG Dice | Dice Games | Every role-playing die, each shown as rolled; presets and history |
 
-Two-player games will also play **wireless, CYD to CYD** (the menu shows it,
-greyed out, until it's built). Coming next: more games from the plan
-(Ultimate Tic-Tac-Toe, Gomoku, You Sunk My CYD!...), then wireless play. The plan is in
+The board games (Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe,
+Mancala, Nine Men's Morris) also play **wireless, CYD to CYD**: two boards
+in the same room or house, no router or setup (see
+[Wireless play](#wireless-play-cyd-to-cyd)). The plan is in
 [docs/SPEC.md](docs/SPEC.md).
 
 ## Starting up and the game picker
@@ -171,9 +172,10 @@ and touch calibration are shared.
 
 ## Two-player games
 
-Chess, Checkers, Reversi, FourConnect and Tic-Tac-Toe share one menu:
-**New Game vs Computer** (Easy, Medium, Hard), **Pass and Play** (two people
-share one board and take turns), and Wireless (coming). Against the computer
+Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala and Nine
+Men's Morris share one menu: **New Game vs Computer** (Easy, Medium, Hard),
+**Pass and Play** (two people share one board and take turns), and
+**Wireless** (two boards, see below). Farkle has the first two. Against the computer
 you and the computer take turns going first, game by game. The computer
 thinks on the board's second processor core, so the screen never freezes.
 Its levels look ahead fewer or more moves (and think longer); it never
@@ -329,6 +331,36 @@ The classic **Jacks or Better** machine. **Bet One** sets 1 to 5 credits
 shows what each hand pays at your bet and lights up the one you hold. A pair
 of Jacks or better pays; a Royal Flush pays 4000 at a 5-credit bet.
 **Hint** holds what the standard strategy keeps. 500 credits to start.
+
+## Wireless play (CYD to CYD)
+
+Two boards play each other over the air (ESP-NOW): no router, no
+passwords, no setup, as far as a house's walls allow.
+
+<img src="docs/screenshots/small_wireless_lobby.png" width="240" alt="Play Nearby: boards in range, one ready to play">
+<img src="docs/screenshots/small_wireless_game.png" width="240" alt="A wireless chess game">
+
+1. On both boards open the same game and pick **☰ → Wireless**. That's
+   **Play Nearby**: boards in it show up by name. Ones that want another
+   game, or run another firmware version, are greyed with the reason - both
+   boards need the same version (flash both from the web flasher).
+2. Tap the other board's name. It asks "Ann asks you to play Chess. Ann
+   moves first." - **Play** or **No Thanks**.
+3. Play. Each board shows the game from its own side; the other player's
+   moves arrive by themselves, and each one is checked against this board's
+   own rules before it's played.
+
+- Your name: **Change Name** in Play Nearby (it starts as "CYD-" and four
+  letters/digits from the board's address).
+- Out of range or switched off: the game says "Waiting for Bob..." and
+  waits; it carries on when the other board is heard again. **Exit Game**
+  pauses it: open the game again on both boards to go on.
+- **Play Again** (when a game is over) starts the next game once both
+  players tapped it; the other player moves first that time.
+- Starting any other game ends the wireless one, and the other board is
+  told. Finished games are recorded on both boards (Stats: the Wireless
+  row).
+- The radio is only on in Play Nearby and in a wireless game.
 
 ## Mancala
 

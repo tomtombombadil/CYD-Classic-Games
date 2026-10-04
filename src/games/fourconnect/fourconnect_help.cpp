@@ -6,6 +6,7 @@ namespace {
 
 using games::HelpPage;
 using games::kHelpTwoPlayer;
+using games::kHelpWireless;
 
 const HelpPage kPages[] = {
     {"The Idea",
@@ -16,6 +17,7 @@ const HelpPage kPages[] = {
         "A dot marks the last disc played. The winning four get a ring.\n"
         "Play Again appears when the game ends."},
     {"New Games", kHelpTwoPlayer},
+    {"Wireless", kHelpWireless},
 };
 
 } // namespace

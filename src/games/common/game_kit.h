@@ -59,8 +59,9 @@ struct MenuHandlers {
     void (*reopen)();              // show this menu again (Back from Settings)
 };
 // Two-player: "New game vs computer: Easy Medium Hard", Pass and play,
-// Wireless (not yet), How To Play, Stats | Settings, and at the bottom Exit Menu | Exit Game.
-void menu_two_player(const char* title, const MenuHandlers& h);
+// Wireless (greyed and ignored unless `wireless`; picks kWireless), How To
+// Play, Stats | Settings, and at the bottom Exit Menu | Exit Game.
+void menu_two_player(const char* title, const MenuHandlers& h, bool wireless = false);
 // Solo puzzle: "New Game:" three levels, Restart, How To Play,
 // Stats | Settings, and at
 // the bottom Exit Menu | Exit Game.

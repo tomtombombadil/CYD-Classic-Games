@@ -49,7 +49,7 @@ int col_w = 0, store_w = 0, row_h = 0, gap = 0;
 // Your pits go on the stylus hand's side (Settings): right-handed the
 // right column, left-handed the left one. Pass-and-play puts Gold
 // (who starts) there.
-int  near_side() { return match::state().mode == twoplayer::Mode::Computer ? match::state().human_side : 0; }
+int  near_side() { return match::my_side() >= 0 ? match::my_side() : 0; }
 int  left_side() { return right_handed() ? 1 - near_side() : near_side(); }
 
 // ---- Rules for the controller ---------------------------------------------------------------
@@ -105,8 +105,9 @@ void note(char* buf, size_t cap)
     buf[0] = 0;
     if (!have_last || B->result() != -1) return;
     const char* who = B->side == 0 ? "Gold" : "Blue";
-    if (match::state().mode == twoplayer::Mode::Computer)
-        who = B->side == match::state().human_side ? "You" : "The computer";
+    if (match::my_side() >= 0)
+        who = B->side == match::my_side() ? "You"
+            : match::state().mode == twoplayer::Mode::Computer ? "The computer" : match::opponent_name();
     if (last.again) snprintf(buf, cap, "%s %s again", who, strcmp(who, "You") == 0 ? "go" : "goes");
     else if (last.captured) snprintf(buf, cap, "Captured %d seeds", last.captured);
 }
@@ -118,6 +119,7 @@ match::Game make_game()
     g.note = note;
     g.busy = [] { return A.on; };
     g.ai_stack = 8 * 1024;
+    g.legal = [](int p) { return B->can_play(p); };
     return g;
 }
 
@@ -216,8 +218,10 @@ void draw_cb(lv_event_t* e)
                        P.stone_light, lv_color_darken(P.stone_light, 80));
             kit::text(layer, t, num, P.stone_light, x, y + 4, w, nh);
             const char* name = side == 0 ? "Gold" : "Blue";
-            if (match::state().mode == twoplayer::Mode::Computer)
-                name = side == match::state().human_side ? "You" : "Computer";
+            if (match::my_side() >= 0) {
+                const char* other = match::opponent_name();
+                name = side == match::my_side() ? "You" : text_width(other, small) <= w - 4 ? other : name;
+            }
             const int sh = lv_font_get_line_height(small);
             kit::text(layer, name, small, lv_color_mix(P.stone_light, hollow, 170), x, y + h - sh - 4, w, sh);
         } else {
@@ -312,6 +316,7 @@ void close()
     match::detach();
     anim_stop();
     save();
+    match::closed();
     board_obj = nullptr;
     delete B;
     B = nullptr;

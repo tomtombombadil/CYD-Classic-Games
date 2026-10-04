@@ -78,6 +78,7 @@ void keyboard(int slot);
 #include "games/common/game_kit.h"
 #include "ui/shell.h"
 #include "ui/widgets.h"
+#include "net/wireless.h"
 
 void card_mockup(int w, const char* title, const char* status);
 static uint32_t fake_ms = 0;
@@ -98,9 +99,15 @@ static void touch_read(lv_indev_t*, lv_indev_data_t* d)
     d->state = touch_down ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
 }
 
+static void (*net_hook)(uint32_t now) = nullptr;     // made-up boards nearby (wireless shots)
 static void run(int ms)
 {
-    for (int t = 0; t < ms; t += 10) { fake_ms += 10; lv_timer_handler(); ui::app_tick(fake_ms); }
+    for (int t = 0; t < ms; t += 10) {
+        fake_ms += 10;
+        if (net_hook) net_hook(fake_ms);
+        lv_timer_handler();
+        ui::app_tick(fake_ms);
+    }
 }
 
 // keep = save what's on the panel as it is (the card win show's trails)
@@ -272,7 +279,7 @@ static void preview_press(int x, int y, int hold_ms)
     touch_down = false;
     run(80);
 }
-static void preview_tap_square(int sq, int hold_ms = 80)
+[[maybe_unused]] static void preview_tap_square(int sq, int hold_ms = 80)
 {
     int x, y;
     if (board8::square_center(sq, &x, &y)) preview_press(x, y, hold_ms);
@@ -335,6 +342,107 @@ static bool press_key_labelled(lv_obj_t* o, const char* text)
     save_game("sudoku", buf.data(), n);
 }
 
+
+// ---- Fake radio: made-up boards nearby for the wireless shots ---------------------
+// Each one runs the real protocol (src/net/wireless.*); "Bob" plays Chess
+// back with the computer's Easy move.
+struct FakeBoard {
+    net::Mac   mac;
+    net::Lobby lobby;
+    net::Link  link;
+    net::Air   air;
+    bool       in_lobby = false, in_game = false;
+    bool       accept_invites = true;
+    chess::Game* chess = nullptr;
+    uint32_t   move_at = 0;
+    bool       invite_us = false;
+};
+struct FakePacket { net::Mac from; std::vector<uint8_t> d; };
+static std::vector<FakePacket> to_preview;
+static FakeBoard fake_boards[3];
+static bool fake_radio_on = false;
+static const net::Mac kPreviewMac = [] { net::Mac m; const uint8_t b[6] = {0x24, 0x6F, 0x28, 0x10, 0x3F, 0x2A}; memcpy(m.b, b, 6); return m; }();
+
+static void fake_board_send(const uint8_t* d, size_t n, void* ctx)
+{
+    if (!fake_radio_on) return;
+    to_preview.push_back(FakePacket{static_cast<FakeBoard*>(ctx)->mac, std::vector<uint8_t>(d, d + n)});
+}
+static bool fake_radio_send(const uint8_t* d, size_t n)
+{
+    if (!fake_radio_on) return false;
+    for (FakeBoard& b : fake_boards) {
+        if (b.in_lobby) b.lobby.receive(kPreviewMac, d, n, fake_ms);
+        if (b.in_game) b.link.receive(kPreviewMac, d, n, fake_ms);
+    }
+    return true;
+}
+static size_t fake_radio_recv(uint8_t mac[6], uint8_t* buf, size_t cap)
+{
+    if (to_preview.empty()) return 0;
+    FakePacket p = to_preview.front();
+    to_preview.erase(to_preview.begin());
+    memcpy(mac, p.from.b, 6);
+    const size_t n = p.d.size() < cap ? p.d.size() : cap;
+    memcpy(buf, p.d.data(), n);
+    return n;
+}
+static uint32_t fake_clock() { return fake_ms; }
+static void fake_boards_tick(uint32_t now)
+{
+    for (FakeBoard& b : fake_boards) {
+        if (b.in_lobby) {
+            b.lobby.tick(now);
+            if (b.invite_us && !b.lobby.inviting())
+                for (int i = 0; i < b.lobby.count(); ++i)
+                    if (b.lobby.at(i).mac == kPreviewMac && b.lobby.can_invite(i)) b.lobby.invite(i, 0x5EED, now);
+            if (b.accept_invites && b.lobby.asked()) b.lobby.accept(now);
+            if (b.lobby.poll() == net::Lobby::Event::Started) {
+                b.link.begin(b.mac, b.lobby.partner(), b.lobby.partner_name(), b.lobby.session(), b.lobby.inviter(), b.air, now);
+                b.in_lobby = false;
+                b.in_game = true;
+                if (!b.chess) b.chess = new chess::Game();
+                *b.chess = chess::Game{};
+                b.move_at = now + 900;
+            }
+        }
+        if (!b.in_game || b.link.ended()) continue;
+        b.link.tick(now);
+        for (int m; (m = b.link.next_move()) >= 0;) { b.chess->play(m); b.link.played(m, now); b.move_at = now + 900; }
+        if (b.chess->result() == -1 && b.chess->turn() == b.link.my_side() && b.link.up(now)
+            && int32_t(now - b.move_at) >= 0) {
+            const int m = chess::best_move(*b.chess, 0, 7, fake_clock);
+            b.chess->play(m);
+            b.link.played(m, now);
+        }
+    }
+}
+[[maybe_unused]] static void fake_boards_begin(const char* fw)
+{
+    const char* names[3] = {"Bob", "Ann", "Cy"};
+    const char* games[3] = {"chess", "checkers", "chess"};
+    for (int i = 0; i < 3; ++i) {
+        FakeBoard& b = fake_boards[i];
+        const uint8_t mac[6] = {0x24, 0x6F, 0x28, 0x77, 0x00, uint8_t(0x10 + i)};
+        memcpy(b.mac.b, mac, 6);
+        b.air.send = fake_board_send;
+        b.air.ctx = &b;
+        b.lobby.begin(b.mac, names[i], games[i], i == 2 ? "v0.8.0" : fw, b.air, fake_ms);
+        b.in_lobby = true;
+        b.in_game = false;
+    }
+    net_hook = fake_boards_tick;
+}
+// Index of a chess move in the move list, from "e2e4"
+[[maybe_unused]] static int chess_index(const chess::Game& g, const char* uci)
+{
+    const int from = (uci[1] - '1') * 8 + (uci[0] - 'a'), to = (uci[3] - '1') * 8 + (uci[2] - 'a');
+    chess::MoveList l;
+    g.legal(l);
+    for (int k = 0; k < l.n; ++k) if (l.m[k].from == from && l.m[k].to == to) return k;
+    return -1;
+}
+
 int main(int argc, char** argv)
 {
     if (argc < 4) { fprintf(stderr, "usage: preview <w> <h> <out prefix>\n"); return 2; }
@@ -366,6 +474,11 @@ int main(int argc, char** argv)
     sh.log_clear = [] {};
     sh.log_copy_sd = [] { return true; };
     sh.memory = fake_memory;
+    sh.radio_on = [] { fake_radio_on = true; return true; };
+    sh.radio_off = [] { fake_radio_on = false; to_preview.clear(); };
+    sh.radio_send = fake_radio_send;
+    sh.radio_recv = fake_radio_recv;
+    sh.radio_mac = [](uint8_t mac[6]) { memcpy(mac, kPreviewMac.b, 6); };
     // Look like a real board so the README screenshots read naturally.
     sh.firmware_version = "v0.9.0";
     sh.firmware_build = "1a2b3c4";
@@ -1387,6 +1500,64 @@ int main(int argc, char** argv)
         ui::close_overlays();
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
+    }
+
+    {   // Wireless: Play Nearby with three boards around, asking Bob, a game with
+        // him, waiting when he's gone, and being asked (tic-tac-toe)
+        fake_boards_begin("v0.9.0");
+        run(100);
+        ui::app_open_game_now(games::find("chess"));
+        kit_preview_menu();
+        shot(out + "_light_80_wl_menu.ppm");
+        press_overlay_key("Wireless");
+        run(1500);
+        shot(out + "_light_80_wl_lobby.ppm");
+        fake_boards[0].accept_invites = false;
+        press_overlay_key("Bob");
+        run(600);
+        shot(out + "_light_80_wl_asking.ppm");
+        fake_boards[0].accept_invites = true;
+        run(1500);
+        shot(out + "_light_80_wl_start.ppm");
+        {   // a few moves each
+            const char* mine[3] = {"e2e4", "g1f3", "f1c4"};
+            for (const char* mv : mine) {
+                for (int t = 0; t < 400 && !match::human_may_move(); ++t) run(10);
+                chess::Game probe;              // this board's position, from its save
+                ui::app_save_current();
+                probe.deserialize(files["chess"].data(), chess::Game::kSaveBytes);
+                const int k = chess_index(probe, mv);
+                if (k >= 0) match::human_move(k);
+                else fprintf(stderr, "WIRELESS STAGING: %s not legal\n", mv);
+            }
+            run(1500);
+            if (fake_boards[0].chess->plies != 6) fprintf(stderr, "WIRELESS FAIL: Bob's board has %d plies\n", fake_boards[0].chess->plies);
+        }
+        shot(out + "_light_80_wl_game.ppm");
+        fake_boards[0].in_game = false;      // Bob's board goes quiet
+        run(3500);
+        shot(out + "_light_80_wl_waiting.ppm");
+        ui::app_go_home_now();
+        files.erase("chess");
+        files.erase("wl_chess");
+        // Being asked: Bob (now in Tic-Tac-Toe) invites this board
+        fake_boards_begin("v0.9.0");
+        fake_boards[0].lobby.begin(fake_boards[0].mac, "Bob", "tictactoe", "v0.9.0", fake_boards[0].air, fake_ms);
+        fake_boards[0].invite_us = true;
+        ui::app_open_game_now(games::find("tictactoe"));
+        kit_preview_menu();
+        press_overlay_key("Wireless");
+        run(1500);
+        shot(out + "_light_80_wl_asked.ppm");
+        press_overlay_key("Change Name");
+        run(50);
+        shot(out + "_light_80_wl_name.ppm");
+        ui::close_overlays();
+        ui::app_go_home_now();
+        net_hook = nullptr;
+        for (FakeBoard& b : fake_boards) { b.in_lobby = b.in_game = false; b.invite_us = false; }
+        files.erase("tictactoe");
+        files.erase("wl_tictactoe");
     }
 
     {   // Left-handed: the games whose layout follows the stylus hand

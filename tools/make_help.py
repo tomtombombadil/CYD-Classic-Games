@@ -18,6 +18,8 @@ def write(gid, pages, two_player=False):
     for title, text in pages:
         if text is None:
             body.append('    {"%s", kHelpTwoPlayer},' % title)
+        elif text == "@WIRELESS":
+            body.append('    {"%s", kHelpWireless},' % title)
         else:
             body.append('    {"%s",\n        %s},' % (title, c(text)))
     src = f'''// How To Play pages for this game (see src/games/help.h). Plain data.
@@ -26,7 +28,7 @@ def write(gid, pages, two_player=False):
 namespace {{
 
 using games::HelpPage;
-{'using games::kHelpTwoPlayer;' + chr(10) if two_player else ''}
+{'using games::kHelpTwoPlayer;' + chr(10) if two_player else ''}{'using games::kHelpWireless;' + chr(10) if any(t == "@WIRELESS" for _, t in pages) else ''}
 const HelpPage kPages[] = {{
 {chr(10).join(body)}
 }};
@@ -38,6 +40,7 @@ CYD_HELP({gid}, kPages)
     (ROOT / gid / f"{gid}_help.cpp").write_text(src)
 
 TP = ("New Games", None)
+WL = ("Wireless", "@WIRELESS")      # the two-player games that play CYD to CYD
 
 write("sudoku", [
  ("The Idea", "Fill the 9x9 grid so every row, every column and every 3x3 box holds the digits 1 to 9 once each.\nEvery puzzle has exactly one answer, and none ever needs guessing: the level says which solving techniques it needs."),
@@ -66,12 +69,14 @@ write("fourconnect", [
  ("The Idea", "Two players take turns dropping discs into the 7 columns. A disc falls to the lowest free spot.\nThe first to get four of their discs in a line wins: across, up and down, or diagonal. A full board with no line is a draw."),
  ("Playing", "Tap anywhere in a column to drop your disc there.\nA dot marks the last disc played. The winning four get a ring.\nPlay Again appears when the game ends."),
  TP,
+ WL,
 ], True)
 
 write("tictactoe", [
  ("The Idea", "X and O take turns marking the 3x3 grid; X goes first.\nThree of your marks in a row, column or diagonal wins. A full grid with no line is a draw.\nTap a square to mark it."),
  ("The Computer", "Easy looks one move ahead, Medium two. Hard plays perfectly: you can't beat it, but you can always hold it to a draw.\nPlay Again appears when the game ends."),
  TP,
+ WL,
 ], True)
 
 write("reversi", [
@@ -79,6 +84,7 @@ write("reversi", [
  ("Playing", "Your legal moves show as dots. Tap one to play it.\nIf you have no legal move your turn passes. The game ends when neither side can move; the most discs wins.\nThe top bar counts both sides' discs."),
  ("The Computer", "Easy looks 2 moves ahead, Medium 4, Hard 6. Hard also plays the last 10 empty squares perfectly."),
  TP,
+ WL,
 ], True)
 
 write("checkers", [
@@ -86,6 +92,7 @@ write("checkers", [
  ("Jumps And Kings", "Jumping is compulsory: if you can jump, you must. After a jump, the same piece keeps jumping while it can.\nA man reaching the far row is crowned king and moves both ways. Crowning ends the move.\n40 moves each with no jump and no man moving is a draw."),
  ("Playing", "Tap one of your pieces (its landing squares show as dots), then tap where it goes. When a jump is possible, only pieces that can jump respond.\nA double jump is tapped one landing at a time.\nTap one of the other side's pieces to see where it can go; the next tap clears that."),
  TP,
+ WL,
 ], True)
 
 write("chess", [
@@ -93,6 +100,7 @@ write("chess", [
  ("The Rules", "White moves first. Castling, en passant and promotion all work. A king in check has its square tinted red; you must get it out of check.\nCheckmate wins. Stalemate, threefold repetition, 50 moves with no capture or pawn move, and too little material to mate are draws."),
  ("The Computer", "Easy looks 2 moves ahead. Medium looks 3, thinking up to 2 seconds. Hard looks up to 6, thinking up to 6 seconds a move.\nThe screen stays usable while it thinks. Against the computer you and it take turns playing White."),
  TP,
+ WL,
 ], True)
 
 write("cyddle", [
@@ -191,6 +199,7 @@ write("mancala", [
  ("A Move", "Tap one of your pits: its seeds are sown one at a time into the next pits - down your side, into your store, up the other side - skipping the other player's store.\nLast seed in your store: you go again.\nLast seed in an empty pit of yours: it and the seeds opposite go to your store."),
  ("The End", "When either side's pits are all empty, the game ends: the other player puts the seeds left on their side into their store.\nThe pit last sown from is lit; your pits light up when it's your turn.\nYour pits are on your stylus hand's side (Settings: Right Hand or Left Hand)."),
  TP,
+ WL,
 ], two_player=True)
 
 write("morris", [
@@ -198,6 +207,7 @@ write("morris", [
  ("Placing, Then Moving", "First, take turns placing a man on any empty point (tap it).\nWith all men placed, a turn moves one man along a line to the next empty point: tap your man (dots show where it can go), then the point.\nA side down to three men may fly: move to any empty point."),
  ("Mills", "Make a mill and the men you may take get a red ring: tap one. Men in a mill are safe while the other side has men outside mills.\nTap your new man again to take that move back.\nThe last move is tinted; a red ring on an empty point shows where a man was taken. 50 moves each with nothing taken is a draw."),
  TP,
+ WL,
 ], two_player=True)
 
 write("vpoker", [

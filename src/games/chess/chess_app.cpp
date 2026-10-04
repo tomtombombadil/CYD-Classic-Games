@@ -66,6 +66,7 @@ match::Game make_game()
     match::Game g{kId, "Chess", {"White", "Black"}, result, turn, moves, play, reset, think, redraw};
     g.note = note;
     g.ai_stack = 32 * 1024;
+    g.legal = [](int index) { MoveList l; G->legal(l); return index >= 0 && index < l.n; };
     return g;
 }
 
@@ -210,7 +211,7 @@ bool load(Game& g, match::State& st)
     return ok;
 }
 
-bool flipped() { return match::state().mode == twoplayer::Mode::Computer && match::state().human_side == 1; }
+bool flipped() { return match::my_side() == 1; }        // your side at the bottom
 bool shown_flipped = false;
 
 void build()
@@ -248,6 +249,7 @@ void close()
     if (!G) return;
     match::detach();
     save();
+    match::closed();
     board8::forget();
     delete G;
     G = nullptr;

@@ -6,6 +6,7 @@
 //   #,Mode,Level,Result,Moves,Seconds,Time
 //   4,Computer,Hard,Lost,21,95,1:35
 //   5,Pass and play,-,Red won,30,240,4:00
+//   6,Wireless,-,Won,41,600,10:00
 #pragma once
 
 #include <cstddef>
@@ -20,7 +21,8 @@ constexpr int kLevels = 3;
 const char* mode_name(Mode m);       // "Computer", "Pass and play", "Wireless"
 const char* level_name(Level l);     // "Easy", "Medium", "Hard"
 
-// Who won, from side 1's view. vs Computer, side 1 is the player.
+// Who won, from side 1's view. vs Computer and Wireless, side 1 is this
+// board's player (the result reads "Won" / "Lost").
 enum class Result : uint8_t { Side1 = 0, Side2 = 1, Draw = 2 };
 
 struct Record {
@@ -46,8 +48,10 @@ bool   parse_line(const char* line, Record& out, const Sides& s);
 struct Summary {
     // vs computer, per level: player won / lost / drew
     uint32_t won[kLevels] = {}, lost[kLevels] = {}, drawn[kLevels] = {};
-    // pass-and-play (and wireless): side 1 won / side 2 won / draws
+    // pass-and-play: side 1 won / side 2 won / draws
     uint32_t side1 = 0, side2 = 0, draws = 0;
+    // wireless (vs another board): this board's player won / lost / drew
+    uint32_t wl_won = 0, wl_lost = 0, wl_drawn = 0;
     uint32_t total = 0;
     void add(const Record& r);
 };

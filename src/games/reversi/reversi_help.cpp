@@ -6,6 +6,7 @@ namespace {
 
 using games::HelpPage;
 using games::kHelpTwoPlayer;
+using games::kHelpWireless;
 
 const HelpPage kPages[] = {
     {"The Idea",
@@ -18,6 +19,7 @@ const HelpPage kPages[] = {
     {"The Computer",
         "Easy looks 2 moves ahead, Medium 4, Hard 6. Hard also plays the last 10 empty squares perfectly."},
     {"New Games", kHelpTwoPlayer},
+    {"Wireless", kHelpWireless},
 };
 
 } // namespace

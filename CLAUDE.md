@@ -503,19 +503,50 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 ## Two-player games (Tom, 2026-10-02)
 - Every two-player game offers all three: vs computer (levels), pass-and-play
   (one CYD, two people take turns), and wireless CYD to CYD (below). The
-  new-game menu lists them; wireless shows as "coming" until stage 5 (multiplayer).
+  new-game menu lists them; the Wireless key is greyed in a game without it
+  (Farkle, for now).
 - Tom, 2026-10-02: finish more games before building wireless play.
 
-## Multiplayer (CYD to CYD)
-- ESP-NOW, peer to peer, no router or password. WiFi radio is OFF except
-  while the player is in "Play nearby" or a network game.
-- Each board has a player name (set in settings, default from its MAC).
-- Before a game both boards exchange protocol version + firmware version;
-  mismatches get a plain message, no game.
-- Messages are tiny, sequence-numbered and acknowledged; each board checks
-  every received move against its own rules engine and never trusts the
-  other side. A dropped link pauses the game and lets either player resume
-  or end it; the game is saved on both boards.
+## Multiplayer (CYD to CYD) - built 2026-10-04 (v0.17.0)
+- ESP-NOW **broadcasts** on WiFi channel 1, no router or password, no
+  peers to add; packets for one board carry its address. Radio OFF except
+  in Play Nearby or a wireless game (`nearby::radio_start/stop`, reference
+  counted). `src/hal/radio.*` (device): bare WiFi driver (`esp_wifi_init`,
+  no Arduino WiFi.h - that pulled in the IP stack: +4 KB static RAM,
+  +180 KB flash), receive callback -> FreeRTOS queue -> main loop.
+  Static RAM 36 -> 56 KB with WiFi linked. Shell hooks `radio_on/off/
+  send/recv/mac`; the preview fakes them with made-up boards ("Bob" plays
+  chess back) running the real protocol.
+- Protocol `src/net/wireless.*` (plain C++, `tools/host_tests/test_net.cpp`
+  with a lossy/duplicating/reordering fake air): no acks - every board
+  repeats its whole state every 500 ms and at once on a change. Lobby =
+  beacons (name, game id, firmware, an invite / "no thanks" for one
+  board); Link = status (session, game no, move count, last 12 moves,
+  FNV hash of all moves; flags again / away / left). Behind = play the
+  missed moves (each through the game's `legal()` and turn check first);
+  bad move, hash mismatch or unfillable gap = OutOfStep, both end
+  unrecorded. 3 s unheard = link down, no moves. A board asked about a
+  session it doesn't have answers "left". Header 'C','Y',proto,kind; the
+  beacon's name stays right after the header in every protocol version
+  (other versions are listed by name). Same firmware version required to
+  invite.
+- UI: `common/nearby.*` = Play Nearby overlay (You are <name>, the boards
+  - invitable first, others greyed "(Checkers)" / "(other version)" -,
+  asking / asked states, [Back | Change Name] at the bottom) + player name
+  (`/games/player.bin` "PLR1", 12 chars, default "CYD-XXXX" from the MAC;
+  set in Play Nearby - Settings has no room). `match.*` runs the game:
+  Mode::Wireless, my side = `Link::my_side()` (inviter first in game 1,
+  then alternating), "Waiting for Bob..." / "Bob's turn" / "Bob wins",
+  partner's moves held while a menu is open or the game animates, Play
+  Again = both must tap it, any other new game = leave (other board told),
+  Exit Game = away (paused, resumes when both open it), link saved as
+  `wl_<id>` with every game save; `match::closed()` (games call it after
+  their last save in close()). Wireless results recorded like vs computer
+  (Won/Lost/Draw, mode "Wireless"; stats table "Opponent" has a Wireless
+  row). Games opt in with `match::Game::legal`; `match::my_side()` /
+  `opponent_name()` for board orientation and labels. Games: FourConnect,
+  Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala, Morris. Farkle: not yet
+  (dice would need one board to roll and send). No resign / draw offer.
 - Internet play is out of scope (needs a server).
 
 ## Known hardware issues (from CYD-Sudoku - all still apply)

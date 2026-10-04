@@ -56,6 +56,15 @@ struct Shell {
     bool (*log_copy_sd)();
     void (*memory)(uint32_t* free_bytes, uint32_t* largest_block);
 
+    // Wireless play, CYD to CYD (nullptr = no radio): ESP-NOW broadcasts on
+    // one channel (src/hal/radio.*, protocol in src/net/wireless.*). The
+    // radio is off except in Play Nearby and wireless games.
+    bool   (*radio_on)();                      // false = couldn't start (memory)
+    void   (*radio_off)();
+    bool   (*radio_send)(const uint8_t* data, size_t len);
+    size_t (*radio_recv)(uint8_t mac[6], uint8_t* buf, size_t cap);   // 0 = nothing came
+    void   (*radio_mac)(uint8_t mac[6]);
+
     const char* firmware_version;              // "v1.2.3" (VERSION file)
     const char* firmware_build;                // git commit of the build, may be empty
     const char* board_name;

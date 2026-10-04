@@ -109,20 +109,46 @@ Candidates, grouped. Order of building is in section 6.
 **Maybe later / poor fit:** Go 9x9 (weak AI), Solitaire/Klondike/FreeCell/Blackjack/Poker (cards too small on 2.8" perhaps if the card only shows the number and a symbol of the suit),
 Chinese checkers, Dots and Boxes (thin tap targets).
 
-## 5. Multiplayer (CYD to CYD)
-- Transport: **ESP-NOW** (direct, no router, no setup). Range: same room or
-  house. Home-network play and internet play are not planned.
-- Flow: ☰ → Play nearby → list of boards in range by player name and
-  game → tap to invite → other board accepts → game starts. Who goes first
-  is decided at random and shown on both screens.
-- Protocol: small binary messages - hello (protocol + firmware version,
-  name, game), invite/accept/decline, move, resign, draw offer, resume,
-  ack. Sequence numbers + acks + retries. Each board validates every move
-  with its own rules engine.
-- Disconnects: the game pauses and is saved on both boards; either can
-  resume when the other reappears, or end it.
-- Games: chess, checkers, Reversi, FourConnect first; later Mancala,
-  Ultimate Tic-Tac-Toe, Nine Men's Morris, You Sunk My CYD!, Gomoku.
+## 5. Multiplayer (CYD to CYD) - *built 2026-10-04*
+- Transport: **ESP-NOW broadcasts** on WiFi channel 1 (direct, no router,
+  no setup, no pairing). Range: same room or house. Home-network and
+  internet play are not planned. The radio is on only in Play Nearby and
+  during a wireless game (`src/hal/radio.*`: the bare WiFi driver, no IP
+  stack; ~20 KB static RAM; its heap use while on is logged - "Wireless:
+  radio on, N KB free" - and not yet measured on a board).
+- Flow: a game's ☰ → **Wireless** → **Play Nearby**: boards in Play Nearby
+  are listed by player name; those that want another game or run another
+  firmware are greyed with the reason. Tap a name to ask; the other board
+  shows "Ann asks you to play Chess. Ann moves first." with **Play** /
+  **No Thanks**. The asker moves first in the first game; after that the
+  first mover alternates with each Play Again.
+- Player name: "CYD-" + the last 4 hex digits of the board's address until
+  changed (Play Nearby → Change Name, the shared keyboard; 12 characters;
+  saved as `/games/player.bin`).
+- Protocol (`src/net/wireless.*`, plain C++, host-tested over a lossy,
+  repeating, reordering fake radio): no acks. Lobby boards beacon twice a
+  second (name, game, firmware version, an invite or "no thanks" for one
+  board). In a game each board sends a status twice a second and at once
+  on a change: session, game number, move count, the last 12 moves and a
+  hash of all moves. A board that is behind plays the moves it missed,
+  each checked by its own rules engine first; a move that isn't legal, a
+  hash that differs, or a gap it can't fill ends the game unrecorded on
+  both boards ("The boards' games differ"). Different protocol versions
+  can't decode each other (listed by name only); different firmware
+  versions are listed but can't be invited.
+- Disconnects: nothing heard for 3 s = "Waiting for Bob..." and no moves
+  until it comes back. Exit Game pauses (the other board shows "Bob left
+  Chess for now"); opening the game again on both boards carries on. The
+  link state is saved beside the game (`wl_<id>`), on both boards.
+- Ending: starting any other game in the menu ends the wireless game and
+  tells the other board ("Bob ended the game"); neither records it. A
+  finished game is recorded on both boards (stats mode "Wireless",
+  Won/Lost/Draw from that board's player; the stats screen's "Opponent"
+  table has a Wireless row). No resign or draw offers (yet).
+- Games: FourConnect, Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala,
+  Nine Men's Morris (every game on the shared `match.*` controller that
+  supplies a `legal()` check). Farkle not yet (its dice would have to be
+  rolled by one board and sent).
 - Every two-player game also has vs computer and pass-and-play (one CYD
   handed back and forth).
 
@@ -147,7 +173,7 @@ Chinese checkers, Dots and Boxes (thin tap targets).
    built 2026-10-03); Poker = two games, Video Poker (Jacks or
    Better, *built 2026-10-03*) and Texas Hold'em vs computer players (*built 2026-10-03*); Blackjack; FreeCell. (Tom, 2026-10-02: more games before wireless.)
 5. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,
-   Checkers, Chess.
+   Checkers, Chess, Mancala, Nine Men's Morris. *Built 2026-10-04.*
 6. **Word and dice games:** (CYD-dle, Yaht-CYD done in stage 3) Farkle (*built 2026-10-03*), RPG Dice roller (*built 2026-10-03*); Trivia if a
    suitable question bank is found.
 7. Remaining candidates as Tom picks them.

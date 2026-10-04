@@ -38,6 +38,8 @@ SHOTS = {
     "s_light_47_pyramid": "small_pyramid",
     "s_light_46_golf": "small_golf",
     "s_light_49_freecell": "small_freecell",
+    "s_light_80_wl_lobby": "small_wireless_lobby",
+    "s_light_80_wl_game": "small_wireless_game",
     "s_light_51_blackjack_done": "small_blackjack",
     "s_light_54_vpoker_held": "small_vpoker",
     "s_light_56_holdem_flop": "small_holdem",

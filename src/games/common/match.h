@@ -9,6 +9,17 @@
 // vs Computer: the player's side alternates each new game (whoever moves
 // first in one game moves second in the next). Leaving a vs-computer game
 // that has started for a new one counts as a loss.
+//
+// Wireless (CYD to CYD, a game that supplies `legal`): Play Nearby
+// (nearby.*) pairs two boards; then each board plays its own copy of the
+// game and the moves travel over the radio (net::Link in src/net/wireless.*).
+// A move from the other board is checked with `legal` before it is played;
+// one that isn't, or boards whose games differ, end the game unrecorded.
+// No moves while the other board isn't heard ("Waiting for Bob..."). Play
+// Again starts the next game once both players tapped it; the first mover
+// alternates. Starting any other game ends the wireless one (the other
+// board is told); Exit Game only pauses it - opening the game again on both
+// boards carries on. The link's state is saved as "wl_<id>" beside the game.
 #pragma once
 
 #include <cstddef>
@@ -39,6 +50,9 @@ struct Game {
     // animation); the computer waits for it before thinking or moving
     bool (*busy)() = nullptr;
     uint32_t ai_stack = 8192;      // the computer's task stack (bytes)
+    // Wireless: is `move` legal for the side to move? nullptr = this game
+    // has no wireless play.
+    bool (*legal)(int move) = nullptr;
 };
 
 // Call when the game opens (after its board was loaded) and on restyle.
@@ -46,7 +60,8 @@ void attach(const Game& g);
 // Top bar + bottom strip (status, play again). Returns the free area for
 // the board: [top, bottom) in screen pixels.
 void build_chrome(int* top, int* bottom);
-void detach();                     // leaving: stop the computer, forget widgets
+void detach();                     // leaving or restyling: stop the computer, forget widgets
+void closed();                     // the game closed (after its last save): pause a wireless game
 
 // The player tapped a legal move on the board. Ignored unless a human may move.
 void human_move(int move);
@@ -56,6 +71,11 @@ void open_menu();
 void summary(char* buf, size_t cap);         // the attached game, for "Continue"
 void restart_view();               // after attach + build: show state, maybe start the computer
 void refresh();                    // redraw the status and info lines (e.g. a new note)
+// The side this board's player has: vs Computer and Wireless 0/1, -1 in
+// pass-and-play (both sides are at this board)
+int  my_side();
+// "Computer", the other board's player name, or nullptr (pass-and-play)
+const char* opponent_name();
 
 // How the game is being played (saved after the board)
 struct State {
