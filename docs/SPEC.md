@@ -225,6 +225,23 @@ Chinese checkers, Dots and Boxes (thin tap targets).
     in a game). Answer only calls from CYD Classic Games boards. The search
     call and its answer must stay readable by every later version, so an
     older board can still say "needs update".
+- **HARD RULE (Tom, 2026-10-04): no free-form communication between
+  players, ever** - no chat, messages or any player-filled field on the
+  air. Only fixed codes: presence, versions, games offered, requests and
+  their fixed answers, moves, game state. (CLAUDE.md has the full rule.)
+- Compatibility (Tom, 2026-10-04): boards play together when their
+  **link version** (finding, requests, game sync) and that **game's
+  version** (its moves and rules) match - not their firmware version.
+  Every wireless game has a fixed **game key** (never its place in the
+  list) and every move travels as a **move key** that describes the move
+  itself (e.g. Chess from-square, to-square, promotion), never its place in
+  a generated move list - so lists can change without changing what's
+  sent. A test in CI plays fixed games per wireless game and fails the
+  build if the moves sent change while the game's version didn't. The
+  first "who's there?" call and its answer keep a frozen layout forever.
+  List: "needs update" / "later version" only when nothing can be played;
+  otherwise the player is "available" and games that differ are greyed
+  with "needs update" on the games page.
 - Protocol (`src/net/wireless.*`, plain C++): no acks; every board repeats
   its state twice a second and at once on a change, with a counter so late
   copies can't undo newer ones. Beacons: name, firmware, available / busy

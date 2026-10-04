@@ -19,6 +19,19 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 - Tom plays with a Nintendo DS Lite stylus with firm presses - NOT a finger.
   Don't explain touch problems with finger size or light pressure.
 
+## HARD RULE: no free-form communication between players (Tom, 2026-10-04)
+Tom works in K-12 education; the boards may be used by children, and laws
+and school rules restrict children communicating with strangers. **Nothing
+a player writes or says may ever travel from one board to another.** What
+crosses the air is limited to fixed, coded fields: board presence and
+version, the games offered, play requests and their fixed answers (Play,
+No Thanks, Other Game + a game key), moves, and game/session state. Never
+add chat, messages, emoji/stickers, free-text fields, drawings, voice, or
+any other channel a player can fill - not even as a hidden or debug
+feature, and not "just for testing". Any new packet field must be a code
+from a fixed set defined in the firmware. If a feature would need free
+text on the air, it doesn't get built. (Player names: see SPEC section 5.)
+
 ## Board naming (Tom's rule)
 - Name boards by what a user can identify: **screen size, display driver,
   touch type**. Never by an information site (LCDwiki is a datasheet
