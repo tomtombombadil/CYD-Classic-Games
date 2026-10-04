@@ -168,10 +168,6 @@ Chinese checkers, Dots and Boxes (thin tap targets).
     "Searching..." while it looks. The list: "Bob - available" ("free" if
     "available" doesn't fit), "Bob - busy", "Bob - no games", "Bob - needs
     update". Busy players can't be picked: no requests interrupt a 2P game.
-  - Versions: the older board's player is told to update to the other
-    board's version; the newer board's player is told the other player's
-    version is too low (both versions shown); both see the web flasher's
-    address.
   - Names carry the board ID internally (protocol, code, log); players only
     ever see the chosen name. No collisions.
   - Picking a player shows the games: playable (both players offer it) lit,
@@ -195,10 +191,31 @@ Chinese checkers, Dots and Boxes (thin tap targets).
   - Game over: Play Again, choose a New Game, or "Goodbye Bob" (ends the
     session).
   - Draws: no draw offer; draws only by the game's rules.
-  - A 2P game settings choice of move timeouts, default 30 s; the shorter
-    of the two players' settings applies, and a player is told only when it
-    differs from theirs. Countdown in the header: "Waiting... 30s" for the
-    player waiting, "Respond in... 30s" for the player to move.
+  - Move time (a 2P setting): 30 s (default), 1 min, 2 min, 5 min, Off - one
+    setting for every game. The shorter of the two players' settings applies
+    (Off = no limit); a player is told only when it differs from theirs.
+    Countdown in the header: "Waiting... 30s" for the waiting player,
+    "Respond in 30s" for the player to move.
+  - Two different failures (Tom, 2026-10-04):
+    - **Player doesn't respond** (communication fine): at 0 the late player
+      gets "You haven't responded in time. You will forfeit if you do not
+      respond in 10 seconds." and 10 more seconds; then they forfeit.
+    - **Communication fails** (range, power, interference - not anyone's
+      choice): after a whole move time with nothing heard: "No reply from
+      Bob. Do you want to close the game, or keep waiting?" Close = "Communications
+      failed. Game not counted." Keep Waiting = one more move time; if still
+      nothing, no loss and no forfeit: the session is saved and resumed if
+      Bob comes back in range.
+  - The one allowed "are you sure": leaving a 2P game says it will forfeit
+    the game, and asks.
+  - List versions: "Bob - needs update" when this board's version is higher
+    (tapping it makes clear **Bob** must update); "Bob - later version"
+    when this board's is lower (tapping it makes clear **this** board must
+    update). Both pages show the web flasher's address.
+  - Radio: 2P = listen silently; send only while the player searches (and
+    in a game). Answer only calls from CYD Classic Games boards. The search
+    call and its answer must stay readable by every later version, so an
+    older board can still say "needs update".
 - Protocol (`src/net/wireless.*`, plain C++): no acks; every board repeats
   its state twice a second and at once on a change, with a counter so late
   copies can't undo newer ones. Beacons: name, firmware, available / busy
