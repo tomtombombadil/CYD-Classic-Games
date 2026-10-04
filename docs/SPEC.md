@@ -229,6 +229,13 @@ Chinese checkers, Dots and Boxes (thin tap targets).
   players, ever** - no chat, messages or any player-filled field on the
   air. Only fixed codes: presence, versions, games offered, requests and
   their fixed answers, moves, game state. (CLAUDE.md has the full rule.)
+- **Player names are picked, never typed** (Tom, 2026-10-04, from the hard
+  rule): two words, one from each of two fixed lists in the firmware -
+  fun, funny and silly, kid-safe ("Wobbly Pickle", "Turbo Llama"). The name
+  page has **Random** and **Pick From List** (pick a word from each list).
+  On the air a name is two numbers plus the board ID; no typed text ever
+  leaves a board. The lists are **append-only** (a word's number never
+  changes), so every version shows the same name.
 - Compatibility (Tom, 2026-10-04): boards play together when their
   **link version** (finding, requests, game sync) and that **game's
   version** (its moves and rules) match - not their firmware version.

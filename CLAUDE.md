@@ -30,7 +30,9 @@ add chat, messages, emoji/stickers, free-text fields, drawings, voice, or
 any other channel a player can fill - not even as a hidden or debug
 feature, and not "just for testing". Any new packet field must be a code
 from a fixed set defined in the firmware. If a feature would need free
-text on the air, it doesn't get built. (Player names: see SPEC section 5.)
+text on the air, it doesn't get built. Player names are two words picked
+from fixed, kid-safe lists (Random / Pick From List), sent as numbers -
+never typed (SPEC section 5).
 
 ## Board naming (Tom's rule)
 - Name boards by what a user can identify: **screen size, display driver,
