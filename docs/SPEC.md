@@ -191,7 +191,7 @@ Chinese checkers, Dots and Boxes (thin tap targets).
   - Game over: Play Again, choose a New Game, or "Goodbye Bob" (ends the
     session).
   - Draws: no draw offer; draws only by the game's rules.
-  - Move time (a 2P setting): 30 s (default), 1 min, 2 min, 5 min, Off - one
+  - **Move Timer** (a 2P setting; Tom's name): 30 s (default), 1 min, 2 min, 5 min, Off - one
     setting for every game. The shorter of the two players' settings applies
     (Off = no limit); a player is told only when it differs from theirs.
     Countdown in the header: "Waiting... 30s" for the waiting player,
@@ -199,15 +199,24 @@ Chinese checkers, Dots and Boxes (thin tap targets).
   - Two different failures (Tom, 2026-10-04):
     - **Player doesn't respond** (communication fine): at 0 the late player
       gets "You haven't responded in time. You will forfeit if you do not
-      respond in 10 seconds." and 10 more seconds; then they forfeit.
+      respond in 10 seconds." and 10 more seconds; then they forfeit. The
+      player can close that pop-up and still has the 10 seconds to move.
     - **Communication fails** (range, power, interference - not anyone's
       choice): after a whole move time with nothing heard: "No reply from
       Bob. Do you want to close the game, or keep waiting?" Close = "Communications
       failed. Game not counted." Keep Waiting = one more move time; if still
       nothing, no loss and no forfeit: the session is saved and resumed if
-      Bob comes back in range.
-  - The one allowed "are you sure": leaving a 2P game says it will forfeit
-    the game, and asks.
+      Bob comes back in range: "Bob is back in range. Continue Chess?"
+      Continue / Close Game on both boards; it goes on only if both tap
+      Continue, else it ends not counted. A saved session **survives a
+      restart** (Tom: DIY boards, maybe run by children - an oops reboot
+      mustn't kill the fun; replaces "a restart clears the session"), the
+      2P icon is lit while it waits, and Clear 2P Sessions always removes it.
+  - The one allowed "are you sure": leaving a 2P game (the back arrow, Exit
+    Game) says "Leaving will forfeit this game." Keep Playing / Leave Game.
+    The menu's Forfeit Game key acts at once.
+  - Requests say only "Ann would like to play Chess." (no "you move first").
+  - "Bob left and forfeited the game."
   - List versions: "Bob - needs update" when this board's version is higher
     (tapping it makes clear **Bob** must update); "Bob - later version"
     when this board's is lower (tapping it makes clear **this** board must
