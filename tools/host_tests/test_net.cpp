@@ -1,6 +1,6 @@
-// Host tests for src/net/wireless.*: boards finding each other, invites,
-// and games kept in step over a fake radio that loses, repeats and
-// reorders packets.
+// Host tests for src/net/wireless.*: boards finding each other, offers and
+// their answers, and games kept in step over a fake radio that loses,
+// repeats and reorders packets.
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -62,20 +62,25 @@ struct Toy {
     }
 };
 
-// ---- A board ----------------------------------------------------------------------------------
+// ---- A board: presence always on, a link while in a game (like the app) -----------------------
 struct Board {
-    int    id = 0;
-    Mac    mac;
-    Ctx    ctx;
-    Air    a;
-    Lobby  lobby;
-    bool   in_lobby = false, in_game = false;
-    Link   link;
-    Toy    g;
-    int    played_here = 0;            // own moves
+    int      id = 0;
+    Mac      mac;
+    Ctx      ctx;
+    Air      a;
+    Presence p;
+    bool     on = false;               // radio on
+    bool     in_game = false;
+    Link     link;
+    Toy      g;
+    char     name[16] = "";
+    uint16_t games = 0xFFFF;
+    bool     available = true;
+    int      played_here = 0;
+    bool     players = true;           // makes moves by itself
     std::mt19937 rng;
 
-    void setup(int i, const char* name, const char* fw)
+    void setup(int i, const char* nm, const char* fw, uint16_t mask = 0xFFFF)
     {
         id = i;
         mac.b[0] = 0x24; mac.b[5] = uint8_t(i + 1);
@@ -83,15 +88,24 @@ struct Board {
         a.send = send_cb;
         a.ctx = &ctx;
         rng.seed(100 + i);
-        lobby.begin(mac, name, "toy", fw, a, air.now);
-        in_lobby = true;
+        snprintf(name, sizeof name, "%s", nm);
+        games = mask;
+        p.begin(mac, fw, a, air.now);
+        profile();
+        on = true;
     }
-    void start_from_lobby()
+    void profile() { p.set_profile(name, available, games, in_game && !link.ended() ? 0 : -1, false, air.now); }
+    void start()
     {
-        link.begin(mac, lobby.partner(), lobby.partner_name(), lobby.session(), lobby.inviter(), a, air.now);
-        in_lobby = false;
+        link.begin(mac, p.partner(), p.partner_name(), p.session(), p.inviter(), a, air.now);
         in_game = true;
         g = Toy{};
+        profile();
+    }
+    int index_of(const Board& other) const
+    {
+        for (int i = 0; i < p.count(); ++i) if (p.at(i).mac == other.mac) return i;
+        return -1;
     }
 };
 
@@ -100,13 +114,17 @@ std::vector<Board*> boards;
 void deliver()
 {
     std::vector<Packet> due, later;
-    for (auto& p : air.flying) (int32_t(air.now - p.at) >= 0 ? due : later).push_back(p);
+    for (auto& pk : air.flying) (int32_t(air.now - pk.at) >= 0 ? due : later).push_back(pk);
     air.flying = later;
-    for (auto& p : due)
+    for (auto& pk : due)
         for (Board* b : boards) {
-            if (b->id == p.from) continue;
-            if (b->in_lobby) b->lobby.receive(boards[p.from]->mac, p.data.data(), p.data.size(), air.now);
-            if (b->in_game)  b->link.receive(boards[p.from]->mac, p.data.data(), p.data.size(), air.now);
+            if (b->id == pk.from || !b->on) continue;
+            const Mac& from = boards[pk.from]->mac;
+            const uint32_t s = status_session(pk.data.data(), pk.data.size());
+            if (b->in_game && s && s == b->link.session())
+                b->link.receive(from, pk.data.data(), pk.data.size(), air.now);
+            else
+                b->p.receive(from, pk.data.data(), pk.data.size(), air.now);
         }
 }
 
@@ -116,19 +134,19 @@ void step(bool players = true)
     air.now += 10;
     deliver();
     for (Board* b : boards) {
-        if (b->in_lobby) b->lobby.tick(air.now);
+        if (!b->on) continue;
+        b->p.tick(air.now);
         if (!b->in_game) continue;
         b->link.tick(air.now);
         if (b->link.started_next()) b->g = Toy{};
         if (b->link.ended()) continue;
-        // The partner's moves first, each checked
         for (int m; (m = b->link.next_move()) >= 0;) {
             if (!b->g.legal(m) || b->g.side == b->link.my_side()) { b->link.disagree(air.now); break; }
             b->g.play(m);
             b->link.played(m, air.now);
         }
-        if (!players || b->link.ended()) continue;
-        if (b->g.winner < 0 && b->g.side == b->link.my_side() && b->link.up(air.now)
+        if (!players || !b->players || b->link.ended()) continue;
+        if (b->g.winner < 0 && b->g.side == b->link.my_side() && b->link.up(air.now) && !b->link.peer_away()
             && b->link.next_move() < 0 && b->rng() % 20 == 0) {
             const int m = 1 + int(b->rng() % 3);
             b->g.play(m);
@@ -140,26 +158,36 @@ void step(bool players = true)
 
 void run(int ms, bool players = true) { for (int t = 0; t < ms; t += 10) step(players); }
 
-// Two boards in a game together (A invited B)
-void pair_up(Board& A, Board& B)
+int wait_seen(Board& A, const Board& B)
 {
-    int bi = -1;
-    for (int t = 0; t < 1000 && bi < 0; ++t) {
-        step(false);
-        for (int i = 0; i < A.lobby.count(); ++i) if (A.lobby.at(i).mac == B.mac) bi = i;
-    }
+    int i = -1;
+    for (int t = 0; t < 1000 && i < 0; ++t) { step(false); i = A.index_of(B); }
+    return i;
+}
+
+Presence::Event wait_event(Board& A, int max_ms)
+{
+    Presence::Event e = Presence::Event::None;
+    for (int t = 0; t < max_ms && e == Presence::Event::None; t += 10) { step(false); e = A.p.poll(); }
+    return e;
+}
+
+// Two boards in a game together (A offered `game` to B)
+void pair_up(Board& A, Board& B, int game = 2)
+{
+    const int bi = wait_seen(A, B);
     CHECK(bi >= 0);
-    CHECK(A.lobby.can_invite(bi));
-    A.lobby.invite(bi, 0xABC00000u + A.id, air.now);
-    for (int t = 0; t < 300 && !B.lobby.asked(); ++t) step(false);
-    CHECK(B.lobby.asked());
-    B.lobby.accept(air.now);
-    CHECK(B.lobby.poll() == Lobby::Event::Started);
-    B.start_from_lobby();
-    Lobby::Event e = Lobby::Event::None;
-    for (int t = 0; t < 500 && e == Lobby::Event::None; ++t) { step(false); e = A.lobby.poll(); }
-    CHECK(e == Lobby::Event::Started);
-    A.start_from_lobby();
+    CHECK(A.p.can_offer(bi, game));
+    A.p.offer(bi, game, 0xABC00000u + A.id, air.now);
+    for (int t = 0; t < 300 && !B.p.asked(); ++t) step(false);
+    CHECK(B.p.asked());
+    CHECK(B.p.asked_game() == game);
+    B.p.accept(air.now);
+    CHECK(B.p.poll() == Presence::Event::Started);
+    B.start();
+    CHECK(wait_event(A, 5000) == Presence::Event::Started);
+    CHECK(A.p.game() == game && B.p.game() == game);
+    A.start();
     CHECK(A.link.session() == B.link.session());
     CHECK(A.link.my_side() == 0 && B.link.my_side() == 1);
 }
@@ -192,69 +220,134 @@ void test_names()
     CHECK(strcmp(out, "Tom") == 0);
 }
 
-void test_lobby_list()
+void test_presence_list()
 {
     reset_air(0.2, 0.1, 80);
-    Board A, B, C;
-    boards = {&A, &B, &C};
+    Board A, B, C, D, E;
+    boards = {&A, &B, &C, &D, &E};
     A.setup(0, "Ann", "v1.0.0");
-    B.setup(1, "Bob", "v1.0.0");
-    C.setup(2, "Cy", "v0.9.9");
-    run(2000, false);
-    CHECK(A.lobby.count() == 2);
-    for (int i = 0; i < A.lobby.count(); ++i) {
-        const Nearby& n = A.lobby.at(i);
-        if (n.mac == B.mac) { CHECK(strcmp(n.name, "Bob") == 0); CHECK(A.lobby.can_invite(i)); }
-        if (n.mac == C.mac) { CHECK(A.lobby.same_game(i)); CHECK(!A.lobby.same_version(i)); CHECK(!A.lobby.can_invite(i)); }
+    B.setup(1, "Bob", "v1.0.0", 0x0005);     // games 0 and 2
+    C.setup(2, "Cy", "v1.0.0");
+    C.available = false; C.profile();        // hidden: not listed
+    D.setup(3, "Di", "v0.9.9");              // another version
+    E.setup(4, "Ed", "v1.0.0");
+    E.in_game = true; E.profile();           // busy in a game
+    run(2500, false);
+    CHECK(A.p.count() == 3);
+    CHECK(A.index_of(C) < 0);
+    const int b = A.index_of(B), d = A.index_of(D), e = A.index_of(E);
+    CHECK(b >= 0 && d >= 0 && e >= 0);
+    if (b >= 0) {
+        CHECK(strcmp(A.p.at(b).name, "Bob") == 0);
+        CHECK(A.p.at(b).games == 0x0005);
+        CHECK(A.p.can_offer(b, 0) && A.p.can_offer(b, 2) && !A.p.can_offer(b, 1));
     }
-    // C leaves: forgotten after a while
-    C.in_lobby = false;
-    run(5000, false);
-    CHECK(A.lobby.count() == 1);
+    if (d >= 0) { CHECK(!A.p.same_version(d)); CHECK(!A.p.can_offer(d, 0)); }
+    if (e >= 0) { CHECK(A.p.at(e).busy && A.p.at(e).busy_game == 0); CHECK(!A.p.can_offer(e, 0)); }
+    // B goes hidden: off the list at once (its next beacon says so)
+    B.available = false; B.profile();
+    run(1500, false);
+    CHECK(A.index_of(B) < 0);
+    // D switches off: forgotten after a while
+    D.on = false;
+    run(kForgetMs + 1500, false);
+    CHECK(A.index_of(D) < 0);
     // Another protocol version shows by name only
-    uint8_t pkt[40] = {'C', 'Y', uint8_t(kProto + 1), 1, 'Z', 'o', 'e'};
+    uint8_t pkt[48] = {'C', 'Y', uint8_t(kProto + 1), 1, 'Z', 'o', 'e'};
     Mac z; z.b[5] = 99;
-    A.lobby.receive(z, pkt, sizeof pkt, air.now);
-    bool seen = false;
-    for (int i = 0; i < A.lobby.count(); ++i)
-        if (A.lobby.at(i).mac == z) { seen = true; CHECK(strcmp(A.lobby.at(i).name, "Zoe") == 0); CHECK(!A.lobby.can_invite(i)); }
-    CHECK(seen);
+    A.p.receive(z, pkt, sizeof pkt, air.now);
+    const Nearby* zn = A.p.find(z);
+    CHECK(zn && strcmp(zn->name, "Zoe") == 0 && !zn->proto_ok);
 }
 
-void test_decline_and_cancel()
+void test_answers()
 {
     reset_air(0.3, 0.1, 100);
     Board A, B;
     boards = {&A, &B};
     A.setup(0, "Ann", "v1");
-    B.setup(1, "Bob", "v1");
-    run(1500, false);
-    A.lobby.invite(0, 77, air.now);
-    for (int t = 0; t < 300 && !B.lobby.asked(); ++t) step(false);
-    CHECK(B.lobby.asked());
-    CHECK(strcmp(B.lobby.asker_name(), "Ann") == 0);
-    B.lobby.decline(air.now);
-    Lobby::Event e = Lobby::Event::None;
-    for (int t = 0; t < 400 && e == Lobby::Event::None; ++t) { step(false); e = A.lobby.poll(); }
-    CHECK(e == Lobby::Event::Declined);
-    CHECK(!A.lobby.inviting());
-    // A cancels an invite: B's question goes away
+    B.setup(1, "Bob", "v1", 0x0003);
+    const int bi = wait_seen(A, B);
+    // Not Now
+    A.p.offer(bi, 1, 77, air.now);
+    CHECK(A.p.offering() && A.p.offer_game() == 1);
+    for (int t = 0; t < 300 && !B.p.asked(); ++t) step(false);
+    CHECK(B.p.asked() && strcmp(B.p.asker_name(), "Ann") == 0 && B.p.asked_game() == 1);
+    B.p.decline(Reason::NotNow, air.now);
+    CHECK(wait_event(A, 4000) == Presence::Event::Declined);
+    CHECK(A.p.reason() == Reason::NotNow);
+    CHECK(!A.p.offering());
     run(3500, false);
-    A.lobby.invite(0, 78, air.now);
-    for (int t = 0; t < 300 && !B.lobby.asked(); ++t) step(false);
-    CHECK(B.lobby.asked());
-    A.lobby.cancel(air.now);
+    // Another Game
+    A.p.offer(A.index_of(B), 0, 78, air.now);
+    for (int t = 0; t < 300 && !B.p.asked(); ++t) step(false);
+    B.p.decline(Reason::OtherGame, air.now);
+    CHECK(wait_event(A, 4000) == Presence::Event::Declined);
+    CHECK(A.p.reason() == Reason::OtherGame);
+    run(3500, false);
+    // A game B turned off since A saw its list: B's board answers by itself
+    air.blocked = true;
+    B.games = 0x0001; B.profile();                 // that beacon is lost
+    air.blocked = false;
+    CHECK(A.p.can_offer(A.index_of(B), 1));        // A doesn't know yet
+    A.p.offer(A.index_of(B), 1, 79, air.now);
+    CHECK(wait_event(A, 4000) == Presence::Event::Declined);
+    CHECK(A.p.reason() == Reason::GameOff);
+    CHECK(!B.p.asked());
+    CHECK(!A.p.can_offer(A.index_of(B), 1));
+    // An offer nobody answers runs out
+    Board C;
+    boards = {&A, &B, &C};
+    C.setup(2, "Cy", "v1");
+    const int ci = wait_seen(A, C);
+    A.p.offer(ci, 2, 80, air.now);
+    for (int t = 0; t < 300 && !C.p.asked(); ++t) step(false);
+    CHECK(C.p.asked());
+    CHECK(wait_event(A, kOfferMs + 2000) == Presence::Event::NoAnswer);
+    run(3000, false);
+    CHECK(!C.p.asked());                           // the question went away there too
+    // Cancelled offers go away on the other board
+    A.p.offer(A.index_of(C), 2, 81, air.now);
+    for (int t = 0; t < 300 && !C.p.asked(); ++t) step(false);
+    A.p.cancel(air.now);
     run(2000, false);
-    CHECK(!B.lobby.asked());
-    // B says Play after A gave up: B's game ends at once ("Ann left")
-    A.lobby.invite(0, 79, air.now);
-    for (int t = 0; t < 300 && !B.lobby.asked(); ++t) step(false);
-    A.lobby.cancel(air.now);
-    B.lobby.accept(air.now);
-    B.start_from_lobby();
-    run(2000, false);
-    CHECK(B.link.ended());
-    CHECK(B.link.end_reason() == Link::End::PeerLeft);
+    CHECK(!C.p.asked());
+    // Play after the asker gave up: the game there ends at once ("gone")
+    A.p.offer(A.index_of(C), 2, 82, air.now);
+    for (int t = 0; t < 300 && !C.p.asked(); ++t) step(false);
+    CHECK(C.p.asked());
+    A.p.cancel(air.now);
+    C.p.accept(air.now);
+    CHECK(C.p.poll() == Presence::Event::Started);
+    C.start();
+    for (int t = 0; t < 10000 && !C.link.ended(); t += 10) step(false);
+    CHECK(C.link.ended() && C.link.end_reason() == Link::End::PeerGone);
+}
+
+void test_busy_refusal()
+{
+    reset_air(0, 0, 0);
+    Board A, B, C;
+    boards = {&A, &B, &C};
+    A.setup(0, "Ann", "v1");
+    B.setup(1, "Bob", "v1");
+    C.setup(2, "Cy", "v1");
+    pair_up(A, B);
+    run(1500, false);
+    const int bi = C.index_of(B);
+    CHECK(bi >= 0 && C.p.at(bi).busy && !C.p.can_offer(bi, 2));
+    // An offer that crosses with B starting a game is refused with Busy
+    // (hand-made: B's own presence answers it)
+    Board D;
+    boards = {&A, &B, &C, &D};
+    D.setup(3, "Di", "v1");
+    const int di = wait_seen(D, C);
+    D.p.offer(di, 2, 90, air.now);
+    for (int t = 0; t < 300 && !C.p.asked(); ++t) step(false);
+    C.in_game = true; C.profile();                 // C got busy before answering
+    CHECK(!C.p.asked());
+    CHECK(wait_event(D, 4000) == Presence::Event::Declined);
+    CHECK(D.p.reason() == Reason::Busy);
 }
 
 void test_game_lossy(double loss, double dup, uint32_t delay, int seed)
@@ -279,6 +372,11 @@ void test_game_lossy(double loss, double dup, uint32_t delay, int seed)
     CHECK(A.link.game_no() == 1 && B.link.game_no() == 1);
     CHECK(A.link.my_side() == 1 && B.link.my_side() == 0);
     CHECK(finished_together(A, B, 120000));
+    // No more: A is done, B hears it
+    A.link.done(air.now);
+    run(3000);
+    CHECK(A.link.end_reason() == Link::End::YouDone);
+    CHECK(B.link.end_reason() == Link::End::PeerDone);
 }
 
 void test_link_down_and_reboot()
@@ -299,54 +397,72 @@ void test_link_down_and_reboot()
     CHECK(A.g.moves == a_moves && B.g.moves == b_moves);
     air.blocked = false;
     run(2000);
+    run(2000, false);                      // nobody moving: both in step
     CHECK(A.link.up(air.now) && B.link.up(air.now));
     CHECK(A.g.moves == B.g.moves);
+
+    // B's game screen closes (paused): A sees it and waits
+    B.link.set_away(true, air.now);
+    run(1500);
+    CHECK(A.link.peer_away());
+    const int moves_then = A.g.moves;
+    run(3000);
+    CHECK(A.g.moves == moves_then);
+    B.link.set_away(false, air.now);
+    run(1500);
+    CHECK(!A.link.peer_away());
 
     // B "turns off" right after A moved (B saved before hearing it), then comes back
     for (int t = 0; t < 20000 && !(A.g.side == A.link.my_side() && A.g.winner < 0); t += 10) step();
     uint8_t saved[Link::kSaveBytes];
     CHECK(B.link.save(saved, sizeof saved) == Link::kSaveBytes);
     const Toy b_game = B.g;
-    B.in_game = false;
+    B.on = false;
     run(1500);                             // A moves (maybe twice); B hears nothing
     Link fresh;
     CHECK(fresh.load(saved, sizeof saved, B.a, air.now));
     B.link = fresh;
     B.g = b_game;
-    B.in_game = true;
+    B.on = true;
     CHECK(finished_together(A, B, 120000));
     CHECK(!A.link.ended() && !B.link.ended());
 }
 
-void test_leave_and_disagree()
+void test_forfeit()
 {
-    reset_air(0.3, 0.1, 50);
+    for (double loss : {0.0, 0.4}) {
+        reset_air(loss, 0.1, 80);
+        Board A, B;
+        boards = {&A, &B};
+        A.setup(0, "Ann", "v1");
+        B.setup(1, "Bob", "v1");
+        pair_up(A, B);
+        run(3000);
+        A.link.forfeit(air.now);
+        CHECK(A.link.end_reason() == Link::End::YouForfeited);
+        // A keeps saying so for a while, then may switch off
+        for (int t = 0; t < 6000 && !A.link.linger_over(air.now); t += 10) step();
+        CHECK(A.link.linger_over(air.now));
+        CHECK(B.link.end_reason() == Link::End::PeerForfeited);
+    }
+    // B was away while A forfeited: B hears it when it comes back (A's board still has the radio on)
+    reset_air(0, 0, 0);
     Board A, B;
     boards = {&A, &B};
     A.setup(0, "Ann", "v1");
     B.setup(1, "Bob", "v1");
     pair_up(A, B);
-    run(3000);
-    A.link.leave(air.now);
-    A.in_game = false;                     // radio off after the "left" packets
-    run(3000);
-    // With 30 % loss, three "left" packets may all be lost: then B waits
-    CHECK(B.link.ended() || !B.link.up(air.now));
-
-    // A board that opens the old game later is told it's over
-    reset_air(0, 0, 0);
-    Board C, D;
-    boards = {&C, &D};
-    C.setup(0, "Cy", "v1");
-    D.setup(1, "Di", "v1");
-    pair_up(C, D);
     run(2000);
-    C.link.leave(air.now);
-    C.in_game = false;
-    run(500);
-    CHECK(D.link.ended() && D.link.end_reason() == Link::End::PeerLeft);
+    B.on = false;
+    A.link.forfeit(air.now);
+    run(10000);
+    B.on = true;
+    run(2000);
+    CHECK(B.link.end_reason() == Link::End::PeerForfeited);
+}
 
-    // Different games on the two boards: found out by the hash
+void test_disagree()
+{
     reset_air(0, 0, 0);
     Board E, F;
     boards = {&E, &F};
@@ -362,8 +478,9 @@ void test_leave_and_disagree()
     mover.link.played(1, air.now);
     other.link.played(2, air.now);
     run(1500, false);
-    CHECK(E.link.ended() || F.link.ended());
-    CHECK((E.link.ended() ? E : F).link.end_reason() == Link::End::OutOfStep);
+    CHECK(E.link.ended() && F.link.ended());
+    CHECK(E.link.end_reason() == Link::End::OutOfStep || E.link.end_reason() == Link::End::PeerGone);
+    CHECK(F.link.end_reason() == Link::End::OutOfStep || F.link.end_reason() == Link::End::PeerGone);
 }
 
 void test_save_round_trip()
@@ -381,6 +498,9 @@ void test_save_round_trip()
     CHECK(l.load(buf, sizeof buf, A.a, air.now));
     CHECK(l.session() == A.link.session() && l.ply() == A.link.ply() && l.my_side() == A.link.my_side());
     CHECK(strcmp(l.peer_name(), "Bob") == 0);
+    A.link.forfeit(air.now);
+    CHECK(A.link.save(buf, sizeof buf) == Link::kSaveBytes);
+    CHECK(l.load(buf, sizeof buf, A.a, air.now) && l.end_reason() == Link::End::YouForfeited);
     buf[0] = 'X';
     CHECK(!l.load(buf, sizeof buf, A.a, air.now));
     CHECK(!l.load(buf, sizeof buf - 1, A.a, air.now));
@@ -391,13 +511,15 @@ void test_save_round_trip()
 int main()
 {
     test_names();
-    test_lobby_list();
-    test_decline_and_cancel();
+    test_presence_list();
+    test_answers();
+    test_busy_refusal();
     test_game_lossy(0, 0, 0, 1);
     test_game_lossy(0.3, 0.1, 150, 2);
     test_game_lossy(0.5, 0.2, 400, 3);
     test_link_down_and_reboot();
-    test_leave_and_disagree();
+    test_forfeit();
+    test_disagree();
     test_save_round_trip();
     if (failures) { printf("%d failed\n", failures); return 1; }
     printf("net: all passed\n");

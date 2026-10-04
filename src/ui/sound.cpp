@@ -26,10 +26,13 @@ template <int N> constexpr Seq seq(const Tone (&t)[N]) { return {t, N}; }
 // Up C E G, then a quick G-C trill: short and pleased with itself
 constexpr Tone kTrill[]   = {{1047, 60}, {1319, 60}, {1568, 70}, {2093, 45}, {1568, 45},
                              {2093, 45}, {1568, 45}, {2093, 160}};
+// "Ding-dong, ding-dong": someone nearby asks to play
+constexpr Tone kCall[]    = {{1319, 120}, {988, 160}, {0, 90}, {1319, 120}, {988, 200}};
 
 const Seq kSounds[] = {
     seq(kPlace), seq(kMove), seq(kError),
     seq(kHint), seq(kWin), seq(kLose), seq(kDraw), seq(kTurn), seq(kFanfare), seq(kTrill),
+    seq(kCall),
 };
 
 } // namespace

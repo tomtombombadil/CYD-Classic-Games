@@ -238,6 +238,16 @@ void menu_two_player(const char* title, const MenuHandlers& h, bool wireless)
     menu_tail();
 }
 
+void menu_wireless(const char* title, const char* line, const MenuHandlers& h)
+{
+    handlers = h;
+    wireless_ok = false;
+    overlay_begin(title);
+    if (line) overlay_text(line, true);
+    overlay_button(overlay(), "Forfeit Game", menu_cb, kForfeit);
+    menu_tail();
+}
+
 void menu_solo(const char* title, const char* const levels[3], const MenuHandlers& h, bool restart, const char* options)
 {
     handlers = h;

@@ -83,8 +83,24 @@ jobs:
           g++ -std=c++17 -O1 -Wall -Werror -fsanitize=address,undefined -o test_net tools/host_tests/test_net.cpp src/net/wireless.cpp
           ./test_net
 
+  # Two whole boards (picker, Wireless Play, games, protocol) on the PC,
+  # in lockstep, playing scripted wireless sessions - clean and with 30 %
+  # of the radio packets lost
+  wireless-duo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: LVGL 9.6 for the PC preview
+        run: git clone --depth 1 --branch v9.6.0 https://github.com/lvgl/lvgl.git ../lvgl
+      - name: Build the preview
+        run: sh tools/preview/build.sh ../lvgl ../pv
+      - name: Two boards, clean radio
+        run: python3 tools/preview/duo.py ../pv/preview
+      - name: Two boards, 30 % of packets lost
+        run: python3 tools/preview/duo.py ../pv/preview "" 0.3
+
   build:
-    needs: [boards, tests]
+    needs: [boards, tests, wireless-duo]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

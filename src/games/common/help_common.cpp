@@ -6,9 +6,9 @@ const char kHelpTwoPlayer[] =
     "Pass and Play: two people share this CYD and take turns.\n"
     "Exit Game keeps the game. A new game once you've moved counts as a loss.";
 const char kHelpWireless[] =
-    "Play someone on another CYD nearby, no router needed: both open this "
-    "game and pick Wireless in the menu.\n"
-    "Tap the other board's name to ask it to play (same version needed).\n"
-    "Out of touch, the game waits. Exit Game pauses it: open it on both to "
-    "go on. Play Again works once both tap it.";
+    "Play someone on another CYD nearby: Wireless Play (on the first "
+    "screen, or Wireless in the menu). Turn on Available To Play, then "
+    "Find Players, tap a name and a game to ask.\n"
+    "Out of touch, the game waits; Exit Game pauses it. Forfeit Game (menu) "
+    "is a loss. Play Again works once both tap it.";
 }

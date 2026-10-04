@@ -50,7 +50,7 @@ enum MenuId : intptr_t {
     kLevel0 = 0, kLevel1 = 1, kLevel2 = 2,   // new game: vs computer level / puzzle level
     kPassAndPlay = 3, kWireless = 4,
     kStats = 5, kExitGame = 6, kSettings = 7, kExitMenu = 8, kRestart = 9,
-    kHowToPlay = 10, kOptions = 11,
+    kHowToPlay = 10, kOptions = 11, kForfeit = 12,
 };
 struct MenuHandlers {
     void (*pick)(int id);          // a level, pass-and-play or restart was tapped
@@ -62,6 +62,10 @@ struct MenuHandlers {
 // Wireless (greyed and ignored unless `wireless`; picks kWireless), How To
 // Play, Stats | Settings, and at the bottom Exit Menu | Exit Game.
 void menu_two_player(const char* title, const MenuHandlers& h, bool wireless = false);
+// A wireless game in progress: a line about it, Forfeit Game (picks
+// kForfeit: a loss here, a win on the other board), How To Play,
+// Stats | Settings, Exit Menu | Exit Game (Exit Game pauses it).
+void menu_wireless(const char* title, const char* line, const MenuHandlers& h);
 // Solo puzzle: "New Game:" three levels, Restart, How To Play,
 // Stats | Settings, and at
 // the bottom Exit Menu | Exit Game.

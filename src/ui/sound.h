@@ -26,6 +26,7 @@ enum class Sound : uint8_t {
     Turn,       // the other side moved (computer or the other player)
     Fanfare,    // a playful tune: a solitaire-type card game won
     Trill,      // a happy little victory trill: a Blackjack hand won
+    Call,       // ding-dong: a board nearby asks to play
 };
 
 void sound(Sound s);

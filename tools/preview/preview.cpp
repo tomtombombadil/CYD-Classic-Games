@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include "games/common/match.h"
+#include "games/common/wplay.h"
 #include "games/common/puzzle_stats.h"
 #include "games/common/two_player.h"
 #include "games/lightswitch/lightswitch_core.h"
@@ -302,6 +303,28 @@ static bool press_key_labelled(lv_obj_t* o, const char* text)
 {
     return ui::overlay() && press_key_labelled(ui::overlay(), text);
 }
+// The same for a key whose label starts with `prefix` (labels with counts)
+static bool press_key_prefix(lv_obj_t* o, const char* prefix)
+{
+    for (uint32_t i = 0; i < lv_obj_get_child_count(o); ++i) {
+        lv_obj_t* c = lv_obj_get_child(o, (int32_t)i);
+        // a key's label (not a title on the overlay or the screen itself)
+        if (lv_obj_check_type(c, &lv_label_class) && o != ui::overlay() && o != lv_screen_active()
+            && lv_obj_has_flag(o, LV_OBJ_FLAG_CLICKABLE)
+            && strncmp(lv_label_get_text(c), prefix, strlen(prefix)) == 0) {
+            lv_obj_send_event(o, LV_EVENT_CLICKED, nullptr);
+            return true;
+        }
+        if (press_key_prefix(c, prefix)) return true;
+    }
+    return false;
+}
+[[maybe_unused]] static bool press_overlay_prefix(const char* prefix)
+{
+    const bool ok = ui::overlay() && press_key_prefix(ui::overlay(), prefix);
+    if (!ok) fprintf(stderr, "PREVIEW: no key \"%s...\"\n", prefix);
+    return ok;
+}
 // The solo menu of whatever game is open: its ☰ key is on the screen; tap it
 [[maybe_unused]] static void kit_preview_menu()
 {
@@ -344,22 +367,26 @@ static bool press_key_labelled(lv_obj_t* o, const char* text)
 
 
 // ---- Fake radio: made-up boards nearby for the wireless shots ---------------------
-// Each one runs the real protocol (src/net/wireless.*); "Bob" plays Chess
-// back with the computer's Easy move.
+// Each one runs the real protocol (src/net/wireless.*): Bob plays Chess back
+// with the computer's Easy move; Ann plays a few games; Cy runs another
+// version; Di is in a game with someone else.
 struct FakeBoard {
-    net::Mac   mac;
-    net::Lobby lobby;
-    net::Link  link;
-    net::Air   air;
-    bool       in_lobby = false, in_game = false;
-    bool       accept_invites = true;
-    chess::Game* chess = nullptr;
-    uint32_t   move_at = 0;
-    bool       invite_us = false;
+    net::Mac      mac;
+    net::Presence pres;
+    net::Link     link;
+    net::Air      air;
+    bool          on = false, in_game = false;
+    bool          accept = true;             // says Play to an offer
+    int           offer_game = -1;           // asks the preview board to play this
+    char          name[16] = "";
+    uint16_t      games = 0xFFFF;
+    int           busy_game = -1;
+    chess::Game*  chess = nullptr;
+    uint32_t      move_at = 0;
 };
 struct FakePacket { net::Mac from; std::vector<uint8_t> d; };
 static std::vector<FakePacket> to_preview;
-static FakeBoard fake_boards[3];
+static FakeBoard fake_boards[4];
 static bool fake_radio_on = false;
 static const net::Mac kPreviewMac = [] { net::Mac m; const uint8_t b[6] = {0x24, 0x6F, 0x28, 0x10, 0x3F, 0x2A}; memcpy(m.b, b, 6); return m; }();
 
@@ -371,9 +398,11 @@ static void fake_board_send(const uint8_t* d, size_t n, void* ctx)
 static bool fake_radio_send(const uint8_t* d, size_t n)
 {
     if (!fake_radio_on) return false;
+    const uint32_t s = net::status_session(d, n);
     for (FakeBoard& b : fake_boards) {
-        if (b.in_lobby) b.lobby.receive(kPreviewMac, d, n, fake_ms);
-        if (b.in_game) b.link.receive(kPreviewMac, d, n, fake_ms);
+        if (!b.on) continue;
+        if (b.in_game && s && s == b.link.session()) b.link.receive(kPreviewMac, d, n, fake_ms);
+        else b.pres.receive(kPreviewMac, d, n, fake_ms);
     }
     return true;
 }
@@ -391,26 +420,26 @@ static uint32_t fake_clock() { return fake_ms; }
 static void fake_boards_tick(uint32_t now)
 {
     for (FakeBoard& b : fake_boards) {
-        if (b.in_lobby) {
-            b.lobby.tick(now);
-            if (b.invite_us && !b.lobby.inviting())
-                for (int i = 0; i < b.lobby.count(); ++i)
-                    if (b.lobby.at(i).mac == kPreviewMac && b.lobby.can_invite(i)) b.lobby.invite(i, 0x5EED, now);
-            if (b.accept_invites && b.lobby.asked()) b.lobby.accept(now);
-            if (b.lobby.poll() == net::Lobby::Event::Started) {
-                b.link.begin(b.mac, b.lobby.partner(), b.lobby.partner_name(), b.lobby.session(), b.lobby.inviter(), b.air, now);
-                b.in_lobby = false;
-                b.in_game = true;
-                if (!b.chess) b.chess = new chess::Game();
-                *b.chess = chess::Game{};
-                b.move_at = now + 900;
-            }
+        if (!b.on) continue;
+        b.pres.set_profile(b.name, true, b.games, b.in_game && !b.link.ended() ? 0 : b.busy_game, false, now);
+        b.pres.tick(now);
+        if (b.offer_game >= 0 && !b.pres.offering() && !b.in_game)
+            for (int i = 0; i < b.pres.count(); ++i)
+                if (b.pres.at(i).mac == kPreviewMac && b.pres.can_offer(i, b.offer_game)) b.pres.offer(i, b.offer_game, 0x5EED, now);
+        if (b.accept && b.pres.asked()) b.pres.accept(now);
+        if (b.pres.poll() == net::Presence::Event::Started) {
+            b.link.begin(b.mac, b.pres.partner(), b.pres.partner_name(), b.pres.session(), b.pres.inviter(), b.air, now);
+            b.in_game = true;
+            b.offer_game = -1;
+            if (!b.chess) b.chess = new chess::Game();
+            *b.chess = chess::Game{};
+            b.move_at = now + 900;
         }
         if (!b.in_game || b.link.ended()) continue;
         b.link.tick(now);
         for (int m; (m = b.link.next_move()) >= 0;) { b.chess->play(m); b.link.played(m, now); b.move_at = now + 900; }
         if (b.chess->result() == -1 && b.chess->turn() == b.link.my_side() && b.link.up(now)
-            && int32_t(now - b.move_at) >= 0) {
+            && !b.link.peer_away() && int32_t(now - b.move_at) >= 0) {
             const int m = chess::best_move(*b.chess, 0, 7, fake_clock);
             b.chess->play(m);
             b.link.played(m, now);
@@ -419,18 +448,25 @@ static void fake_boards_tick(uint32_t now)
 }
 [[maybe_unused]] static void fake_boards_begin(const char* fw)
 {
-    const char* names[3] = {"Bob", "Ann", "Cy"};
-    const char* games[3] = {"chess", "checkers", "chess"};
-    for (int i = 0; i < 3; ++i) {
+    const char* names[4] = {"Bob", "Ann", "Cy", "Di"};
+    for (int i = 0; i < 4; ++i) {
         FakeBoard& b = fake_boards[i];
         const uint8_t mac[6] = {0x24, 0x6F, 0x28, 0x77, 0x00, uint8_t(0x10 + i)};
         memcpy(b.mac.b, mac, 6);
         b.air.send = fake_board_send;
         b.air.ctx = &b;
-        b.lobby.begin(b.mac, names[i], games[i], i == 2 ? "v0.8.0" : fw, b.air, fake_ms);
-        b.in_lobby = true;
+        snprintf(b.name, sizeof b.name, "%s", names[i]);
+        b.pres.begin(b.mac, i == 2 ? "v0.8.0" : fw, b.air, fake_ms);
+        b.on = true;
         b.in_game = false;
+        b.accept = true;
+        b.offer_game = -1;
+        b.games = 0xFFFF;
+        b.busy_game = -1;
     }
+    fake_boards[1].games = uint16_t((1u << wplay::game_of("tictactoe")) | (1u << wplay::game_of("checkers"))
+                                    | (1u << wplay::game_of("mancala")));
+    fake_boards[3].busy_game = wplay::game_of("reversi");
     net_hook = fake_boards_tick;
 }
 // Index of a chess move in the move list, from "e2e4"
@@ -443,8 +479,225 @@ static void fake_boards_tick(uint32_t now)
     return -1;
 }
 
+
+// ---- Agent mode: one board of a two-board test (tools/preview/duo.py) ----------------
+// `preview --agent <w> <h> <name> <mac byte> <files dir>` reads commands on
+// stdin, one per line, and answers each with lines ending in "OK". The
+// coordinator runs two agents in lockstep and carries their radio packets.
+//   tick <ms>         run that long; prints each packet sent as "P <hex>"
+//   rx <mac> <hex>    a packet arrives (delivered on the next tick)
+//   press <prefix>    tap the key whose label starts so (overlay or screen)
+//   wplay | home | menu | open <game id> | move <n> | chess <e2e4>
+//   dump              every label on screen: "D text | text | ..."
+//   may               "M 1" if this player may move
+//   stats             the stats lines recorded so far: "R <game> <line>"
+//   shot <path>
+static std::vector<std::vector<uint8_t>> agent_out;
+static std::vector<std::pair<net::Mac, std::vector<uint8_t>>> agent_in;
+static bool agent_radio = false;
+static net::Mac agent_mac;
+static std::string agent_dir;
+static std::vector<std::string> agent_stats;
+
+static std::string hex(const uint8_t* d, size_t n)
+{
+    static const char* h = "0123456789abcdef";
+    std::string s;
+    for (size_t i = 0; i < n; ++i) { s += h[d[i] >> 4]; s += h[d[i] & 15]; }
+    return s;
+}
+static std::vector<uint8_t> unhex(const std::string& s)
+{
+    std::vector<uint8_t> v;
+    for (size_t i = 0; i + 1 < s.size(); i += 2) v.push_back(uint8_t(std::stoi(s.substr(i, 2), nullptr, 16)));
+    return v;
+}
+static void agent_save(const char* id, const uint8_t* buf, size_t len)
+{
+    files[id].assign(buf, buf + len);
+    if (agent_dir.empty()) return;
+    FILE* f = fopen((agent_dir + "/" + id + ".bin").c_str(), "wb");
+    if (f) { fwrite(buf, 1, len, f); fclose(f); }
+}
+static void agent_load_dir()
+{
+    if (agent_dir.empty()) return;
+    std::string cmd = "ls " + agent_dir + " 2>/dev/null";
+    FILE* p = popen(cmd.c_str(), "r");
+    char name[256];
+    while (p && fgets(name, sizeof name, p)) {
+        std::string n(name);
+        while (!n.empty() && (n.back() == '\n' || n.back() == '\r')) n.pop_back();
+        if (n.size() < 5 || n.substr(n.size() - 4) != ".bin") continue;
+        FILE* f = fopen((agent_dir + "/" + n).c_str(), "rb");
+        if (!f) continue;
+        std::vector<uint8_t> d;
+        int c;
+        while ((c = fgetc(f)) != EOF) d.push_back(uint8_t(c));
+        fclose(f);
+        files[n.substr(0, n.size() - 4)] = d;
+    }
+    if (p) pclose(p);
+}
+static void dump_labels(lv_obj_t* o, std::string& out)
+{
+    if (lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN)) return;
+    if (lv_obj_check_type(o, &lv_label_class)) {
+        std::string t = lv_label_get_text(o);
+        for (char& c : t) if (c == '\n') c = ' ';
+        if (!t.empty()) out += t + " | ";
+    }
+    for (uint32_t i = 0; i < lv_obj_get_child_count(o); ++i) dump_labels(lv_obj_get_child(o, (int32_t)i), out);
+}
+static bool press_prefix_anywhere(const char* prefix)
+{
+    if (ui::overlay() && press_key_labelled(ui::overlay(), prefix)) return true;   // exact first
+    if (ui::overlay() && press_key_prefix(ui::overlay(), prefix)) return true;
+    return press_key_prefix(lv_screen_active(), prefix);
+}
+
+static int agent_main(int argc, char** argv)
+{
+    if (argc < 7) { fprintf(stderr, "usage: preview --agent <w> <h> <name> <mac byte> <dir>\n"); return 2; }
+    W = atoi(argv[2]); H = atoi(argv[3]);
+    const char* name = argv[4];
+    const uint8_t mb = uint8_t(atoi(argv[5]));
+    agent_dir = argv[6];
+    const uint8_t mac[6] = {0x24, 0x6F, 0x28, 0x55, 0x00, mb};
+    memcpy(agent_mac.b, mac, 6);
+    lv_init();
+    lv_tick_set_cb(tick);
+    fb.assign(W * H, 0);
+    lv_display_t* d = lv_display_create(W, H);
+    lv_display_set_color_format(d, LV_COLOR_FORMAT_RGB565);
+    lv_display_set_flush_cb(d, flush);
+    lv_display_set_buffers(d, fb.data(), nullptr, W * H * 2, LV_DISPLAY_RENDER_MODE_DIRECT);
+    lv_indev_t* stylus = lv_indev_create();
+    lv_indev_set_type(stylus, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(stylus, touch_read);
+    agent_load_dir();
+    if (!files.count("player")) {                    // a name to start with
+        uint8_t p[20] = {'P', 'L', 'R', '2'};
+        memcpy(p + 4, name, strlen(name) < 12 ? strlen(name) : 12);
+        p[17] = 0xFF; p[18] = 0xFF; p[19] = 0;
+        agent_save("player", p, sizeof p);
+    }
+    ui::Shell sh{};
+    static uint32_t seed_state = 0;
+    seed_state = 1234567u * mb + 89;
+    sh.random_seed = [] { seed_state = seed_state * 1664525u + 1013904223u; return seed_state; };
+    sh.load_game = load_game;
+    sh.save_game = agent_save;
+    sh.stats_read = [](const char*, void (*)(const char*, void*), void*) { return false; };
+    sh.stats_append = [](const char* id, const char*, const char* body) {
+        agent_stats.push_back(std::string(id) + " " + body);
+        return true;
+    };
+    sh.memory = fake_memory;
+    sh.radio_on = [] { agent_radio = true; return true; };
+    sh.radio_off = [] { agent_radio = false; agent_in.clear(); };
+    sh.radio_send = [](const uint8_t* d, size_t n) {
+        if (!agent_radio) return false;
+        agent_out.push_back(std::vector<uint8_t>(d, d + n));
+        return true;
+    };
+    sh.radio_recv = [](uint8_t m[6], uint8_t* buf, size_t cap) -> size_t {
+        if (!agent_radio || agent_in.empty()) return 0;
+        auto pk = agent_in.front();
+        agent_in.erase(agent_in.begin());
+        memcpy(m, pk.first.b, 6);
+        const size_t n = pk.second.size() < cap ? pk.second.size() : cap;
+        memcpy(buf, pk.second.data(), n);
+        return n;
+    };
+    sh.radio_mac = [](uint8_t m[6]) { memcpy(m, agent_mac.b, 6); };
+    sh.firmware_version = "v9.9.9";
+    sh.board_name = "agent";
+    static ui::CustomThemes themes;
+    ui::UiSettings st;
+    ui::app_begin(sh, st, themes);
+    char line[4096];
+    while (fgets(line, sizeof line, stdin)) {
+        std::string l(line);
+        while (!l.empty() && (l.back() == '\n' || l.back() == '\r')) l.pop_back();
+        const size_t sp = l.find(' ');
+        const std::string cmd = l.substr(0, sp), arg = sp == std::string::npos ? "" : l.substr(sp + 1);
+        if (cmd == "tick") {
+            const int ms = atoi(arg.c_str());
+            agent_out.clear();
+            run(ms);
+            for (auto& pk : agent_out) printf("P %s\n", hex(pk.data(), pk.size()).c_str());
+        } else if (cmd == "rx") {
+            const size_t s2 = arg.find(' ');
+            auto m = unhex(arg.substr(0, s2));
+            net::Mac from;
+            memcpy(from.b, m.data(), 6);
+            if (agent_radio) agent_in.push_back({from, unhex(arg.substr(s2 + 1))});
+        } else if (cmd == "press") {
+            printf("K %d\n", press_prefix_anywhere(arg.c_str()) ? 1 : 0);
+            run(20);
+        } else if (cmd == "wplay") { wplay::open_menu(); run(20); }
+        else if (cmd == "home") { ui::app_go_home_now(); run(20); }
+        else if (cmd == "menu") { kit_preview_menu(); run(20); }
+        else if (cmd == "open") { ui::app_open_game_now(games::find(arg.c_str())); run(20); }
+        else if (cmd == "move") { match::human_move(atoi(arg.c_str())); run(20); }
+        else if (cmd == "chess") {
+            chess::Game probe;
+            ui::app_save_current();
+            probe.deserialize(files["chess"].data(), chess::Game::kSaveBytes);
+            const int k = chess_index(probe, arg.c_str());
+            printf("K %d\n", k >= 0 ? 1 : 0);
+            if (k >= 0) match::human_move(k);
+            run(20);
+        } else if (cmd == "anymove") {
+            // A random legal move (tests): codes up to 32767 cover every game's moves
+            static uint32_t r = 12345;
+            int played = -1;
+            if (match::human_may_move()) {
+                r = r * 1103515245u + 12345u + mb;
+                const int start = int((r >> 8) % 1024);
+                for (int k = 0; k < 1024 && played < 0; ++k) if (match::try_move((start + k) % 1024)) played = (start + k) % 1024;
+                for (int m = 1024; m < 32768 && played < 0; ++m) if (match::try_move(m)) played = m;
+            }
+            printf("A %d\n", played);
+            run(20);
+        } else if (cmd == "board") {
+            ui::app_save_current();
+            const auto& f = files[arg];
+            uint32_t h = 2166136261u;
+            for (size_t i = 0; i + 8 < f.size(); ++i) h = (h ^ f[i]) * 16777619u;
+            printf("B %08x %zu\n", h, f.size());
+        } else if (cmd == "dump") {
+            std::string o;
+            dump_labels(lv_screen_active(), o);
+            dump_labels(lv_layer_top(), o);
+            printf("D %s\n", o.c_str());
+        } else if (cmd == "wpstate") {
+            char b[512];
+            wplay::debug_state(b, sizeof b);
+            printf("W %s\n", b);
+        } else if (cmd == "may") {
+            printf("M %d\n", match::human_may_move() ? 1 : 0);
+        } else if (cmd == "stats") {
+            for (auto& r : agent_stats) {
+                std::string t = r;
+                while (!t.empty() && t.back() == '\n') t.pop_back();
+                printf("R %s\n", t.c_str());
+            }
+        } else if (cmd == "shot") {
+            shot(arg);
+        } else if (cmd == "quit") {
+            break;
+        }
+        printf("OK\n");
+        fflush(stdout);
+    }
+    return 0;
+}
+
 int main(int argc, char** argv)
 {
+    if (argc > 1 && strcmp(argv[1], "--agent") == 0) return agent_main(argc, argv);
     if (argc < 4) { fprintf(stderr, "usage: preview <w> <h> <out prefix>\n"); return 2; }
     W = atoi(argv[1]); H = atoi(argv[2]);
     const std::string out = argv[3];
@@ -1502,24 +1755,40 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
     }
 
-    {   // Wireless: Play Nearby with three boards around, asking Bob, a game with
-        // him, waiting when he's gone, and being asked (tic-tac-toe)
+    {   // Wireless Play: the picker row, the menu, the games list, players
+        // nearby, a player's games, asking, a game with Bob, its menu, Bob
+        // gone quiet, and an offer popping up over the picker
         fake_boards_begin("v0.9.0");
+        ui::app_go_home_now();
         run(100);
-        ui::app_open_game_now(games::find("chess"));
-        kit_preview_menu();
-        shot(out + "_light_80_wl_menu.ppm");
-        press_overlay_key("Wireless");
+        wplay::open_menu();
+        run(50);
+        shot(out + "_light_80_wl_off.ppm");
+        press_overlay_key("Available To Play: Off");
         run(1500);
-        shot(out + "_light_80_wl_lobby.ppm");
-        fake_boards[0].accept_invites = false;
+        shot(out + "_light_80_wl_main.ppm");
+        press_overlay_prefix("Games I'll Play");
+        run(50);
+        press_overlay_key("Mancala");                 // switch one off
+        run(50);
+        shot(out + "_light_80_wl_games.ppm");
+        press_overlay_key("Mancala");
+        press_overlay_key("Back");
+        press_overlay_prefix("Find Players");
+        run(200);
+        shot(out + "_light_80_wl_players.ppm");
+        fake_boards[0].accept = false;
         press_overlay_key("Bob");
+        run(50);
+        shot(out + "_light_80_wl_player.ppm");
+        press_overlay_key("Chess");
         run(600);
         shot(out + "_light_80_wl_asking.ppm");
-        fake_boards[0].accept_invites = true;
+        fake_boards[0].accept = true;
         run(1500);
+        if (ui::app_current_game() != games::find("chess")) fprintf(stderr, "WIRELESS FAIL: chess didn't open\n");
         shot(out + "_light_80_wl_start.ppm");
-        {   // a few moves each
+        if (fake_boards[0].chess) {   // a few moves each
             const char* mine[3] = {"e2e4", "g1f3", "f1c4"};
             for (const char* mv : mine) {
                 for (int t = 0; t < 400 && !match::human_may_move(); ++t) run(10);
@@ -1531,33 +1800,39 @@ int main(int argc, char** argv)
                 else fprintf(stderr, "WIRELESS STAGING: %s not legal\n", mv);
             }
             run(1500);
-            if (fake_boards[0].chess->plies != 6) fprintf(stderr, "WIRELESS FAIL: Bob's board has %d plies\n", fake_boards[0].chess->plies);
+            if (!fake_boards[0].chess || fake_boards[0].chess->plies != 6) fprintf(stderr, "WIRELESS FAIL: Bob's board has %d plies\n", fake_boards[0].chess->plies);
         }
         shot(out + "_light_80_wl_game.ppm");
-        fake_boards[0].in_game = false;      // Bob's board goes quiet
+        kit_preview_menu();
+        shot(out + "_light_80_wl_game_menu.ppm");
+        ui::close_overlays();
+        fake_boards[0].on = false;            // Bob's board goes quiet
         run(3500);
         shot(out + "_light_80_wl_waiting.ppm");
+        // Bob's board comes back and he forfeits: a win here, back to Wireless Play
+        fake_boards[0].on = true;
+        run(1000);
+        fake_boards[0].link.forfeit(fake_ms);
+        run(1000);
+        shot(out + "_light_80_wl_forfeit.ppm");
         ui::app_go_home_now();
-        files.erase("chess");
-        files.erase("wl_chess");
-        // Being asked: Bob (now in Tic-Tac-Toe) invites this board
-        fake_boards_begin("v0.9.0");
-        fake_boards[0].lobby.begin(fake_boards[0].mac, "Bob", "tictactoe", "v0.9.0", fake_boards[0].air, fake_ms);
-        fake_boards[0].invite_us = true;
-        ui::app_open_game_now(games::find("tictactoe"));
-        kit_preview_menu();
-        press_overlay_key("Wireless");
+        fake_boards[0].in_game = false;
+        run(5000);
+        // Ann asks this board to play Tic-Tac-Toe: the question pops up over the picker
+        fake_boards[1].offer_game = wplay::game_of("tictactoe");
         run(1500);
-        shot(out + "_light_80_wl_asked.ppm");
-        press_overlay_key("Change Name");
-        run(50);
-        shot(out + "_light_80_wl_name.ppm");
-        ui::close_overlays();
-        ui::app_go_home_now();
+        shot(out + "_light_80_wl_offer.ppm");
+        press_overlay_key("Not Now");
+        fake_boards[1].offer_game = -1;
+        run(200);
+        shot(out + "_light_80_wl_picker.ppm");
         net_hook = nullptr;
-        for (FakeBoard& b : fake_boards) { b.in_lobby = b.in_game = false; b.invite_us = false; }
-        files.erase("tictactoe");
-        files.erase("wl_tictactoe");
+        for (FakeBoard& b : fake_boards) b.on = b.in_game = false;
+        wplay::open_menu();
+        press_overlay_key("Available To Play: On");   // off again for the shots that follow
+        ui::close_overlays();
+        run(200);
+        files.erase("chess");
     }
 
     {   // Left-handed: the games whose layout follows the stylus hand

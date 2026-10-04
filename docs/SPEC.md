@@ -109,46 +109,56 @@ Candidates, grouped. Order of building is in section 6.
 **Maybe later / poor fit:** Go 9x9 (weak AI), Solitaire/Klondike/FreeCell/Blackjack/Poker (cards too small on 2.8" perhaps if the card only shows the number and a symbol of the suit),
 Chinese checkers, Dots and Boxes (thin tap targets).
 
-## 5. Multiplayer (CYD to CYD) - *built 2026-10-04*
+## 5. Multiplayer (CYD to CYD) - *built 2026-10-04, redesigned the same day (Tom)*
 - Transport: **ESP-NOW broadcasts** on WiFi channel 1 (direct, no router,
   no setup, no pairing). Range: same room or house. Home-network and
-  internet play are not planned. The radio is on only in Play Nearby and
-  during a wireless game (`src/hal/radio.*`: the bare WiFi driver, no IP
-  stack; ~20 KB static RAM; its heap use while on is logged - "Wireless:
-  radio on, N KB free" - and not yet measured on a board).
-- Flow: a game's ☰ → **Wireless** → **Play Nearby**: boards in Play Nearby
-  are listed by player name; those that want another game or run another
-  firmware are greyed with the reason. Tap a name to ask; the other board
-  shows "Ann asks you to play Chess. Ann moves first." with **Play** /
-  **No Thanks**. The asker moves first in the first game; after that the
-  first mover alternates with each Play Again.
-- Player name: "CYD-" + the last 4 hex digits of the board's address until
-  changed (Play Nearby → Change Name, the shared keyboard; 12 characters;
-  saved as `/games/player.bin`).
-- Protocol (`src/net/wireless.*`, plain C++, host-tested over a lossy,
-  repeating, reordering fake radio): no acks. Lobby boards beacon twice a
-  second (name, game, firmware version, an invite or "no thanks" for one
-  board). In a game each board sends a status twice a second and at once
-  on a change: session, game number, move count, the last 12 moves and a
-  hash of all moves. A board that is behind plays the moves it missed,
-  each checked by its own rules engine first; a move that isn't legal, a
-  hash that differs, or a gap it can't fill ends the game unrecorded on
-  both boards ("The boards' games differ"). Different protocol versions
-  can't decode each other (listed by name only); different firmware
-  versions are listed but can't be invited.
-- Disconnects: nothing heard for 3 s = "Waiting for Bob..." and no moves
-  until it comes back. Exit Game pauses (the other board shows "Bob left
-  Chess for now"); opening the game again on both boards carries on. The
-  link state is saved beside the game (`wl_<id>`), on both boards.
-- Ending: starting any other game in the menu ends the wireless game and
-  tells the other board ("Bob ended the game"); neither records it. A
-  finished game is recorded on both boards (stats mode "Wireless",
-  Won/Lost/Draw from that board's player; the stats screen's "Opponent"
-  table has a Wireless row). No resign or draw offers (yet).
+  internet play are not planned. `src/hal/radio.*`: the bare WiFi driver,
+  no IP stack (~20 KB static RAM; its heap use is logged - "Wireless:
+  radio on, N KB free").
+- Tom's design (2026-10-04): the players may not see or be able to talk to
+  each other, so finding a partner and a game is done by the boards.
+  **Wireless Play** (first screen row + a two-player game's Wireless key):
+  - **Available To Play** toggle: radio on, the board beacons its name, the
+    games it will play and whether it is in a game; offers reach it
+    anywhere (picker, solo games, menus) as a pop-up with a ding-dong.
+    Saved, so it stays on after a restart.
+  - **Games I'll Play**: a toggle key per wireless game + All Games; only
+    lit games are announced and can be asked for.
+  - **Find Players** (turns Available on): players nearby with their game
+    count, or "playing <game>" / "other version" greyed. Tap a player ->
+    their games -> tap one = an offer ("Asking Bob to play Chess...",
+    Stop Asking). Answers: Play (the game opens on both boards; the asker
+    moves first), Not Now ("can't play right now. Thanks for asking!"),
+    Other Game ("would rather play another game"), automatic Busy / game
+    switched off, no answer in 30 s, or the board went away.
+- In a game: "Waiting for <name>..." when the other board is out of range
+  or has the game closed (no moves then). Exit Game pauses; Resume (Wireless
+  Play) / Continue carries on, also after a restart (`/games/wl_session.bin`).
+  **Forfeit Game** in the menu: a loss for that player, a win for the other,
+  the forfeiter goes back to Wireless Play. Game over: **[Play Again | Done]**
+  - the next game starts once both tapped Play Again (first mover
+  alternates); Done takes both boards back to Wireless Play ("Bob is done
+  playing. Thanks for the game!"). A board whose game is over isn't busy:
+  accepting a new offer ends that session.
+- Protocol (`src/net/wireless.*`, plain C++): no acks; every board repeats
+  its state twice a second and at once on a change, with a counter so late
+  copies can't undo newer ones. Beacons: name, firmware, available / busy
+  / paused, games mask, an offer or a "no" (with a reason) for one board.
+  Game status: session, game number, moves played, the last 12 moves, a
+  hash of all moves, flags again / away / forfeit / done / gone. A board
+  behind plays the missed moves, each checked by its own rules; a bad move
+  or a differing hash ends the session unrecorded on both. Forfeit and
+  Done are repeated for 4 s. Different firmware versions can't play.
+- Tests: `tools/host_tests/test_net.cpp` (the protocol over a fake radio
+  that loses, repeats and reorders packets) and `tools/preview/duo.py`:
+  two (or three) whole boards - the PC preview in agent mode - run in
+  lockstep with their packets carried between them, playing scripted
+  sessions (offers, answers, rematch, Done, forfeit, pause, link loss, a
+  restart, crossed offers, a third board, random games of every wireless
+  game) clean and with 30-50 % of packets lost. Both run in CI.
 - Games: FourConnect, Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala,
-  Nine Men's Morris (every game on the shared `match.*` controller that
-  supplies a `legal()` check). Farkle not yet (its dice would have to be
-  rolled by one board and sent).
+  Nine Men's Morris (kNetwork in games.def + `match::Game::legal`). Farkle
+  not yet (its dice would have to be rolled by one board and sent).
 - Every two-player game also has vs computer and pass-and-play (one CYD
   handed back and forth).
 

@@ -175,7 +175,7 @@ and touch calibration are shared.
 Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala and Nine
 Men's Morris share one menu: **New Game vs Computer** (Easy, Medium, Hard),
 **Pass and Play** (two people share one board and take turns), and
-**Wireless** (two boards, see below). Farkle has the first two. Against the computer
+**Wireless** (two boards: Wireless Play, below). Farkle has the first two. Against the computer
 you and the computer take turns going first, game by game. The computer
 thinks on the board's second processor core, so the screen never freezes.
 Its levels look ahead fewer or more moves (and think longer); it never
@@ -335,32 +335,49 @@ of Jacks or better pays; a Royal Flush pays 4000 at a 5-credit bet.
 ## Wireless play (CYD to CYD)
 
 Two boards play each other over the air (ESP-NOW): no router, no
-passwords, no setup, as far as a house's walls allow.
+passwords, no setup, as far as a house's walls allow. The players don't
+need to see or talk to each other: the boards do the finding and asking.
 
-<img src="docs/screenshots/small_wireless_lobby.png" width="240" alt="Play Nearby: boards in range, one ready to play">
+<img src="docs/screenshots/small_wireless_lobby.png" width="240" alt="Players nearby: who is available and what they play">
+<img src="docs/screenshots/small_wireless_menu.png" width="240" alt="Wireless Play: Available To Play, Find Players, Games I'll Play">
 <img src="docs/screenshots/small_wireless_game.png" width="240" alt="A wireless chess game">
+<img src="docs/screenshots/small_wireless_offer.png" width="240" alt="Someone nearby asks to play">
 
-1. On both boards open the same game and pick **☰ → Wireless**. That's
-   **Play Nearby**: boards in it show up by name. Ones that want another
-   game, or run another firmware version, are greyed with the reason - both
-   boards need the same version (flash both from the web flasher).
-2. Tap the other board's name. It asks "Ann asks you to play Chess. Ann
-   moves first." - **Play** or **No Thanks**.
-3. Play. Each board shows the game from its own side; the other player's
-   moves arrive by themselves, and each one is checked against this board's
-   own rules before it's played.
+**Wireless Play** is the last row on the first screen (it shows Off, On, how
+many players are nearby, or Playing) and the Wireless key in a two-player
+game's menu.
 
-- Your name: **Change Name** in Play Nearby (it starts as "CYD-" and four
-  letters/digits from the board's address).
-- Out of range or switched off: the game says "Waiting for Bob..." and
-  waits; it carries on when the other board is heard again. **Exit Game**
-  pauses it: open the game again on both boards to go on.
-- **Play Again** (when a game is over) starts the next game once both
-  players tapped it; the other player moves first that time.
-- Starting any other game ends the wireless one, and the other board is
-  told. Finished games are recorded on both boards (Stats: the Wireless
-  row).
-- The radio is only on in Play Nearby and in a wireless game.
+- **Available To Play** turns the radio on and lets boards nearby see you
+  and ask you to play - wherever you are on your board: the picker, a
+  solo game, a menu. Someone asking rings (a ding-dong) and shows "Bob would
+  like to play Chess with you. Bob moves first." with **Play**, **Not Now**
+  or **Other Game**. Not Now and Other Game send a polite answer back
+  ("Tom can't play right now. Thanks for asking!" / "...would rather play
+  another game"). It stays on until you turn it off, even after a restart.
+- **Games I'll Play**: a key per game (lit = willing), and All Games. Others
+  only see, and can only ask for, your lit games.
+- **Find Players**: everyone nearby with Available To Play on, with how many
+  games they'll play - or "playing Reversi" / "other version" (both boards
+  need the same version: flash both from the web flasher). Tap a player to
+  see their games; tap a game to ask them. No answer in 30 seconds, or
+  they walked away: you're told.
+- **Change Name**: boards start as "CYD-" and four letters/digits from the
+  board's address.
+
+In the game:
+
+- Each board shows the game from its own side; the other player's moves
+  arrive by themselves, each checked against this board's own rules.
+- Out of range or switched off: "Waiting for Bob..." until the board is
+  heard again. **Exit Game** pauses the game (the other board shows "Bob
+  closed Chess for now"); **Resume** in Wireless Play, or Continue on the
+  first screen, carries on - even after a restart.
+- **☰ → Forfeit Game** ends it at once: a loss for you, a win for the other
+  player, and both go on from there (you to Wireless Play).
+- At the end, **Play Again** starts the next game once both players tapped
+  it (the other player moves first then); **Done** takes both boards back to
+  Wireless Play. A board whose game is over can be asked again by anyone.
+- Finished games are recorded on both boards (Stats: the Wireless row).
 
 ## Mancala
 

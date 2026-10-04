@@ -10,16 +10,17 @@
 // first in one game moves second in the next). Leaving a vs-computer game
 // that has started for a new one counts as a loss.
 //
-// Wireless (CYD to CYD, a game that supplies `legal`): Play Nearby
-// (nearby.*) pairs two boards; then each board plays its own copy of the
-// game and the moves travel over the radio (net::Link in src/net/wireless.*).
-// A move from the other board is checked with `legal` before it is played;
-// one that isn't, or boards whose games differ, end the game unrecorded.
-// No moves while the other board isn't heard ("Waiting for Bob..."). Play
-// Again starts the next game once both players tapped it; the first mover
-// alternates. Starting any other game ends the wireless one (the other
-// board is told); Exit Game only pauses it - opening the game again on both
-// boards carries on. The link's state is saved as "wl_<id>" beside the game.
+// Wireless (CYD to CYD, a game that supplies `legal`): Wireless Play
+// (wplay.*) agrees a game between two boards and owns the session's link;
+// each board plays its own copy and the moves travel over the radio
+// (net::Link in src/net/wireless.*). A move from the other board is checked
+// with `legal` before it is played; one that isn't, or boards whose games
+// differ, end the session unrecorded. No moves while the other board isn't
+// heard or has the game closed ("Waiting for Bob..."). The menu has
+// Forfeit Game (a loss here, a win there; back to Wireless Play); Exit Game
+// pauses. A game over offers [Play Again | Done]: the next game starts once
+// both tap Play Again (the first mover alternates); Done takes both boards
+// back to Wireless Play.
 #pragma once
 
 #include <cstddef>
@@ -66,6 +67,8 @@ void closed();                     // the game closed (after its last save): pau
 // The player tapped a legal move on the board. Ignored unless a human may move.
 void human_move(int move);
 bool human_may_move();
+// human_move() if `move` is legal (games with `legal`); false if not played
+bool try_move(int move);
 void tick(uint32_t now_ms);
 void open_menu();
 void summary(char* buf, size_t cap);         // the attached game, for "Continue"

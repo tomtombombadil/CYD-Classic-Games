@@ -4,17 +4,18 @@
 #include <new>
 #include "ai_task.h"
 #include "game_kit.h"
-#include "nearby.h"
 #include "net/wireless.h"
 #include "ui/shell.h"
 #include "ui/sound.h"
 #include "ui/theme.h"
 #include "ui/widgets.h"
+#include "wplay.h"
 
 namespace match {
 
 using namespace ui;
 using twoplayer::Mode;
+using End = net::Link::End;
 
 namespace {
 
@@ -24,7 +25,9 @@ bool         attached = false;
 kit::TopBar  bar;
 kit::Clock   clock_;
 lv_obj_t*    info_l  = nullptr;
-lv_obj_t*    again_k = nullptr;
+lv_obj_t*    again_k = nullptr;        // Play Again (full width; half with Done beside it)
+lv_obj_t*    done_k  = nullptr;        // wireless: Done (no more games) / Wireless Play
+int          key_full_w = 0, key_half_w = 0, key_pad = 0;
 
 // The computer's move travels from the AI task to the UI through these
 struct Think {
@@ -40,72 +43,16 @@ bool     was_busy = false;            // the game's animation was running last t
 uint32_t now_ms = 0;
 constexpr uint32_t kThinkPauseMs = 350;
 
-// Wireless: the link to the other board (on the heap while the game is open)
-net::Link* L = nullptr;
-bool radio_held = false;
-bool link_was_up = false;
-bool wl_broken = false;               // a wireless game whose link couldn't be loaded
+// Wireless: the session's link lives in the Wireless Play service (wplay.*)
+int      link_look = -1;              // the link's state the screen shows
+uint32_t handled_end = 0;             // the session whose end was dealt with here
 
 bool over()             { return G.result && G.result() != -1; }
 bool computer_to_move() { return S.mode == Mode::Computer && !over() && G.turn() != S.human_side; }
 bool wl()               { return S.mode == Mode::Wireless; }
-bool wl_live()          { return wl() && L && !L->ended(); }
-const char* peer()      { return L ? L->peer_name() : "Partner"; }
-
-void wl_file(char* buf, size_t cap) { snprintf(buf, cap, "wl_%s", G.id); }
-
-void wl_save()
-{
-    if (!L || !shell().save_game) return;
-    uint8_t buf[net::Link::kSaveBytes];
-    char fn[24];
-    wl_file(fn, sizeof fn);
-    if (L->save(buf, sizeof buf)) shell().save_game(fn, buf, sizeof buf);
-}
-
-void hold_radio(bool on)
-{
-    if (on && !radio_held) radio_held = nearby::radio_start();
-    else if (!on && radio_held) { nearby::radio_stop(); radio_held = false; }
-}
-
-// Ends the wireless session (another game starts): the other board is told
-void wl_end()
-{
-    if (L) {
-        if (!L->ended()) {
-            L->leave(now_ms);
-            log_event("Wireless: %s ended", G.id);
-        }
-        delete L;
-        L = nullptr;
-    }
-    hold_radio(false);
-    wl_broken = false;
-}
-
-// Opening (or restyling) a game saved as wireless: get the link back
-void wl_resume()
-{
-    if (!wl()) return;
-    if (!L && !wl_broken) {
-        uint8_t buf[net::Link::kSaveBytes];
-        char fn[24];
-        wl_file(fn, sizeof fn);
-        const Shell& H = shell();
-        L = new (std::nothrow) net::Link();
-        const size_t n = H.load_game ? H.load_game(fn, buf, sizeof buf) : 0;
-        if (!L || n != sizeof buf || !L->load(buf, n, nearby::air(), now_ms)) {
-            delete L;
-            L = nullptr;
-            wl_broken = true;
-        }
-    }
-    if (L) {
-        S.human_side = uint8_t(L->my_side());
-        if (!L->ended()) hold_radio(true);
-    }
-}
+net::Link* link()       { return wl() ? wplay::session_for(G.id) : nullptr; }
+bool wl_live()          { net::Link* l = link(); return l && !l->ended(); }
+const char* peer()      { net::Link* l = link(); return l ? l->peer_name() : "Partner"; }
 
 void ai_job(void* ctx, volatile bool* stop)
 {
@@ -120,26 +67,43 @@ const char* side_name(int s) { return s == 0 ? G.sides.side1 : G.sides.side2; }
 void wireless_note(char* buf, size_t cap)
 {
     buf[0] = 0;
-    if (!L) {
-        if (wl_broken) snprintf(buf, cap, "This wireless game can't go on");
-        return;
-    }
+    net::Link* L = link();
+    if (!L) { snprintf(buf, cap, "Wireless game over. New games are in the menu"); return; }
     switch (L->end_reason()) {
-        case net::Link::End::PeerLeft:  snprintf(buf, cap, "%s ended the game", peer()); return;
-        case net::Link::End::OutOfStep: snprintf(buf, cap, "The boards' games differ: it ended"); return;
-        case net::Link::End::YouLeft:   snprintf(buf, cap, "You ended the game"); return;
-        case net::Link::End::None:      break;
+        case End::PeerForfeited: snprintf(buf, cap, "%s forfeited the game", peer()); return;
+        case End::YouForfeited:  snprintf(buf, cap, "You forfeited the game"); return;
+        case End::PeerDone:      snprintf(buf, cap, "%s is done playing. Thanks!", peer()); return;
+        case End::YouDone:       snprintf(buf, cap, "Thanks for playing!"); return;
+        case End::PeerGone:      snprintf(buf, cap, "%s's board ended this game", peer()); return;
+        case End::OutOfStep:     snprintf(buf, cap, "The boards' games differ: it ended"); return;
+        case End::None:          break;
     }
-    if (!radio_held) { snprintf(buf, cap, "The radio couldn't start (low on memory)"); return; }
-    if (!L->up(now_ms)) {
-        if (L->peer_away()) snprintf(buf, cap, "%s left %s for now", peer(), G.title);
-        else                snprintf(buf, cap, "%s needs %s open too", peer(), G.title);
-        return;
-    }
+    if (!L->up(now_ms)) { snprintf(buf, cap, "%s's board is out of range", peer()); return; }
+    if (L->peer_away()) { snprintf(buf, cap, "%s closed %s for now", peer(), G.title); return; }
     if (over()) {
         if (L->again() && !L->peer_again()) snprintf(buf, cap, "Waiting for %s to play again", peer());
-        else if (L->peer_again())          snprintf(buf, cap, "%s wants to play again", peer());
+        else if (L->peer_again())          snprintf(buf, cap, "%s wants to play again!", peer());
+        else                               snprintf(buf, cap, "Play again with %s?", peer());
     }
+}
+
+void place_keys()
+{
+    if (!again_k || !done_k) return;
+    // Wireless: [Play Again | Done] while a rematch is possible; just
+    // "Wireless Play" once the session is over. Elsewhere: Play Again.
+    net::Link* L = link();
+    const bool show_wl = wl() && over();
+    const bool rematch = show_wl && L && !L->ended();
+    const bool ended = wl() && (!L || L->ended());
+    lv_obj_set_hidden(again_k, !(over() && (!wl() || rematch)));
+    lv_obj_set_hidden(done_k, !(rematch || ended));
+    lv_obj_set_width(again_k, rematch ? key_half_w : key_full_w);
+    lv_obj_set_width(done_k, rematch ? key_half_w : key_full_w);
+    lv_obj_set_x(done_k, rematch ? key_pad + key_half_w + key_pad : key_pad);
+    lv_label_set_text(lv_obj_get_child(done_k, 0), rematch ? "Done" : "Wireless Play");
+    set_checked(again_k, !(L && L->again()));
+    set_checked(done_k, ended);
 }
 
 void update_status()
@@ -151,14 +115,15 @@ void update_status()
     char st[40];
     const int r = G.result();
     if (wl()) {
-        const uint32_t now = now_ms;
+        net::Link* L = link();
         if (r == 2)                    snprintf(st, sizeof st, "Draw");
         else if (r == S.human_side)    snprintf(st, sizeof st, "You win!");
         else if (r >= 0)               snprintf(st, sizeof st, "%s wins", peer());
         else if (!L)                   snprintf(st, sizeof st, "Game over");
+        else if (L->end_reason() == End::PeerForfeited) snprintf(st, sizeof st, "You win!");
+        else if (L->end_reason() == End::YouForfeited)  snprintf(st, sizeof st, "Forfeited");
         else if (L->ended())           snprintf(st, sizeof st, "Game ended");
-        else if (!radio_held)          snprintf(st, sizeof st, "Radio off");
-        else if (!L->up(now))          snprintf(st, sizeof st, "Waiting for %s...", peer());
+        else if (!L->up(now_ms) || L->peer_away()) snprintf(st, sizeof st, "Waiting for %s...", peer());
         else if (G.turn() == S.human_side) snprintf(st, sizeof st, "Your turn (%s)", side_name(S.human_side));
         else                           snprintf(st, sizeof st, "%s's turn", peer());
     } else if (S.mode == Mode::Computer) {
@@ -202,13 +167,7 @@ void update_status()
             snprintf(in, sizeof in, "Pass and play. %s moves first", G.sides.side1);
         lv_label_set_text(info_l, in);
     }
-    if (again_k) {
-        // Wireless: Play Again only while the partner can still answer; lit
-        // until tapped
-        const bool show = over() && (!wl() || wl_live());
-        lv_obj_set_hidden(again_k, !show);
-        set_checked(again_k, !(wl() && L && L->again()));
-    }
+    place_keys();
 }
 
 void record(twoplayer::Result res)
@@ -243,6 +202,7 @@ void after_move(bool by_other)
         if (r == 2) sound(Sound::Draw);
         else if (vs && r != S.human_side) sound(Sound::Lose);
         else { sound(Sound::Win); kit::flash(); }
+        if (wl()) wplay::session_over(true);           // free to be asked again (a rematch may follow)
     }
     update_status();
 }
@@ -251,7 +211,6 @@ void start_new(Mode mode, twoplayer::Level level)
 {
     ai_stop();
     thinking = false;
-    if (wl()) wl_end();                   // the other board is told: no record here or there
     // Leaving a vs-computer game the player has moved in counts as a loss
     if (!over() && !S.recorded && S.mode == Mode::Computer && S.human_moved)
         record(twoplayer::Result::Side2);
@@ -271,92 +230,141 @@ void start_new(Mode mode, twoplayer::Level level)
     update_status();
 }
 
-// The next game of a wireless session (both players asked for it)
-void wl_next_game()
+// A game of the wireless session starts (its first, or the next after Play Again)
+void wl_game_starts()
 {
+    net::Link* L = link();
+    if (!L) return;
+    ai_stop();
+    thinking = false;
     kit::flash_stop();
+    S.mode = Mode::Wireless;
     S.human_side = uint8_t(L->my_side());
     S.recorded = 0;
     S.human_moved = 0;
     S.seconds = 0;
+    clock_ = kit::Clock{};
     G.reset();
     if (G.redraw) G.redraw();
-    wl_save();
+    wplay::session_over(false);
+    wplay::session_save();
     update_status();
+}
+
+// The session ended: record what it means here (once), then let it go.
+// navigate: it ended while this game was on screen (then "no more games"
+// from the other board takes this one back to Wireless Play too).
+void wl_ended(bool navigate)
+{
+    net::Link* L = link();
+    if (!L || !L->ended()) return;
+    handled_end = L->session();
+    const End why = L->end_reason();
+    if (!S.recorded) {
+        S.recorded = 1;
+        if (why == End::PeerForfeited && !over()) {
+            record(twoplayer::Result::Side1);              // they left: a win here
+            sound(Sound::Win);
+            kit::flash();
+        } else if (why == End::YouForfeited && !over()) {
+            record(twoplayer::Result::Side2);
+        }
+    }
+    wplay::session_finished();
+    update_status();
+    // "No more games" from the other board: back to Wireless Play together
+    if (why == End::PeerDone && navigate) {
+        char t[96];
+        snprintf(t, sizeof t, "%s is done playing. Thanks for the game!", peer());
+        wplay::back_after_game(t);
+    }
+}
+
+void forfeit()
+{
+    net::Link* L = link();
+    if (!L || L->ended()) return;
+    char t[96];
+    snprintf(t, sizeof t, "You forfeited %s with %s.", G.title, peer());
+    L->forfeit(now_ms);
+    log_event("Wireless: %s forfeited", G.id);
+    wl_ended(false);
+    sound(Sound::Lose);
+    wplay::back_after_game(t);
 }
 
 void again_cb(lv_event_t*)
 {
     if (wl()) {
-        if (wl_live() && !L->again()) L->want_again(now_ms);
+        net::Link* L = link();
+        if (L && !L->ended() && !L->again()) L->want_again(now_ms);
         update_status();
         return;
     }
     start_new(S.mode, S.level);
 }
 
-// Play Nearby agreed on a game: it starts here at once
-void wl_started(const net::Mac& peer_mac, const char* name, uint32_t session, bool inviter)
+void done_cb(lv_event_t*)
 {
-    start_new(Mode::Wireless, S.level);   // ends whatever was on (a wireless game too)
-    L = new (std::nothrow) net::Link();
-    if (!L) { wl_broken = true; update_status(); return; }
-    L->begin(nearby::my_mac(), peer_mac, name, session, inviter, nearby::air(), now_ms);
-    hold_radio(true);
-    S.human_side = uint8_t(L->my_side());
-    link_was_up = false;
-    wl_save();
-    update_status();
+    if (!wl()) return;
+    net::Link* L = link();
+    if (L && !L->ended()) {
+        L->done(now_ms);
+        wl_ended(false);
+        wplay::back_after_game("Thanks for playing!");
+    } else {
+        wplay::back_after_game(nullptr);
+    }
 }
 
 void menu_pick(int id)
 {
+    if (id == kit::kForfeit) { forfeit(); return; }
     if (id <= kit::kLevel2) start_new(Mode::Computer, static_cast<twoplayer::Level>(id));
     else if (id == kit::kPassAndPlay) start_new(Mode::PassAndPlay, S.level);
-    else if (id == kit::kWireless) nearby::lobby_open(G.id, G.title, wl_started, open_menu);
+    else if (id == kit::kWireless) wplay::open_menu(open_menu);
 }
+void menu_stats() { kit::stats_two_player(G.id, G.sides, open_menu); }
+void menu_back()  { if (G.redraw) G.redraw(); update_status(); }
 
-// Wireless, every tick: packets in, status out, the other board's moves
+// Wireless, every tick: a new game, the other board's moves, the end
 void wl_tick(uint32_t now)
 {
+    net::Link* L = link();
     if (!L) return;
-    if (radio_held) {
-        net::Mac from;
-        uint8_t buf[net::kPacketMax];
-        size_t n;
-        for (int k = 0; k < 16 && nearby::receive(&from, buf, &n); ++k) L->receive(from, buf, n, now);
-        L->tick(now);
+    if (L->started_next()) wl_game_starts();
+    if (L->ended()) {
+        if (handled_end != L->session()) wl_ended(true);
+        return;
     }
-    if (L->started_next()) wl_next_game();
     // The other board's moves, one at a time (a game may animate each),
-    // each checked against this board's rules first
-    // (held while a menu is open, like the computer's: it would land unseen)
+    // each checked against this board's rules first; held while a menu is
+    // open, like the computer's (it would land unseen)
     const bool busy = (G.busy && G.busy()) || overlay_open();
     const int m = busy ? -1 : L->next_move();
     if (m >= 0) {
         if (over() || G.turn() == S.human_side || (G.legal && !G.legal(m))) {
             log_event("Wireless: %s got a move it can't play (%d)", G.id, m);
             L->disagree(now);
+            update_status();
         } else {
             G.play(m);
             L->played(m, now);
             after_move(true);
         }
     }
-    if (L->ended() && radio_held) {
-        hold_radio(false);
-        wl_save();
+    // What the status and info lines say about the link: redraw on a change
+    const int look = (L->up(now) ? 1 : 0) | (L->peer_away() ? 2 : 0) | (L->peer_again() ? 4 : 0) | (L->again() ? 8 : 0);
+    if (look != link_look) {
+        link_look = look;
         update_status();
     }
-    const bool up = L->up(now);
-    if (up != link_was_up) { link_was_up = up; update_status(); }
 }
-void menu_stats() { kit::stats_two_player(G.id, G.sides, open_menu); }
-void menu_back()  { if (G.redraw) G.redraw(); update_status(); }
 
 } // namespace
 
 State& state() { return S; }
+bool take_wireless_start();
 
 int my_side() { return S.mode == Mode::PassAndPlay ? -1 : S.human_side; }
 
@@ -390,12 +398,20 @@ void build_chrome(int* top, int* bottom)
     const int ih = lv_font_get_line_height(&lv_font_montserrat_14);
     lv_obj_set_height(info_l, ih);
     lv_obj_set_pos(info_l, pad, m.h - pad - ih);
-    again_k = make_key(scr, m.w - 2 * pad, kh, again_cb, 0);
+    key_pad = pad;
+    key_full_w = m.w - 2 * pad;
+    key_half_w = (m.w - 3 * pad) / 2;
+    const int ky = m.h - pad - ih - pad - kh;
+    again_k = make_key(scr, key_full_w, kh, again_cb, 0);
     lv_obj_add_state(again_k, LV_STATE_CHECKED);
     key_label(again_k, "Play Again", menu_font());
-    lv_obj_set_pos(again_k, pad, m.h - pad - ih - pad - kh);
+    lv_obj_set_pos(again_k, pad, ky);
+    done_k = make_key(scr, key_half_w, kh, done_cb, 0);
+    key_label(done_k, "Done", menu_font());
+    lv_obj_set_pos(done_k, pad + key_half_w + pad, ky);
+    lv_obj_set_hidden(done_k, true);
     *top = bar.h;
-    *bottom = m.h - pad - ih - pad - kh - pad;
+    *bottom = ky - pad;
 }
 
 void restart_view()
@@ -403,10 +419,29 @@ void restart_view()
     clock_ = kit::Clock{};
     start_failed = false;
     was_busy = false;
-    wl_resume();
-    link_was_up = false;
+    link_look = -1;
+    if (wl() && link()) {
+        S.human_side = uint8_t(link()->my_side());
+        // It ended while this game was closed: take it in without leaving
+        if (link()->ended() && handled_end != link()->session()) wl_ended(false);
+    }
+    if (take_wireless_start()) return;
     if (computer_to_move()) think_after_ms = now_ms + kThinkPauseMs;
     update_status();
+}
+
+bool take_wireless_start()
+{
+    if (!attached || !wplay::take_start(G.id)) return false;
+    // A new session agreed in Wireless Play: whatever was on here gives way
+    ai_stop();
+    thinking = false;
+    if (!over() && !S.recorded && S.mode == Mode::Computer && S.human_moved)
+        record(twoplayer::Result::Side2);
+    close_overlays();
+    S.mode = Mode::Wireless;
+    wl_game_starts();
+    return true;
 }
 
 void refresh() { update_status(); }
@@ -416,39 +451,42 @@ void detach()
     ai_stop();
     thinking = false;
     kit::flash_stop();
-    nearby::lobby_close();
     bar = kit::TopBar{};
-    info_l = again_k = nullptr;
+    info_l = again_k = done_k = nullptr;
     attached = false;
 }
 
 void closed()
 {
-    nearby::lobby_close();
-    if (L) {
-        if (!L->ended()) L->away(now_ms);          // "Bob left Chess for now"
-        wl_save();
-        delete L;
-        L = nullptr;
-    }
-    hold_radio(false);
-    wl_broken = false;
+    // A wireless game closed here is paused: the service tells the other board
+    if (wl()) wplay::session_save();
 }
 
 bool human_may_move()
 {
     if (!attached || over() || overlay_open()) return false;
-    if (wl()) return wl_live() && radio_held && L->up(now_ms) && L->next_move() < 0
-                     && G.turn() == S.human_side && !(G.busy && G.busy());
+    if (wl()) {
+        net::Link* L = link();
+        return L && !L->ended() && L->up(now_ms) && !L->peer_away() && L->next_move() < 0
+            && G.turn() == S.human_side && !(G.busy && G.busy());
+    }
     return S.mode == Mode::PassAndPlay || G.turn() == S.human_side;
+}
+
+bool try_move(int move)
+{
+    if (!human_may_move() || (G.legal && !G.legal(move))) return false;
+    human_move(move);
+    return true;
 }
 
 void human_move(int move)
 {
     if (!human_may_move()) return;
+    if (G.legal && !G.legal(move)) return;          // never play (or send) an illegal move
     S.human_moved = 1;
     G.play(move);
-    if (wl() && L) L->played(move, now_ms);
+    if (net::Link* L = link()) L->played(move, now_ms);
     after_move(false);
 }
 
@@ -456,9 +494,9 @@ void tick(uint32_t now)
 {
     now_ms = now;
     if (!attached) return;
-    if (nearby::lobby_active()) nearby::lobby_tick(now);
-    else if (wl()) wl_tick(now);
-    if (clock_.tick(now, !over(), S.seconds)) update_status();
+    if (take_wireless_start()) return;
+    if (wl()) wl_tick(now);
+    if (clock_.tick(now, !over() && (!wl() || wl_live()), S.seconds)) update_status();
     // Computer: start thinking after the pause, pick up the move when done
     // A game still animating its last move holds the computer back; the
     // pause starts when the animation ends
@@ -493,7 +531,15 @@ void tick(uint32_t now)
 void open_menu()
 {
     kit::MenuHandlers h{menu_pick, menu_stats, menu_back, open_menu};
-    kit::menu_two_player(G.title, h, G.legal && nearby::available());
+    if (wl_live()) {
+        char title[48], line[96];
+        snprintf(title, sizeof title, "%s With %s", G.title, peer());
+        snprintf(line, sizeof line, "Forfeit Game ends it as a loss for you and a win for %s. "
+                                    "Exit Game pauses it.", peer());
+        kit::menu_wireless(title, line, h);
+        return;
+    }
+    kit::menu_two_player(G.title, h, G.legal && wplay::radio_present());
 }
 
 void describe(const State& st, int r, int moves, const twoplayer::Sides& sides, char* buf, size_t cap)
@@ -517,7 +563,7 @@ size_t save_state(uint8_t* buf, size_t cap)
     buf[2] = S.human_side;
     buf[3] = uint8_t((S.recorded ? 1 : 0) | (S.human_moved ? 2 : 0));
     for (int k = 0; k < 4; ++k) buf[4 + k] = uint8_t(S.seconds >> (8 * k));
-    if (wl()) wl_save();                  // the link's state goes with every save
+    if (wl()) wplay::session_save();      // the link's state goes with every save
     return kStateBytes;
 }
 

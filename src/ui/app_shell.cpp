@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <lvgl.h>
+#include "games/common/wplay.h"
 #include "games/registry.h"
 #include "shell.h"
 #include "theme.h"
@@ -109,6 +110,9 @@ void category_cb(lv_event_t* e)
     page = 0;
     rebuild_later();
 }
+
+void wireless_cb(lv_event_t*) { wplay::open_menu(); }
+void wireless_label_gone(lv_event_t*) { wplay::set_picker_label(nullptr); }
 
 void back_cb(lv_event_t*)
 {
@@ -248,9 +252,12 @@ void build_category_list()
     int y = title_bar("Classic Games", false, g);
     y = make_continue(scr, y, g);
 
+    // The categories, then Wireless Play (when the board has a radio)
+    const bool radio = wplay::radio_present();
     const int n = games::kCategories;
+    const int rows = n + (radio ? 1 : 0);
     const int gap = m.large ? 8 : 5;
-    int key_h = (m.h - g.pad - y - (n - 1) * gap) / n;
+    int key_h = (m.h - g.pad - y - (rows - 1) * gap) / rows;
     const int cap = m.large ? 58 : 40;
     if (key_h > cap) key_h = cap;
     const lv_font_t* f = m.large ? &lv_font_montserrat_20 : &lv_font_montserrat_20;
@@ -268,6 +275,23 @@ void build_category_list()
         lv_obj_align(r, LV_ALIGN_RIGHT_MID, m.large ? -14 : -10, 0);
         if (!count) set_dim(k, true);
         y += key_h + gap;
+    }
+    if (radio) {
+        lv_obj_t* k = make_key(scr, m.w - 2 * g.pad, key_h, wireless_cb, 0);
+        lv_obj_set_pos(k, g.pad, y);
+        lv_obj_t* l = label(k, "Wireless Play", f, pal().ink);
+        lv_obj_align(l, LV_ALIGN_LEFT_MID, m.large ? 14 : 10, 0);
+        char st[48];
+        wplay::picker_status(st, sizeof st);
+        lv_obj_t* r = label(k, st, fc, pal().muted);
+        lv_obj_align(r, LV_ALIGN_RIGHT_MID, m.large ? -14 : -10, 0);
+        // The status follows the radio (nearby boards, a game going)
+        lv_obj_add_event_cb(r, [](lv_event_t* e) {
+            lv_obj_t* o = lv_event_get_target_obj(e);
+            lv_obj_align(o, LV_ALIGN_RIGHT_MID, metrics().large ? -14 : -10, 0);
+        }, LV_EVENT_SIZE_CHANGED, nullptr);
+        lv_obj_add_event_cb(r, wireless_label_gone, LV_EVENT_DELETE, nullptr);
+        wplay::set_picker_label(r);
     }
 }
 
@@ -401,6 +425,7 @@ void app_begin(const Shell& shell, const UiSettings& settings, const CustomTheme
 
 void app_tick(uint32_t now_ms)
 {
+    wplay::tick(now_ms);                 // wireless play runs everywhere: offers pop up anywhere
     if (current < 0) return;
     const games::GameOps* ops = games::get(current).ops;
     if (ops && ops->tick) ops->tick(now_ms);

@@ -51,8 +51,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   (-DCYD_PREVIEW) and prints per-screen usage - check it when adding
   screens. Tables are one label per column, not objects per cell.
 - PC tools (Claude's side, Linux): `tools/preview/build.sh <lvgl 9.6 dir>
-  <out>` builds `preview` (picker + game screens at any size) and
-  `preview_paging`; `tools/preview/readme_shots.py` turns renders into
+  <out>` builds `preview` (picker + game screens at any size; `--agent` =
+  one board for `duo.py`) and `preview_paging`; `tools/preview/readme_shots.py` turns renders into
   `docs/screenshots/*.png`. Re-render when a shown screen changes.
 - Toolchain: pioarduino platform 55.03.312-1 (Arduino-ESP32 3.3.x),
   LovyanGFX 1.2.x, LVGL 9.6. Partition table `huge_app.csv` (3 MB app,
@@ -294,7 +294,8 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
   summary line), then the categories as a text list (Tom, 2026-10-02):
   Puzzle Games, Strategy Games, Card Games (added 2026-10-03 for the card
   games), Word Games, Dice Games (Other Games dropped - Tom, 2026-10-03), each
-  with its game count. A category opens its own page of icon tiles, 2 per
+  with its game count, and last "Wireless Play" with its state (boards
+  with a radio). A category opens its own page of icon tiles, 2 per
   row, with a back key in the top bar. Extra tiles go on pages switched
   with big < > keys (no scrolling). `preview_paging` renders a long fake
   list.
@@ -503,50 +504,71 @@ https://tomtombombadil.github.io/CYD-Classic-Games/
 ## Two-player games (Tom, 2026-10-02)
 - Every two-player game offers all three: vs computer (levels), pass-and-play
   (one CYD, two people take turns), and wireless CYD to CYD (below). The
-  new-game menu lists them; the Wireless key is greyed in a game without it
-  (Farkle, for now).
+  new-game menu lists them; the Wireless key (-> Wireless Play) is greyed
+  in a game without it (Farkle, for now).
 - Tom, 2026-10-02: finish more games before building wireless play.
 
-## Multiplayer (CYD to CYD) - built 2026-10-04 (v0.17.0)
-- ESP-NOW **broadcasts** on WiFi channel 1, no router or password, no
-  peers to add; packets for one board carry its address. Radio OFF except
-  in Play Nearby or a wireless game (`nearby::radio_start/stop`, reference
-  counted). `src/hal/radio.*` (device): bare WiFi driver (`esp_wifi_init`,
-  no Arduino WiFi.h - that pulled in the IP stack: +4 KB static RAM,
-  +180 KB flash), receive callback -> FreeRTOS queue -> main loop.
-  Static RAM 36 -> 56 KB with WiFi linked. Shell hooks `radio_on/off/
-  send/recv/mac`; the preview fakes them with made-up boards ("Bob" plays
-  chess back) running the real protocol.
-- Protocol `src/net/wireless.*` (plain C++, `tools/host_tests/test_net.cpp`
-  with a lossy/duplicating/reordering fake air): no acks - every board
-  repeats its whole state every 500 ms and at once on a change. Lobby =
-  beacons (name, game id, firmware, an invite / "no thanks" for one
-  board); Link = status (session, game no, move count, last 12 moves,
-  FNV hash of all moves; flags again / away / left). Behind = play the
-  missed moves (each through the game's `legal()` and turn check first);
-  bad move, hash mismatch or unfillable gap = OutOfStep, both end
-  unrecorded. 3 s unheard = link down, no moves. A board asked about a
-  session it doesn't have answers "left". Header 'C','Y',proto,kind; the
-  beacon's name stays right after the header in every protocol version
-  (other versions are listed by name). Same firmware version required to
-  invite.
-- UI: `common/nearby.*` = Play Nearby overlay (You are <name>, the boards
-  - invitable first, others greyed "(Checkers)" / "(other version)" -,
-  asking / asked states, [Back | Change Name] at the bottom) + player name
-  (`/games/player.bin` "PLR1", 12 chars, default "CYD-XXXX" from the MAC;
-  set in Play Nearby - Settings has no room). `match.*` runs the game:
-  Mode::Wireless, my side = `Link::my_side()` (inviter first in game 1,
-  then alternating), "Waiting for Bob..." / "Bob's turn" / "Bob wins",
-  partner's moves held while a menu is open or the game animates, Play
-  Again = both must tap it, any other new game = leave (other board told),
-  Exit Game = away (paused, resumes when both open it), link saved as
-  `wl_<id>` with every game save; `match::closed()` (games call it after
-  their last save in close()). Wireless results recorded like vs computer
-  (Won/Lost/Draw, mode "Wireless"; stats table "Opponent" has a Wireless
-  row). Games opt in with `match::Game::legal`; `match::my_side()` /
-  `opponent_name()` for board orientation and labels. Games: FourConnect,
-  Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala, Morris. Farkle: not yet
-  (dice would need one board to roll and send). No resign / draw offer.
+## Multiplayer (CYD to CYD) - built 2026-10-04; redesigned per Tom the same day (v0.18.0)
+- Tom's model (2026-10-04): players may not see or talk to each other, so
+  the boards find partners and games. **Wireless Play** (`common/wplay.*`,
+  a service ticked from `app_tick` everywhere + its overlays; reached from
+  the picker's last row "Wireless Play  Off/On/N nearby/Playing" and a
+  two-player game's Wireless key): Available To Play toggle (radio on,
+  beacons, offers pop up anywhere with `Sound::Call`; saved), Games I'll
+  Play (toggle key per kNetwork game + All Games; only lit games are
+  announced/askable), Find Players (turns Available on; list with "N
+  games" / "playing X" / "other version"; tap -> "Play With Bob" grid of
+  Bob's games -> tap = offer, Asking screen with Stop Asking), Change Name
+  (shared keyboard). Offer pop-up: "Bob would like to play Chess with you.
+  Bob moves first." [Play] / [Not Now | Other Game] ("Another Game" didn't
+  fit half a row at 320) - each "no" sends a polite reason back; Busy /
+  GameOff answered by the board itself; 30 s no answer. Profile
+  `/games/player.bin` "PLR2" (name 12 chars, games mask, available).
+- One session at a time, owned by the service (`/games/wl_session.bin`
+  "WLS1": game id, over flag, link); a game agreed opens on both boards
+  (`wplay::take_start` -> `match`), the old game is saved. Busy (not
+  askable) only while its game is going: a board whose game is over can
+  be asked, and accepting ends that session (Done sent). Game screen closed
+  = paused (away flag; the other board waits "Bob closed X for now").
+- In the game (`match.*`): status "Your turn (White)" / "Bob's turn" /
+  "Waiting for Bob..." (link down or away: no moves) / "You win!" / "Bob
+  wins"; menu while it's going = `kit::menu_wireless()`: "Chess With Bob",
+  a line, **Forfeit Game** (Tom: a loss for the leaver, a win for the
+  other; acts at once, no confirmation), How To Play, Stats | Settings,
+  Exit Menu | Exit Game (= pause). Game over: [Play Again | Done]; both
+  Play Again = next game (first mover alternates); Done = both boards back
+  to Wireless Play (`wplay::back_after_game`, a note on each). Forfeited /
+  ended: one "Wireless Play" key. Results are recorded once
+  (`handled_end`), also lazily when an ended session's game is next opened
+  (a forfeit while paused = a win on opening). Wireless results: mode
+  "Wireless", Won/Lost/Draw; stats "Opponent" table Wireless row.
+- Protocol `src/net/wireless.*` (proto 2, plain C++): ESP-NOW broadcasts on
+  channel 1, no acks - state repeated every 500 ms and at once on a change,
+  u16 counters drop late copies. Presence beacons: name, fw, available /
+  busy / paused, games mask (bit = index among kNetwork games in games.def
+  order), busy game, an offer (game, session) or a "no" (reason) for one
+  board. Link status: session, game no, ply, last 12 moves, FNV hash, flags
+  again 1 / away 2 / forfeit 4 / done 8 / gone 16 ("no such session
+  here"); forfeit/done repeated 4 s (`kLingerMs`); behind = play missed
+  moves after `legal()` + turn checks; bad move / hash mismatch = OutOfStep
+  (unrecorded). Lost after 3 s, forgotten after 6 s. Same firmware needed.
+  `src/hal/radio.*`: bare WiFi driver (`esp_wifi_init`, not Arduino WiFi.h:
+  that pulled in the IP stack, +4 KB static RAM, +180 KB flash), receive
+  callback -> FreeRTOS queue. Static RAM 36 -> 56 KB with WiFi linked.
+- Tests: `test_net.cpp` (lossy/duplicating/reordering fake air) and
+  **`tools/preview/duo.py`** = 2-3 preview processes in agent mode
+  (`preview --agent w h name macbyte dir`: commands tick/rx/press/dump/
+  anymove/board/stats/wpstate on stdin) in lockstep, packets carried by
+  the coordinator with optional loss; scenarios: offer+play+rematch,
+  link loss + pause + resume, forfeit, Not Now / Other Game / no answer,
+  an offer over Sudoku + Done, a restart mid-game, forfeit while paused,
+  crossed offers, a third board, random games of all 7 games (positions
+  compared). CI job `wireless-duo` (clean + 30 % loss). Run it after any
+  change to wireless code. `match::try_move()` = a legal move or nothing
+  (human_move refuses illegal moves too).
+- Games: FourConnect, Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala,
+  Morris (kNetwork + `match::Game::legal`). Farkle: not yet (one board
+  would have to roll and send the dice). No draw offer.
 - Internet play is out of scope (needs a server).
 
 ## Known hardware issues (from CYD-Sudoku - all still apply)
