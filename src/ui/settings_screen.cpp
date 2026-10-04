@@ -121,9 +121,16 @@ void tt_dot(int16_t x, int16_t y, bool first)
         lv_obj_set_ignore_layout(d, true);
     }
     const int r = first ? 4 : 2;
-    // Positions are relative to the overlay's content area: remove padding
-    const int px = lv_obj_get_style_pad_left(ov, LV_PART_MAIN);
-    const int py = lv_obj_get_style_pad_top(ov, LV_PART_MAIN);
+    // Touches are screen coordinates; positions are relative to the
+    // overlay's content area, which starts below the header bar (v0.19.0
+    // moved the page down by the bar's height - the dots landed that much
+    // too low). Remove the overlay's own place on screen and its padding.
+    lv_obj_update_layout(ov);
+    lv_area_t a;
+    lv_obj_get_coords(ov, &a);
+    const int bw = lv_obj_get_style_border_width(ov, LV_PART_MAIN);
+    const int px = a.x1 + bw + lv_obj_get_style_pad_left(ov, LV_PART_MAIN);
+    const int py = a.y1 + bw + lv_obj_get_style_pad_top(ov, LV_PART_MAIN);
     lv_obj_set_size(d, 2 * r + 1, 2 * r + 1);
     lv_obj_set_pos(d, x - r - px, y - r - py);
     lv_obj_set_style_bg_color(d, first ? pal().conflict : pal().entry, 0);

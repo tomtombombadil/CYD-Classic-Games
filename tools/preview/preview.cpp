@@ -865,6 +865,29 @@ int main(int argc, char** argv)
     for (fake_step = 0; fake_step < 3 * 14; ++fake_step) { fake_ms += 10; lv_timer_handler(); }
     fake_step = -1;
     shot(out + "_light_9_touch_test.ppm");
+    {   // Each tap's first dot (9x9) must sit on the tap, in screen coordinates
+        // (v0.19.0 drew them a header bar's height too low)
+        int found = 0;
+        lv_obj_t* ov = ui::overlay();
+        for (uint32_t i = 0; ov && i < lv_obj_get_child_count(ov); ++i) {
+            lv_obj_t* c = lv_obj_get_child(ov, (int32_t)i);
+            lv_area_t a;
+            lv_obj_get_coords(c, &a);
+            if (lv_area_get_width(&a) != 9 || lv_area_get_height(&a) != 9) continue;
+            const int cx = (a.x1 + a.x2) / 2, cy = (a.y1 + a.y2) / 2;
+            bool ok = false;
+            for (int t = 0; t < 3; ++t) {
+                int16_t tx, ty;
+                fake_step = t * 14;
+                fake_touch(&tx, &ty);
+                if (cx == tx && cy == ty) ok = true;
+            }
+            fake_step = -1;
+            if (!ok) fprintf(stderr, "TOUCH TEST FAIL: a dot at %d,%d is off its tap\n", cx, cy);
+            ++found;
+        }
+        if (found != 3) fprintf(stderr, "TOUCH TEST FAIL: %d first dots, expected 3\n", found);
+    }
     ui::diagnostics_open();
     shot(out + "_light_9_diagnostics.ppm");
     ui::device_log_open();

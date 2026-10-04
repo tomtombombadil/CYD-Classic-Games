@@ -96,14 +96,14 @@ void draw_cb(lv_event_t* e)
     // The cards
     const lv_font_t* hf = M.large ? &lv_font_montserrat_20 : &lv_font_montserrat_14;
     for (int i = 0; i < 5; ++i) {
-        const int x = cards_x0 + i * (cw + card_gap);
+        const int x = a.x1 + cards_x0 + i * (cw + card_gap), cy = a.y1 + cards_y;
         if (G->phase == Phase::Ready)                           // nothing dealt yet
-            cards::draw_back(layer, x, cards_y, cw, ch);
+            cards::draw_back(layer, x, cy, cw, ch);
         else
-            cards::draw_face(layer, x, cards_y, cw, ch, G->hand[i], G->phase == Phase::Dealt && ((G->held >> i) & 1));
+            cards::draw_face(layer, x, cy, cw, ch, G->hand[i], G->phase == Phase::Dealt && ((G->held >> i) & 1));
         if (G->phase == Phase::Dealt && ((G->held >> i) & 1)) {
             const int lh = lv_font_get_line_height(hf);
-            kit::text(layer, "HELD", hf, P.lit, x - card_gap, cards_y + ch + 3, cw + 2 * card_gap, lh);
+            kit::text(layer, "HELD", hf, P.lit, x - card_gap, cy + ch + 3, cw + 2 * card_gap, lh);
         }
     }
 }
@@ -115,6 +115,10 @@ void press_cb(lv_event_t* e)
     if (!indev) return;
     lv_point_t p;
     lv_indev_get_point(indev, &p);
+    lv_area_t a;                                            // touches are screen coordinates
+    lv_obj_get_coords(lv_event_get_target_obj(e), &a);
+    p.x -= a.x1;
+    p.y -= a.y1;
     if (p.y < cards_y - 4) return;                          // the pay table
     const int i = (p.x - cards_x0 + card_gap / 2) / (cw + card_gap);
     if (i < 0 || i > 4) return;
@@ -238,7 +242,7 @@ void build()
     const int room = table_h - 4 - 5 * row_h - 8 - held_h;
     if (ch > room) { ch = room; cw = ch * 5 / 7; }
     cards_x0 = (m.w - (5 * cw + 4 * card_gap)) / 2;
-    cards_y = bar.h + 4 + 5 * row_h + 8 + (room - ch) / 2;     // relative to the screen
+    cards_y = 4 + 5 * row_h + 8 + (room - ch) / 2;             // relative to the table
     // Keys: [Bet One] [Bet Max] [Hint] / [Deal or Draw]
     const int W = m.w - 2 * pad, third = (W - 2 * gap) / 3;
     const char* names[4] = {"Bet One", "Bet Max", "Hint", "Deal"};
