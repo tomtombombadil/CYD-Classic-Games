@@ -160,25 +160,45 @@ Chinese checkers, Dots and Boxes (thin tap targets).
   alternates); Done takes both boards back to the Play page ("Bob is done
   playing. Thanks for the game!"). A board whose game is over isn't busy:
   accepting a new offer ends that session.
-- Decided 2026-10-04 (Tom, situation review; to build):
-  - Two boards ask the same board: the **first asker has priority**; the
-    second gets the busy answer at once.
-  - Accepting an offer while playing that same game against the computer:
-    **not a loss**. The computer game is saved and comes back once the
-    2-player game is over (if that can't be done, no big deal).
-  - Different firmware: the **older** board's player is told to update to
-    the other board's version; the **newer** board's player is told the
-    other player's version is too low (both versions shown). Both see the
-    web flasher's address.
-  - Names: every board's name carries its board ID **internally** (in the
-    protocol, the code and the log), so two boards can never be mixed up;
-    players only ever see the chosen name.
-  - Accepting a new offer while in an old session: the old partner is
-    disconnected gracefully - forfeited if its game was still going - and
-    told the player quit.
-  - Also to fix: a forfeit made while the other board is away must still
-    reach it as a win; after a game ends the menu offers Play Again / Done,
-    not Forfeit; boards out of step can start over together.
+- **Redesign decided 2026-10-04 (Tom, situation review; to build).**
+  Replaces the matching parts above.
+  - Finding: a board doesn't look for players all the time. 2P = the board
+    listens and answers; it only sends when its player searches (a "who's
+    there?" call that boards in 2P answer with their info) or is in a game.
+    "Searching..." while it looks. The list: "Bob - available" ("free" if
+    "available" doesn't fit), "Bob - busy", "Bob - no games", "Bob - needs
+    update". Busy players can't be picked: no requests interrupt a 2P game.
+  - Versions: the older board's player is told to update to the other
+    board's version; the newer board's player is told the other player's
+    version is too low (both versions shown); both see the web flasher's
+    address.
+  - Names carry the board ID internally (protocol, code, log); players only
+    ever see the chosen name. No collisions.
+  - Picking a player shows the games: playable (both players offer it) lit,
+    the rest greyed out.
+  - Requesting: "Requesting..." The answers are **Play**, **No Thanks**,
+    **Other Game** (no "Not Now"). Other Game = Bob picks the game he'd
+    rather play: a counter-request back to Ann (same three answers).
+  - Answers as Ann sees them: "Bob said 'no thanks'." / "Bob can't play
+    right now." (became busy after being picked; a second asker gets this
+    too - the first asker has priority) / "That game is no longer
+    available." / "There was no answer from Bob." / "Bob went out of
+    range." Bob sees "Ann cancelled her request." when she stops.
+  - Agreed: "Connecting..." until the game starts; a little trill on both
+    boards when it does. The **requested player moves first** (in games
+    where it matters).
+  - A one-player game of the same game is saved and comes back silently
+    once the 2P game is over: "Resuming your previous one player game."
+    (never mention the computer).
+  - Leaving a 2P game = forfeit: "Bob left and forfeit the game." Clear 2P
+    Sessions while the partner is connected and the game is on = forfeit.
+  - Game over: Play Again, choose a New Game, or "Goodbye Bob" (ends the
+    session).
+  - Draws: no draw offer; draws only by the game's rules.
+  - A 2P game settings choice of move timeouts, default 30 s; the shorter
+    of the two players' settings applies, and a player is told only when it
+    differs from theirs. Countdown in the header: "Waiting... 30s" for the
+    player waiting, "Respond in... 30s" for the player to move.
 - Protocol (`src/net/wireless.*`, plain C++): no acks; every board repeats
   its state twice a second and at once on a change, with a counter so late
   copies can't undo newer ones. Beacons: name, firmware, available / busy
