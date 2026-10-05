@@ -283,6 +283,8 @@ public:
     // Turns: the side this board plays in the current game (0 moves first)
     int  my_side() const;
     int  game_no() const { return game_no_; }  // 0 = the first game of the session
+    int  peer_ply() const { return peer_ply_; }    // the partner's last status (log)
+    int  peer_game() const { return peer_game_; }
     int  ply() const { return ply_; }
     uint16_t peer_name_a() const { return peer_a_; }
     uint16_t peer_name_b() const { return peer_b_; }

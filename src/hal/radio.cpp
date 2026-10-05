@@ -28,6 +28,9 @@ QueueHandle_t rx_queue = nullptr;
 bool on = false;
 bool dozing = false;
 uint32_t start_ms = 0;
+// Counters for the log (a stuck game: did packets go out, come in, get dropped?)
+volatile uint32_t n_sent = 0, n_failed = 0, n_received = 0, n_dropped = 0;
+int last_error = 0;
 const uint8_t kBroadcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // Runs in the WiFi task: copy the packet into the queue, never wait
@@ -39,7 +42,8 @@ void on_recv(const esp_now_recv_info_t* info, const uint8_t* data, int len)
     r.rssi = info->rx_ctrl ? int8_t(info->rx_ctrl->rssi) : -100;
     r.len = uint8_t(len);
     memcpy(r.data, data, size_t(len));
-    xQueueSend(rx_queue, &r, 0);              // a full queue drops it: the next status replaces it
+    // a full queue drops it: the next status replaces it
+    if (xQueueSend(rx_queue, &r, 0) == pdTRUE) ++n_received; else ++n_dropped;
 }
 
 } // namespace
@@ -54,6 +58,16 @@ bool radio_on()
     // The WiFi driver by itself (no network stack: nothing here needs IP)
     esp_event_loop_create_default();          // already there = fine
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    // ESP-NOW broadcasts are tiny and few: fewer buffers and no aggregation
+    // leave the heap more room (a 4.0" board had ~50 KB left with the
+    // defaults). Power management while not connected lets the radio doze.
+    cfg.static_rx_buf_num = 4;
+    if (cfg.dynamic_rx_buf_num > 16) cfg.dynamic_rx_buf_num = 16;
+    if (cfg.dynamic_tx_buf_num > 16) cfg.dynamic_tx_buf_num = 16;
+    cfg.ampdu_rx_enable = 0;
+    cfg.ampdu_tx_enable = 0;
+    cfg.amsdu_tx_enable = 0;
+    cfg.sta_disconnected_pm = true;
     if (esp_wifi_init(&cfg) != ESP_OK) return false;
     esp_wifi_set_storage(WIFI_STORAGE_RAM);
     if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK || esp_wifi_start() != ESP_OK) {
@@ -115,7 +129,20 @@ void radio_off()
 bool radio_send(const uint8_t* data, size_t len)
 {
     if (!on || len == 0 || len > kMaxPacket) return false;
-    return esp_now_send(kBroadcast, data, len) == ESP_OK;
+    const esp_err_t e = esp_now_send(kBroadcast, data, len);
+    if (e == ESP_OK) { ++n_sent; return true; }
+    ++n_failed;
+    last_error = int(e);
+    return false;
+}
+
+void radio_counts(uint32_t* sent, uint32_t* failed, uint32_t* received, uint32_t* dropped, int* error)
+{
+    *sent = n_sent;
+    *failed = n_failed;
+    *received = n_received;
+    *dropped = n_dropped;
+    *error = last_error;
 }
 
 size_t radio_recv(uint8_t mac[6], uint8_t* buf, size_t cap, int8_t* rssi)

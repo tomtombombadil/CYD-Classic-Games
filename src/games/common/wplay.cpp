@@ -1579,6 +1579,17 @@ int wifi_level()
 
 int two_player_state() { return busy() ? 1 : 0; }
 
+void radio_report(char* buf, size_t cap)
+{
+    uint32_t sent = 0, failed = 0, got = 0, dropped = 0, fr = 0, big = 0;
+    int err = 0;
+    if (shell().radio_counts) shell().radio_counts(&sent, &failed, &got, &dropped, &err);
+    if (shell().memory) shell().memory(&fr, &big);
+    snprintf(buf, cap, "radio sent %lu (%lu failed, error %d), got %lu (%lu dropped), %lu KB free",
+             (unsigned long)sent, (unsigned long)failed, err, (unsigned long)got, (unsigned long)dropped,
+             (unsigned long)(fr / 1024));
+}
+
 const char* radio_state()
 {
     if (!radio_present()) return "None";

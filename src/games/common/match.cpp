@@ -57,6 +57,8 @@ int      comm = 0;                    // 0 fine, 1 "No reply" asked, 2 keep wait
 uint32_t comm_deadline = 0;
 uint32_t start_note_until = 0;        // "Move Timer: ..." after a game starts
 uint32_t resumed_note_until = 0;      // "Resuming your previous one player game."
+uint32_t behind_since = 0;            // the partner is ahead of this board (log a stuck game)
+int      behind_logged = -1;
 int      last_secs = -1;              // the countdown shown
 constexpr uint32_t kGraceMs = 10000;  // after the move timer ran out
 constexpr uint32_t kNoTimerCommMs = 60000;   // Move Timer Off: how long "no reply" waits
@@ -170,7 +172,7 @@ void update_status()
         else if (L->end_reason() == End::PeerForfeited) snprintf(st, sizeof st, "You win!");
         else if (L->end_reason() == End::YouForfeited)  snprintf(st, sizeof st, "Forfeited");
         else if (L->ended() || L->voided()) snprintf(st, sizeof st, "Not counted");
-        else if (!L->up(now_ms))       { snprintf(st, sizeof st, "Waiting for %s...", peer()); short_st = "Waiting..."; }
+        else if (!L->up(now_ms))       { snprintf(st, sizeof st, "Waiting for %s...", peer()); short_st = "Out of range"; }
         else if (G.turn() == S.human_side) {
             if (left == INT32_MIN) { snprintf(st, sizeof st, "Your turn (%s)", side_name(S.human_side)); short_st = "Your turn"; }
             else {
@@ -314,6 +316,10 @@ void wl_game_starts()
     if (G.redraw) G.redraw();
     start_turn();
     start_note_until = now_ms + 8000;
+    behind_since = 0;
+    behind_logged = -1;
+    log_event("Wireless: %s game %d, this board %s (%s), timer %d s", G.id, L->game_no(), side_name(S.human_side),
+              S.human_side == 0 ? "first" : "second", L->timer());
     wplay::session_over(false);
     wplay::session_save();
     update_status();
@@ -501,13 +507,35 @@ void wl_tick(uint32_t now)
             wplay::session_over(true);
             update_status();
         } else {
+            if (L->ply() < 4) log_event("Wireless: %s ply %d played here from the partner (%lu)", G.id, L->ply() + 1,
+                                        (unsigned long)m);
             G.play(int(m));
             L->played(m, now);
             after_move(true);
         }
     }
+    // The partner is ahead and this board hasn't played its move: say why, once
+    if (L->peer_game() == L->game_no() && L->peer_ply() > L->ply() && !L->voided()) {
+        if (!behind_since) behind_since = now;
+        if (now - behind_since > 3000 && behind_logged != L->peer_ply()) {
+            behind_logged = L->peer_ply();
+            char r[112];
+            wplay::radio_report(r, sizeof r);
+            uint32_t mm = 0;
+            log_event("Wireless: %s behind: ply %d, partner %d, move %s, overlay %d, busy %d, turn %d/%d; %s", G.id,
+                      L->ply(), L->peer_ply(), L->next_move(&mm) ? "waiting" : "missing", overlay_open() ? 1 : 0,
+                      (G.busy && G.busy()) ? 1 : 0, G.turn(), S.human_side, r);
+        }
+    } else {
+        behind_since = 0;
+    }
     if (L->voided()) wplay::session_over(true);
     const bool up = L->up(now);
+    if (up != was_up && wl_going()) {
+        char r[112];
+        wplay::radio_report(r, sizeof r);
+        log_event("Wireless: %s link %s at ply %d; %s", G.id, up ? "back" : "down", L->ply(), r);
+    }
     // Losing touch: after a whole move time with nothing heard, ask; kept
     // waiting another move time with nothing = put the session away
     if (up) {
@@ -716,8 +744,10 @@ void human_move(int move)
     if (!human_may_move()) return;
     if (G.legal && !G.legal(move)) return;          // never play (or send) an illegal move
     S.human_moved = 1;
+    net::Link* L = link();
+    if (L && L->ply() < 4) log_event("Wireless: %s ply %d played here (%d)", G.id, L->ply() + 1, move);
     G.play(move);
-    if (net::Link* L = link()) L->played(uint32_t(move), now_ms);
+    if (L) L->played(uint32_t(move), now_ms);
     after_move(false);
 }
 

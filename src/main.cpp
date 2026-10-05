@@ -198,6 +198,7 @@ void setup()
     sh.radio_mac         = radio_mac;
     sh.radio_doze        = radio_doze;
     sh.radio_start_ms    = radio_start_ms;
+    sh.radio_counts      = radio_counts;
     sh.firmware_version  = CYD_GAMES_VERSION;
     sh.firmware_build    = CYD_GAMES_BUILD;
     sh.board_name        = BOARD_NAME;

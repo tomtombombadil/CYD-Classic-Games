@@ -58,7 +58,7 @@ void build()
     l.absent       = lv_color_hex(0x8F897B);   // warm grey
 
     Palette& d = p_dark;
-    d.screen       = lv_color_hex(0x0E1A33);   // night sky
+    d.screen       = lv_color_hex(0x000000);   // black (Tom, 2026-10-04); the rest stays night-sky navy
     d.cell         = lv_color_hex(0x172642);
     d.line_thin    = lv_color_hex(0x2F4268);
     d.line_thick   = lv_color_hex(0xA9BCD6);

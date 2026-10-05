@@ -441,7 +441,8 @@ never typed (SPEC section 5).
 - Colors come from `src/ui/theme.cpp` palettes (Light/Dark), never
   hard-coded elsewhere. Both default palettes are drawn from the splash
   art (Tom, 2026-10-02): Light = parchment/cream with night-sky navy ink,
-  Dark = night-sky navy with cream text; accents coat gold, hat blue,
+  Dark = black screen background (Tom, 2026-10-04) with night-sky navy
+  keys/cells and cream text; accents coat gold, hat blue,
   glade teal-green, wood brown. Subtle and cohesive, never garish or
   childish. Tom plans game icons in the splash's style.
 - Game clocks count only while the game screen is up AND there was a touch
@@ -498,7 +499,8 @@ never typed (SPEC section 5).
   window, ~6x on logs) + base43 (QR alphanumeric set minus space and %,
   2 bytes -> 3 chars); QR = byte segment `logpack::kUrl`
   (`https://tomtombombadil.github.io/CYD-Classic-Games/l/#`) + alphanumeric
-  segment, ECC L, encoder = LVGL's bundled Nayuki qrcodegen
+  segment, ECC L, under it "Point your phone's camera at the QR code to get
+  a link that sends the log to the developer." (Tom), encoder = LVGL's bundled Nayuki qrcodegen
   (`LV_USE_QRCODE 1`), modules >= 2 px (240 wide: ~150 lines / 5 KB of
   text; 320 wide: ~380 lines / 12 KB). The page `web/l/index.html` decodes
   it (DecompressionStream "deflate-raw") and offers Email (mailto to
@@ -623,6 +625,17 @@ never typed (SPEC section 5).
   found / asked within ~2 s. About shows "Radio: Off (1P) / Dozing (2P) /
   Listening"; the log says how long radio_on took. The preview agent drops
   packets outside the wake window while dozing, so duo.py tests it.
+- Radio memory (v0.22.1, after Tom's 4.0" had ~50 KB free with the radio
+  on): `radio_on()` trims the WiFi init config (4 static RX buffers, at
+  most 16 dynamic RX/TX, no AMPDU/AMSDU).
+- Wireless log lines (v0.22.1, after a stuck Reversi game on Tom's boards):
+  each game's start (side, timer), the first 4 plies (played here / from
+  the partner), link down/back with the radio counters (`radio_counts`:
+  sent, failed + last error, received, dropped; free heap), and "behind"
+  when the partner is ahead for 3 s without this board playing its move
+  (why: move waiting/missing, overlay, busy, turn). The header's short
+  status for a lost link is "Out of range" (was "Waiting...", which looked
+  like the Move Timer's "Waiting... 30s").
 
 ## Known hardware issues (from CYD-Sudoku - all still apply)
 - Supported boards: 2.8" ESP32-2432S028 in ILI9341 and ST7789 versions

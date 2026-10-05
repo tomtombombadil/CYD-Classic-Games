@@ -17,3 +17,5 @@ void   radio_mac(uint8_t mac[6]);                           // this board's addr
 // which takes far longer). false = fully awake.
 void   radio_doze(bool doze);
 uint32_t radio_start_ms();                                  // how long the last radio_on() took
+// Since boot: packets sent, failed to send (last error code), received, dropped (queue full)
+void   radio_counts(uint32_t* sent, uint32_t* failed, uint32_t* received, uint32_t* dropped, int* error);

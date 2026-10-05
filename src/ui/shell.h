@@ -68,6 +68,8 @@ struct Shell {
     // Battery: doze = asleep but for short wake windows (nullptr = always awake)
     void   (*radio_doze)(bool doze);
     uint32_t (*radio_start_ms)();              // how long turning the radio on took (log)
+    // Since boot: sent, failed to send (+ last error), received, dropped (log)
+    void   (*radio_counts)(uint32_t* sent, uint32_t* failed, uint32_t* received, uint32_t* dropped, int* error);
 
     const char* firmware_version;              // "v1.2.3" (VERSION file)
     const char* firmware_build;                // git commit of the build, may be empty

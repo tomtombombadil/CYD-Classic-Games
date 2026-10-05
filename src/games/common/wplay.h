@@ -92,7 +92,9 @@ void debug_state(char* buf, size_t cap);    // one line for tests and the log
 // signal (just the dot), 1-3 bars; 2P 1 = a session going, put away or starting
 int  wifi_level();
 int  two_player_state();
-const char* radio_state();                  // About: "Off (1P)", "Dozing (2P)", "Listening", "None"
+const char* radio_state();
+// For the log: "radio sent N (M failed, error E), got K (D dropped), F KB free"
+void radio_report(char* buf, size_t cap);                  // About: "Off (1P)", "Dozing (2P)", "Listening", "None"
 void resume_session();                      // the 2P icon
 // Tests (preview agent)
 void set_two_player(bool on);
