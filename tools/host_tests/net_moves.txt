@@ -1,0 +1,9 @@
+# Wireless move keys: "<game id> <key> <version> <hash of fixed games>".
+# Written by tools/host_tests/test_movekeys.cpp; never edit or remove a line.
+fourconnect 1 1 5d8cbe53
+tictactoe 2 1 9fb1bcb9
+reversi 3 1 0b897d85
+checkers 4 1 c5ffc9f6
+chess 5 1 25423ba1
+mancala 6 1 dca3cbd2
+morris 7 1 6569d7ea

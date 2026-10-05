@@ -133,12 +133,12 @@ starts). Tap anywhere to go on to the game picker.
 
 - **<** (top left) goes back: closes a page, leaves a category, or leaves a
   game (saved for Continue). In a wireless game that is still going it
-  forfeits - a loss.
+  asks first: leaving forfeits.
 - In the middle: the page's name, or in a game just what matters now
   ("Your turn", "Score 45", "Solved!"). Sudoku and Minesweeper show their
   clock; Blackjack and Video Poker your chips.
-- **2P** (two people): filled while a wireless game is going or waiting to
-  be resumed; tap it to go back to that game.
+- **2P** (two people): filled while a wireless game is going or saved until
+  the boards meet again; tap it to go back to that game (or the Play page).
 - **Wifi**: empty while wireless play is off (1P); a dot and up to three
   arcs for the signal of the boards nearby. Tap it for Play settings.
 - **Gear** (top right): Settings - and in a game, the game's menu (New
@@ -357,51 +357,67 @@ passwords, no setup, as far as a house's walls allow. The players don't
 need to see or talk to each other: the boards do the finding and asking.
 
 <img src="docs/screenshots/small_wireless_lobby.png" width="240" alt="Players nearby: who is available and what they play">
-<img src="docs/screenshots/small_wireless_menu.png" width="240" alt="Play settings: Left/Right Hand, Play Mode 1P/2P, Find Players, Games I'll Play">
+<img src="docs/screenshots/small_wireless_menu.png" width="240" alt="The Play page: Left/Right Hand, Play Mode 1P/2P, Find Players, Games I'll Play, Name, Move Timer">
 <img src="docs/screenshots/small_wireless_game.png" width="240" alt="A wireless chess game">
 <img src="docs/screenshots/small_wireless_offer.png" width="240" alt="Someone nearby asks to play">
+<img src="docs/screenshots/small_wireless_player.png" width="240" alt="A player's games: the ones you can both play are lit">
+<img src="docs/screenshots/small_wireless_name.png" width="240" alt="Your name: Random or Pick From List">
 
 It all lives on the **Play** settings page: tap the **wifi icon** in the
 header (or Settings → Play, or Wireless in a two-player game's menu).
 
-- **Play Mode 2P** turns the radio on and lets boards nearby see you
-  and ask you to play - wherever you are on your board: the picker, a
-  solo game, a menu. Someone asking rings (a ding-dong) and shows "Bob would
-  like to play Chess with you. Bob moves first." with **Play**, **Not Now**
-  or **Other Game**. Not Now and Other Game send a polite answer back
-  ("Tom can't play right now. Thanks for asking!" / "...would rather play
-  another game"). It stays on until you switch back to 1P, even after a
-  restart. The wifi icon shows the signal of the boards nearby.
-- **Games I'll Play**: a key per game (lit = willing), and All Games. Others
-  only see, and can only ask for, your lit games.
-- **Find Players**: everyone nearby in 2P, with how many
-  games they'll play - or "playing Reversi" / "other version" (both boards
-  need the same version: flash both from the web flasher). Tap a player to
-  see their games; tap a game to ask them. No answer in 30 seconds, or
-  they walked away: you're told.
-- **Change Name**: boards start as "CYD-" and four letters/digits from the
-  board's address.
+**Nothing the players write or say ever travels between boards.** The
+boards may be used by children, so there is no chat, no messages and no
+typed names: only fixed codes go over the air (who's there, the games
+offered, play requests and their fixed answers, moves).
+
+- **Play Mode 2P**: the board listens and can be found by players who
+  look. It stays quiet unless its player looks for others or is in a game.
+  It stays on until you switch back to 1P, even after a restart.
+- **Find Players** ("Searching..."): everyone nearby in 2P - "Bob -
+  available", "busy" (in a game: can't be asked), "no games", "needs update"
+  (Bob's board is older) or "later version" (this board is older; both say
+  where to update: the web flasher). Tap a player to see the games: the ones
+  you can both play are lit. Tap one to ask ("Requesting...").
+- **Being asked** rings (a ding-dong) anywhere - the picker, a solo game, a
+  menu: "Ann would like to play Chess." **Play**, **No Thanks** or **Other
+  Game** (you pick one of Ann's games and ask her back). Ann sees "Bob said
+  'no thanks'.", "Bob can't play right now.", "That game is no longer
+  available.", "There was no answer from Bob." or "Bob went out of range."
+  The first player to ask has priority.
+- **Play**: "Connecting..." until both boards hear each other, a trill, and
+  the game opens on both. The player who was asked moves first. A
+  one-player game of the same game is put aside and comes back afterwards
+  ("Resuming your previous one player game.").
+- **Games I'll Play**: a key per game (lit = willing), and All Games.
+- **Name**: two silly words, picked - never typed: **Random**, or **Pick
+  From List** (a word from each of two lists). Players see only the name.
+- **Move Timer**: 30 seconds (the default), 1, 2 or 5 minutes, or Off. The
+  shorter of the two players' timers applies; you're told when it isn't
+  yours. The header counts down: "Respond in 30s" / "Waiting... 30s". At 0:
+  "You haven't responded in time. You will forfeit if you do not respond in
+  10 seconds."
+- **Clear 2P Sessions** ends a wireless game: a forfeit if the other player
+  is connected and the game is going, else not counted on either board.
 
 In the game:
 
-- Each board shows the game from its own side; the other player's moves
-  arrive by themselves, each checked against this board's own rules.
-- Out of range: "Waiting for Bob..." until the board is heard again.
-  **Exit Game** pauses the game (the other board shows "Bob closed Chess
-  for now"); the filled **2P** icon in the header (or Resume on the Play
-  page, or Continue on the first screen) carries on.
-- A board that restarts drops its wireless game: nothing is recorded on
-  either board, and the other board shows "Ann's board ended this game".
-  Both are free to play again at once.
-- **Clear 2P Sessions** (Play page) is the way out of a wireless game that
-  can't go on - the other board gone for good, say. It ends the game
-  without recording it, on both boards.
-- **Forfeit Game** in the game's menu (the gear), or the header's **<**,
-  ends it at once: a loss for you, a win for the other player, and both go
-  on from there (you to the Play page).
-- At the end, **Play Again** starts the next game once both players tapped
-  it (the other player moves first then); **Done** takes both boards back to
-  the Play page. A board whose game is over can be asked again by anyone.
+- The other player's moves arrive by themselves, each checked against this
+  board's own rules.
+- **Leaving** (the header's **<** or Exit Game) asks first: "Leaving will
+  forfeit this game." **Forfeit Game** in the menu acts at once. The other
+  player sees "Bob left and forfeited the game."
+- **Out of range**: "Waiting for Bob..." After a whole move time with
+  nothing heard: "No reply from Bob. Do you want to close the game, or keep
+  waiting?" **Close Game** = "Communications failed. Game not counted."
+  **Keep Waiting** waits one more move time, then the game is saved (also
+  through a restart: an oops reboot doesn't end it) and the 2P icon stays
+  lit. When the boards meet again both players get "Bob is back in range.
+  Continue Chess?" - it goes on if both tap Continue.
+- **Game over**: **Again** (the next game starts once both tapped it; the
+  other player moves first), **New Game** (ask the same player for another
+  game) or **Goodbye** (both boards go back to the Play page). No Forfeit
+  once a game is over; draws only by the game's own rules.
 - Finished games are recorded on both boards (Stats: the Wireless row).
 
 ## Mancala

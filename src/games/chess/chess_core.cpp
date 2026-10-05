@@ -561,3 +561,17 @@ int best_move(const Game& g, int level, uint32_t seed, uint32_t (*clock)(), vola
 }
 
 } // namespace chess
+
+namespace chess {
+
+uint32_t move_key(const Move& m) { return uint32_t(m.from) | uint32_t(m.to) << 6 | uint32_t(m.promo & 7) << 12; }
+
+int find_key(const Game& g, uint32_t key)
+{
+    MoveList l;
+    g.legal(l);
+    for (int k = 0; k < l.n; ++k) if (move_key(l.m[k]) == key) return k;
+    return -1;
+}
+
+} // namespace chess

@@ -12,15 +12,19 @@
 //
 // Wireless (CYD to CYD, a game that supplies `legal`): Wireless Play
 // (wplay.*) agrees a game between two boards and owns the session's link;
-// each board plays its own copy and the moves travel over the radio
-// (net::Link in src/net/wireless.*). A move from the other board is checked
-// with `legal` before it is played; one that isn't, or boards whose games
-// differ, end the session unrecorded. No moves while the other board isn't
-// heard or has the game closed ("Waiting for Bob..."). The menu has
-// Forfeit Game (a loss here, a win there; back to Wireless Play); Exit Game
-// pauses. A game over offers [Play Again | Done]: the next game starts once
-// both tap Play Again (the first mover alternates); Done takes both boards
-// back to Wireless Play.
+// each board plays its own copy and the moves travel over the radio as move
+// keys (net::Link in src/net/wireless.*). A move from the other board is
+// checked with `legal` before it is played; one that isn't, or boards whose
+// games differ, void that game (not counted). No moves while the other
+// board isn't heard ("Waiting for Bob..."). The Move Timer (the shorter of
+// the two players' settings) counts down in the header: "Respond in 30s" /
+// "Waiting... 30s"; at 0 the late player gets 10 more seconds, then forfeits.
+// Nothing heard for a whole move time: "No reply from Bob" [Keep Waiting |
+// Close Game] (closed = not counted; waited out = put away until both meet
+// again). Leaving (the header's back arrow, Exit Game) asks first - it
+// forfeits; the menu's Forfeit Game acts at once. A game over offers
+// [Play Again | New Game | Goodbye]: the next game starts once both tap
+// Play Again (the first mover alternates).
 #pragma once
 
 #include <cstddef>
@@ -54,6 +58,9 @@ struct Game {
     // Wireless: is `move` legal for the side to move? nullptr = this game
     // has no wireless play.
     bool (*legal)(int move) = nullptr;
+    // Optional: the legal moves (keys) for the side to move, for tests;
+    // without it, moves 0..32767 are tried with `legal`
+    int  (*list)(int* out, int cap) = nullptr;
 };
 
 // Call when the game opens (after its board was loaded) and on restyle.
@@ -69,6 +76,8 @@ void human_move(int move);
 bool human_may_move();
 // human_move() if `move` is legal (games with `legal`); false if not played
 bool try_move(int move);
+// The legal moves for the side to move (tests: a random move)
+int  legal_moves(int* out, int cap);
 void tick(uint32_t now_ms);
 void open_menu();
 void summary(char* buf, size_t cap);         // the attached game, for "Continue"

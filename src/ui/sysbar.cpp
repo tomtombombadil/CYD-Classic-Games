@@ -74,6 +74,7 @@ void show_text()
     const int nw = *n ? text_w(n, &lv_font_montserrat_12) + 4 : 0;
     lv_label_set_text(title_l, t);
     lv_obj_set_width(title_l, tw < room ? tw + 1 : room);
+    lv_obj_set_height(title_l, lv_font_get_line_height(bar_font()));     // one line: dots, never a wrap
     lv_obj_set_pos(title_l, mid_x0(), (bar_h - lv_font_get_line_height(bar_font())) / 2);
     lv_label_set_text(note_l, *n && tw + nw <= room ? n : "");
     lv_obj_update_layout(title_l);

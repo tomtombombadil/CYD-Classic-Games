@@ -7,8 +7,8 @@ const char kHelpTwoPlayer[] =
     "Exit Game keeps the game. A new game once you've moved counts as a loss.";
 const char kHelpWireless[] =
     "Play someone on another CYD nearby: tap the wifi icon at the top "
-    "and set Play Mode to 2P. Then Find Players, tap a name and a game to ask.\n"
-    "Out of touch, the game waits; Exit Game pauses it and the 2P icon "
-    "brings it back. The back arrow or Forfeit Game is a loss. Play Again "
-    "works once both tap it.";
+    "and set Play Mode to 2P. Then Find Players, tap a name and a game to ask. "
+    "The player asked moves first.\n"
+    "Each move has a time limit (Move Timer). Leaving the game forfeits it. "
+    "Out of touch, the game waits and goes on when you meet again.";
 }

@@ -50,8 +50,23 @@ int  turn()   { return G->turn(); }
 int  moves()  { return G->plies; }
 void reset()  { kit::renew(*G); sel = -1; peek = false; }
 void redraw();
-void play(int index) { G->play(index); sel = -1; peek = false; redraw(); }
-int  think(int level, uint32_t seed, volatile bool* stop) { return best_move(*G, level, seed, tick_ms, stop); }
+// Moves reach the match controller as keys (move_key: from, to, promotion)
+void play(int key) { G->play(find_key(*G, uint32_t(key))); sel = -1; peek = false; redraw(); }
+int  key_of(int index)
+{
+    MoveList l;
+    G->legal(l);
+    return index >= 0 && index < l.n ? int(move_key(l.m[index])) : -1;
+}
+int  think(int level, uint32_t seed, volatile bool* stop) { return key_of(best_move(*G, level, seed, tick_ms, stop)); }
+int  list(int* out, int cap)
+{
+    MoveList l;
+    G->legal(l);
+    int n = 0;
+    for (int k = 0; k < l.n && n < cap; ++k) out[n++] = int(move_key(l.m[k]));
+    return n;
+}
 void note(char* buf, size_t cap)
 {
     const End e = G->end();
@@ -66,7 +81,8 @@ match::Game make_game()
     match::Game g{kId, "Chess", {"White", "Black"}, result, turn, moves, play, reset, think, redraw};
     g.note = note;
     g.ai_stack = 32 * 1024;
-    g.legal = [](int index) { MoveList l; G->legal(l); return index >= 0 && index < l.n; };
+    g.legal = [](int key) { return key >= 0 && find_key(*G, uint32_t(key)) >= 0; };
+    g.list = list;
     return g;
 }
 
@@ -124,7 +140,7 @@ void promo_cb(lv_event_t* e)
     MoveList l;
     G->legal(l);
     for (int k = 0; k < l.n; ++k)
-        if (l.m[k].from == from && l.m[k].to == to && l.m[k].promo == piece) { match::human_move(k); return; }
+        if (l.m[k].from == from && l.m[k].to == to && l.m[k].promo == piece) { match::human_move(int(move_key(l.m[k]))); return; }
 }
 
 void ask_promotion(int from, int to)
@@ -165,7 +181,7 @@ void on_tap(int sq)
         int found = -1, count = 0;
         for (int k = 0; k < l.n; ++k)
             if (l.m[k].from == sel && l.m[k].to == sq) { found = k; ++count; }
-        if (count == 1) { match::human_move(found); return; }
+        if (count == 1) { match::human_move(int(move_key(l.m[found]))); return; }
         if (count > 1) { ask_promotion(sel, sq); return; }
     }
     const uint8_t c = G->pos.sq[sq];

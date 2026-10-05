@@ -41,16 +41,31 @@ int  turn()   { return G->turn(); }
 int  moves()  { return G->plies; }
 void reset()  { kit::renew(*G); sel = -1; path_n = 0; }
 void redraw();
-void play(int index)
+// Moves reach the match controller as keys (move_key: from + each landing's direction)
+void play(int key)
 {
-    G->play(index);
+    G->play(find_key(*G, uint32_t(key)));
     sel = -1;
     path_n = 0;
     peek = false;
     note_text[0] = 0; must_jump = 0;
     redraw();
 }
-int  think(int level, uint32_t seed, volatile bool* stop) { return best_move(*G, level, seed, stop); }
+int  key_of(int index)
+{
+    MoveList l;
+    G->legal(l);
+    return index >= 0 && index < l.n ? int(move_key(l.m[index])) : -1;
+}
+int  think(int level, uint32_t seed, volatile bool* stop) { return key_of(best_move(*G, level, seed, stop)); }
+int  list(int* out, int cap)
+{
+    MoveList l;
+    G->legal(l);
+    int n = 0;
+    for (int k = 0; k < l.n && n < cap; ++k) out[n++] = int(move_key(l.m[k]));
+    return n;
+}
 void score(char* buf, size_t cap)
 {
     snprintf(buf, cap, "Black %d  White %d", __builtin_popcountll(G->pos.pieces(0)),
@@ -64,7 +79,8 @@ match::Game make_game()
     g.score = score;
     g.note = note;
     g.ai_stack = 40 * 1024;
-    g.legal = [](int index) { MoveList l; G->legal(l); return index >= 0 && index < l.n; };
+    g.legal = [](int key) { return key >= 0 && find_key(*G, uint32_t(key)) >= 0; };
+    g.list = list;
     return g;
 }
 
@@ -155,7 +171,7 @@ void on_tap(int sq)
             --path_n;
         } else {
             // Exactly one move left, and the taps reached its end: play it
-            if (n == 1 && l.m[only].n == path_n) { match::human_move(only); return; }
+            if (n == 1 && l.m[only].n == path_n) { match::human_move(int(move_key(l.m[only]))); return; }
             redraw();
             return;
         }

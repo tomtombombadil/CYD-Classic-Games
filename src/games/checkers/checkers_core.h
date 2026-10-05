@@ -74,4 +74,12 @@ struct Game {
 // `seed`. Needs about 32 KB of stack (move lists live on it).
 int best_move(const Game& g, int level, uint32_t seed, volatile bool* stop = nullptr);
 
+// Wireless play sends a move as its key, which describes the move itself
+// (never its place in a generated list): from | landings << 6 | the
+// direction of each landing (2 bits: down?, right?) from bit 10. Part of
+// Checkers' wireless game version (src/games/common/net_games.h).
+uint32_t move_key(const Move& m);
+// The legal move (index into g.legal()) with that key, or -1
+int find_key(const Game& g, uint32_t key);
+
 } // namespace checkers

@@ -82,6 +82,11 @@ jobs:
         run: |
           g++ -std=c++17 -O1 -Wall -Werror -fsanitize=address,undefined -o test_net tools/host_tests/test_net.cpp src/net/wireless.cpp
           ./test_net
+      - name: Wireless move keys and player names (moves sent change only with a game's version)
+        run: |
+          G=src/games
+          g++ -std=c++17 -O1 -Wall -Werror -fsanitize=address,undefined -Isrc -o test_movekeys tools/host_tests/test_movekeys.cpp src/net/names.cpp $G/fourconnect/fourconnect_core.cpp $G/tictactoe/tictactoe_core.cpp $G/reversi/reversi_core.cpp $G/checkers/checkers_core.cpp $G/chess/chess_core.cpp $G/mancala/mancala_core.cpp $G/morris/morris_core.cpp
+          ./test_movekeys
 
   # Two whole boards (picker, Wireless Play, games, protocol) on the PC,
   # in lockstep, playing scripted wireless sessions - clean and with 30 %

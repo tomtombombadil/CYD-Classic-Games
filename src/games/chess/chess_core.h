@@ -87,4 +87,12 @@ int best_move(const Game& g, int level, uint32_t seed, uint32_t (*clock)(), vola
 
 const char* end_text(End e);           // "Checkmate", "Stalemate", ...
 
+// Wireless play sends a move as its key, which describes the move itself
+// (never its place in a generated list, which may change between
+// versions): from | to << 6 | promotion piece << 12. Part of Chess's
+// wireless game version (src/games/common/net_games.h) - don't change it.
+uint32_t move_key(const Move& m);
+// The legal move (index into g.legal()) with that key, or -1
+int find_key(const Game& g, uint32_t key);
+
 } // namespace chess

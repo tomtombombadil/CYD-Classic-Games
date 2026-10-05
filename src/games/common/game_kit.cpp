@@ -41,7 +41,7 @@ void menu_cb(lv_event_t* e)
     const intptr_t id = reinterpret_cast<intptr_t>(lv_event_get_user_data(e));
     switch (id) {
         case kStats:     if (handlers.stats) handlers.stats(); break;
-        case kExitGame:  app_go_home(); break;
+        case kExitGame:  if (handlers.exit_game) handlers.exit_game(); else app_go_home(); break;
         case kSettings:  settings_open(handlers.reopen); break;
         case kHowToPlay: how_to_play(handlers.reopen); break;
         case kExitMenu:  close_overlays(); if (handlers.back) handlers.back(); break;

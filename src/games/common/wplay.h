@@ -1,37 +1,39 @@
 // Wireless Play: CYD-to-CYD games, from finding someone to play to the
 // end of a session. The protocol is plain C++ in src/net/wireless.*; the
-// game side (turns, Play Again, Forfeit) is in match.*. This file is the
-// service that runs all the time (from app_tick) and its screens.
+// game side (turns, the move timer, Play Again, Forfeit) is in match.*.
+// This file is the service that runs all the time (from app_tick) and its
+// pages. Tom's design (2026-10-04) is docs/SPEC.md section 5.
 //
-// The player's setup, kept in /games/player.bin:
-//   - a name (boards start as "CYD-" + 4 hex digits of the address),
-//   - Available To Play: on = the radio is on and this board beacons, so
-//     others find it and can ask it to play - wherever the player is (the
-//     picker, a solo game, a menu). Off = hidden; the radio is off unless a
-//     wireless game is going.
-//   - the games it is willing to play (Games I'll Play: a toggle per game);
-//     others see only those.
+// HARD RULE: no free-form communication between players. Names are two
+// words picked from fixed lists (src/net/names.*), never typed; everything
+// on the air is a fixed code.
 //
-// Screens (overlays, reachable from the picker's "Wireless Play" row and a
-// two-player game's Wireless key):
-//   Wireless Play   - You are <name>; Available To Play (toggle); Games I'll
-//                     Play; Find Players / Resume <game> With <name>;
-//                     [Back | Change Name]
-//   Games I'll Play - a toggle key per game, and All Games
-//   Players Nearby  - everyone available or playing nearby; tap one
-//   <name>'s Games  - the games that player is willing to play; tap one to
-//                     ask them
-//   Asking          - "Asking Bob to play Chess..." [Stop Asking]; the answer
-//                     comes back as a note: Play starts the game, "Not Now",
-//                     "Another Game", busy, or no answer within 30 s
-//   An offer        - pops up over anything when someone asks this board:
-//                     "Bob would like to play Chess with you" [Play],
-//                     [Not Now | Other Game] (and a ding-dong)
+// The player's setup, kept in /games/player.bin ("PLR3"): the name (two
+// word numbers), Play Mode 1P / 2P (2P = the radio listens, and answers
+// players who look for others), the games this board will play (Games I'll
+// Play) and the Move Timer.
 //
-// One session at a time (/games/wl_session.bin; a paused game carries on
-// while the board stays on - a restart clears the session, Tom 2026-10-04). A board in a session is busy: others see
-// "playing Chess" and can't ask it. The session's game screen closed =
-// paused ("Bob closed the game for now" on the other board).
+// Pages (Settings > Play, the header's wifi icon, a game's Wireless key):
+//   Play           - Left / Right Hand; Play Mode 1P / 2P; Find Players;
+//                    Games I'll Play; Name; Move Timer; Clear 2P Sessions
+//   Find Players   - "Searching...", then "Bob - available / busy / no
+//                    games / needs update / later version"; tap one
+//   Play With Bob  - every wireless game, the ones both play lit; tap = ask
+//   Requesting     - "Asking Bob to play Chess." [Stop Asking]; answers
+//                    come back as a line on Play With Bob
+//   A request      - pops up anywhere: "Ann would like to play Chess."
+//                    [Play] [No Thanks | Other Game] (and a ding-dong)
+//   Connecting     - until both boards hear each other; a trill, the game opens
+//   Back in range  - a put-away session meets its partner again:
+//                    "Bob is back in range. Continue Chess?"
+//   Your Name      - [Random] [Pick From List] (a word from each list)
+//   Move Timer     - 30 s, 1, 2, 5 minutes, Off
+//
+// One session at a time (/games/wl_session.bin "WLS2"), kept through a
+// restart (it comes back put away until both players meet again). While it
+// is going the board is busy: nobody can ask it, and it can't ask anyone.
+// A one-player game of the session's game is put aside when the session
+// starts and comes back when it ends ("Resuming your previous one player game.").
 #pragma once
 
 #include <cstddef>
@@ -41,8 +43,7 @@
 
 namespace wplay {
 
-// The games that play wireless (kNetwork in games.def), in games.def order:
-// their index is the bit in the "willing to play" mask
+// The games that play wireless (kNetwork in games.def, with a key in net_games.h)
 int  game_count();
 int  game_registry(int g);                 // registry index of wireless game g
 int  game_of(const char* id);              // wireless index of a registry id, -1 = none
@@ -62,28 +63,39 @@ void session_save();                       // write the link's state (with every
 void session_over(bool over);
 // The game noted how the session ended (recorded the result): let it go
 void session_finished();
-// Back to Wireless Play once a session is over (closes the game first)
+// Back to the Play page once a session is over (closes the game first)
 void back_after_game(const char* note);
-// Drop the session, unrecorded on both boards (Clear 2P Sessions; also done
-// at every start and when a game finds a session it doesn't agree with)
+// The boards lost touch and the player kept waiting a whole move time more:
+// put the session away (it carries on when they meet again) and leave the game
+void suspend_session();
+// The partner's name, e.g. "Wobbly Pickle" ("" with no session)
+const char* partner_name();
+// Game over, New Game: the Play With page for the partner
+void new_game_with_partner();
+// "Resuming your previous one player game." is due for game `id` (once)
+bool take_resumed_note(const char* id);
+// The game `id` closed: if its session is over, its one-player game comes back
+void game_closed(const char* id);
+// Drop the session: a forfeit if the partner is connected and the game is
+// going, else unrecorded on both boards (Clear 2P Sessions)
 void clear_sessions();
 
 // ---- Screens ----------------------------------------------------------------------------------
-// Play settings (Settings > Play, the wifi icon, a game's Wireless key):
-// the stylus hand, Play Mode 1P / 2P and, in 2P, Find Players, Games I'll
-// Play, Change Name. `back` runs on the header's back arrow (nullptr = close).
+// The Play page (Settings > Play, the wifi icon, a game's Wireless key).
+// `back` runs on the header's back arrow (nullptr = close).
 void open_menu(void (*back)() = nullptr);
-// The picker's row: "Off", "On", "2 nearby" or "Playing"
-void picker_status(char* buf, size_t cap);
-bool available();
-// The picker's row label to keep current (nullptr when it goes)
-void set_picker_label(lv_obj_t* label);
+bool available();                           // Play Mode 2P
+uint16_t move_timer();                      // this board's Move Timer setting (s), 0 = Off
+const char* my_name();
 void debug_state(char* buf, size_t cap);    // one line for tests and the log
 // The header bar's icons (sysbar.*): wifi -1 = off (1P), 0 = on but no
-// signal (just the dot), 1-3 bars; 2P 1 = a wireless game going or paused
+// signal (just the dot), 1-3 bars; 2P 1 = a session going, put away or starting
 int  wifi_level();
 int  two_player_state();
-void resume_session();                      // the 2P icon: open that game
-void set_two_player(bool on);               // Play Mode 1P / 2P (tests)
+void resume_session();                      // the 2P icon
+// Tests (preview agent)
+void set_two_player(bool on);
+void set_name(uint16_t a, uint16_t b);
+void set_move_timer(uint16_t seconds);
 
 } // namespace wplay

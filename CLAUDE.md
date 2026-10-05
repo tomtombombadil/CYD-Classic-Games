@@ -548,84 +548,65 @@ never typed (SPEC section 5).
   in a game without it (Farkle, for now).
 - Tom, 2026-10-02: finish more games before building wireless play.
 
-## Multiplayer (CYD to CYD) - built 2026-10-04; redesigned per Tom the same day (v0.18.0)
-- Tom's model (2026-10-04): players may not see or talk to each other, so
-  the boards find partners and games. Wireless play (`common/wplay.*`,
-  a service ticked from `app_tick` everywhere + its overlays; its page is
-  Settings -> Play, also the header's wifi icon and a two-player game's
-  Wireless key; v0.19.0 replaced the picker row and the Available To Play
-  key): Play Mode 2P (radio on,
-  beacons, offers pop up anywhere with `Sound::Call`; saved), Games I'll
-  Play (toggle key per kNetwork game + All Games; only lit games are
-  announced/askable), Find Players (2P only; list with "N
-  games" / "playing X" / "other version"; tap -> "Play With Bob" grid of
-  Bob's games -> tap = offer, Asking screen with Stop Asking), Change Name
-  (shared keyboard). Offer pop-up: "Bob would like to play Chess with you.
-  Bob moves first." [Play] / [Not Now | Other Game] ("Another Game" didn't
-  fit half a row at 320) - each "no" sends a polite reason back; Busy /
-  GameOff answered by the board itself; 30 s no answer. Profile
-  `/games/player.bin` "PLR2" (name 12 chars, games mask, available).
-- One session at a time, owned by the service (`/games/wl_session.bin`
-  "WLS1": game id, over flag, link). Tom, 2026-10-04 (after a crash left
-  two boards stuck): **a restart clears the session** (`load_all` ->
-  `clear_session()`: `Link::leave()` = End::YouLeft, unrecorded, says
-  "gone" for kLingerMs so the partner ends PeerGone, unrecorded) and the
-  Play page has **Clear 2P Sessions** (lit while there is a session; same
-  thing by hand). `match::restart_view` clears a session for its game that
-  the game never switched to; a game in Wireless mode with no session
-  shows "Game ended" (no moves; New Game in the menu); a game agreed opens on both boards
-  (`wplay::take_start` -> `match`), the old game is saved. Busy (not
-  askable) only while its game is going: a board whose game is over can
-  be asked, and accepting ends that session (Done sent). Game screen closed
-  = paused (away flag; the other board waits "Bob closed X for now").
-- In the game (`match.*`): status "Your turn (White)" / "Bob's turn" /
-  "Waiting for Bob..." (link down or away: no moves) / "You win!" / "Bob
-  wins"; menu while it's going = `kit::menu_wireless()`: "Chess With Bob",
-  a line, **Forfeit Game** (Tom: a loss for the leaver, a win for the
-  other; acts at once, no confirmation), How To Play, Stats | Settings,
-  Exit Menu | Exit Game (= pause). Game over: [Play Again | Done]; both
-  Play Again = next game (first mover alternates); Done = both boards back
-  to the Play page (`wplay::back_after_game`, a note on each). Forfeited /
-  ended: one "Wireless Play" key. Results are recorded once
-  (`handled_end`), also lazily when an ended session's game is next opened
-  (a forfeit while paused = a win on opening). Wireless results: mode
-  "Wireless", Won/Lost/Draw; stats "Opponent" table Wireless row.
-- Protocol `src/net/wireless.*` (proto 2, plain C++): ESP-NOW broadcasts on
-  channel 1, no acks - state repeated every 500 ms and at once on a change,
-  u16 counters drop late copies. Presence beacons: name, fw, available /
-  busy / paused, games mask (bit = index among kNetwork games in games.def
-  order), busy game, an offer (game, session) or a "no" (reason) for one
-  board. Link status: session, game no, ply, last 12 moves, FNV hash, flags
-  again 1 / away 2 / forfeit 4 / done 8 / gone 16 ("no such session
-  here"); forfeit/done repeated 4 s (`kLingerMs`); behind = play missed
-  moves after `legal()` + turn checks; bad move / hash mismatch = OutOfStep
-  (unrecorded). Lost after 3 s, forgotten after 6 s. Same firmware needed.
-  `src/hal/radio.*`: bare WiFi driver (`esp_wifi_init`, not Arduino WiFi.h:
-  that pulled in the IP stack, +4 KB static RAM, +180 KB flash), receive
-  callback -> FreeRTOS queue. Static RAM 36 -> 56 KB with WiFi linked.
-- Stack (2026-10-04 crash: v0.18/v0.19 rebooted both boards as a wireless
-  Chess game started): `*G = Game{}` built a 5.5 KB chess Game temporary
-  on the main task's 8 KB stack. Rules: reset state in place with
-  `kit::renew(x)`, big locals go on the heap; main.cpp sets the loop
-  task's stack to 16 KB (`SET_LOOP_TASK_STACK_SIZE`) and logs "Main stack
-  tight" when it ever has under 4 KB left; the preview build fails on any
-  function in src/ with a frame over 3 KB (`-Wstack-usage=3072`, build.sh).
-- Tests: `test_net.cpp` (lossy/duplicating/reordering fake air) and
-  **`tools/preview/duo.py`** = 2-3 preview processes in agent mode
-  (`preview --agent w h name macbyte dir`: commands tick/rx/press/dump/
-  anymove/board/stats/wpstate on stdin) in lockstep, packets carried by
-  the coordinator with optional loss; scenarios: offer+play+rematch,
-  link loss + pause + resume, forfeit, Not Now / Other Game / no answer,
-  an offer over Sudoku + Done, a restart mid-game (session cleared on both,
-  nothing recorded, both free again), Clear 2P Sessions, forfeit while paused,
-  crossed offers, a third board, random games of all 7 games (positions
-  compared). CI job `wireless-duo` (clean + 30 % loss). Run it after any
-  change to wireless code. `match::try_move()` = a legal move or nothing
-  (human_move refuses illegal moves too).
+## Multiplayer (CYD to CYD) - redesign built 2026-10-05 (v0.21.0, Tom's design in SPEC section 5)
+- HARD RULE above: only fixed codes on the air. Names = two word numbers
+  (`src/net/names.*`, two APPEND-ONLY lists of 112 kid-safe silly words,
+  <= 8 letters each; Random / Pick From List, 2 or 3 columns by the widest
+  word, paged); a legacy (link < 3) board shows as "Older board", never its
+  typed name.
+- `src/games/common/net_games.h`: each wireless game's fixed KEY (on the
+  air, never a list position) and VERSION. Moves travel as move keys that
+  describe the move (Chess `chess::move_key` from|to<<6|promo<<12, Checkers
+  `checkers::move_key` from + landings + 2-bit directions; others column /
+  square / pit / Morris code). `tools/host_tests/test_movekeys.cpp` plays
+  fixed games and compares with `net_moves.txt`: a changed move stream
+  needs a version bump + a new line (never edit old lines). match::Game
+  moves are these keys everywhere (`list` gives them for tests).
+- Protocol `src/net/wireless.*` link version 3 (`kLink`): frozen Call (0x10)
+  / Hello (0x11) layouts - later versions may only append; Request / Answer
+  (Play, No Thanks, Other Game, Busy, Game Off, Cancel, Ringing) / Status
+  (u32 moves, flags again/forfeit/done/gone/void/suspended/continue/
+  by-time/closed, the asked board's move timer). 2P = listen; Calls only
+  while the Find Players / player / version / requesting pages are open;
+  Hellos answer Calls. First asker priority; crossed requests: the lower
+  address keeps asking. The asked player moves first (game 0), then
+  alternates. Out-of-step = that game void (not counted), Play Again goes
+  on. Suspended sessions (lost touch waited out, or loaded after a restart)
+  send a status every 2 s; meeting again asks both "Continue?", both yes =
+  resume. `send_end` + wplay tombstones (2 last ended sessions, saved)
+  answer a returning partner, so a forfeit reaches a board that was away.
+- `wplay.*`: profile "PLR3" (name words, games mask by key-1, 2P, Move
+  Timer 30/60/120/300/0), session "WLS2" (link "LNK3" + tombstones; kept
+  through a restart). Busy = a live session not over (incl. put away).
+  Pages: Play, Find Players, <name> (games, lit = playable, "needs update"
+  small under a grey game), version page (flasher address), Requesting,
+  request popup, Other Game pick, Connecting (10 s), back-in-range, Your
+  Name, First/Second Word, Move Timer, a notice page for news off the Play
+  pages. One-player game of the session's game: copied to `1p_<id>` before
+  the session and put back when the game closes after the session ended
+  (and at boot); the game then shows "Resuming your previous one player
+  game." Clear 2P Sessions = forfeit if the partner is up and the game is
+  going, else leave (not counted). Radio on while 2P or a session exists.
+- `match.*`: header "Respond in Ns" / "Waiting... Ns" (Move Timer; time
+  restarts when the link comes back), at 0 the grace popup, at -10 s a
+  by-time forfeit (shown over the board). No reply for a move time (60 s
+  with Timer Off): "No Reply" [Keep Waiting | Close Game]; another move
+  time = `wplay::suspend_session()`. Leaving (back arrow, Exit Game via
+  `MenuHandlers::exit_game`) = the one confirmation; Forfeit Game acts at
+  once; no Forfeit after game over. Game over: [Again | New Game | Goodbye];
+  ended: [Done]. A partner's forfeit / closed / gone pops a notice (the
+  info line is one line). Leaving a finished game = Goodbye.
+- Tests: `test_net.cpp` (fake lossy air), `test_movekeys.cpp`, and
+  `tools/preview/duo.py` (agent names must be list names, e.g. "Jolly
+  Llama"; scenarios: request/play/rematch, link loss, leave confirm, menu
+  forfeit, No Thanks / Other Game / no answer / cancel, the one-player game
+  coming back, priority + busy + Clear 2P = forfeit, restart + Continue,
+  No Reply + Close, Keep Waiting + meet + move timer forfeit, forfeit while
+  away, crossed requests, New Game, every game random) clean and 30 % loss.
+  Run it after any wireless change.
 - Games: FourConnect, Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala,
-  Morris (kNetwork + `match::Game::legal`). Farkle: not yet (one board
-  would have to roll and send the dice). No draw offer.
-- Internet play is out of scope (needs a server).
+  Morris. Farkle not yet. Internet play out of scope.
+- Not built yet: duty-cycled listening for battery (proposed, waiting for Tom).
 
 ## Known hardware issues (from CYD-Sudoku - all still apply)
 - Supported boards: 2.8" ESP32-2432S028 in ILI9341 and ST7789 versions

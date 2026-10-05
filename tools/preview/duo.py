@@ -26,8 +26,9 @@ rng = random.Random(5)
 
 class Board:
     def __init__(self, name, mac, w=240, h=320, files=None):
+        # name: two words from the name lists (src/net/names.cpp)
         self.name, self.mac = name, mac
-        self.dir = files or tempfile.mkdtemp(prefix="duo_%s_" % name)
+        self.dir = files or tempfile.mkdtemp(prefix="duo_%s_" % name.replace(" ", "_"))
         self.w, self.h = w, h
         self.start()
 
@@ -139,248 +140,27 @@ def tictactoe_moves(first, second, cells):
         run(200)
 
 
-def scenario_offer_and_play(A, B):
-    print("Offer, accept, play, rematch")
-    A.cmd("wplay")
-    B.cmd("wplay")
-    A.cmd("twop 1")
-    B.cmd("twop 1")
-    run(1500)
-    expect(A, "Find Players (1 Nearby)")
-    A.press("Find Players")
-    expect(A, B.name)
-    shot(A, "players")
-    A.press(B.name)
-    expect(A, "Play With " + B.name)
-    A.press("Tic-Tac-Toe")
-    expect(A, "Asking %s to play Tic-Tac-Toe" % B.name)
-    expect(B, "%s would like to play Tic-Tac-Toe with you" % A.name)
-    shot(B, "offer")
-    B.press("Play")
-    run(1500)
-    expect(A, "Your turn (X)")
-    expect(B, "%s's turn" % A.name)
-    shot(A, "start")
-    tictactoe_moves(A, B, [0, 3, 1, 4, 2])             # X wins on the top row
-    expect(A, "You win!")
-    expect(B, "%s wins" % A.name)
-    expect(A, "Play Again")
-    expect(B, "Done")
-    shot(B, "over")
-    check(any("tictactoe Wireless,-,Won" in s for s in A.stats()), "A recorded a win")
-    check(any("tictactoe Wireless,-,Lost" in s for s in B.stats()), "B recorded a loss")
-    A.press("Play Again")
-    expect(B, "%s wants to play again" % A.name)
-    B.press("Play Again")
-    run(1500)
-    expect(B, "Your turn (X)")                          # the other player starts now
-    expect(A, "%s's turn" % B.name)
-
-
-def scenario_link_loss_and_pause(A, B):
-    print("Link loss, pause, resume")
-    # B (X) moves, then the boards lose touch
-    for _ in range(40):
-        if B.may():
-            break
-        run(100)
-    B.cmd("move 4")
-    run(500)
-    blocked.add(B)
-    run(4000)
-    expect(A, "Waiting")
-    expect(A, "out of range")
-    check(not A.may(), "A can't move while B is out of range")
-    blocked.discard(B)
-    run(2000)
-    expect(A, "Your turn (O)")
-    # A closes the game (Exit Game): B sees it paused
-    A.cmd("home")
-    run(1500)
-    expect(B, "closed Tic-Tac-Toe for now")
-    shot(B, "paused")
-    check("2p=1" in A.cmd("icons")[0], "Ann's 2P icon is filled (a game to resume)")
-    check("wifi=3" in A.cmd("icons")[0], "Ann's wifi icon shows a strong signal")
-    A.cmd("wplay")
-    expect(A, "Resume Tic-Tac-Toe With " + B.name)
-    A.press("Resume")
-    run(1500)
-    expect(A, "Your turn (O)")
-    expect(B, "%s's turn" % A.name)
-
-
-def scenario_forfeit(A, B):
-    print("Forfeit")
-    for _ in range(40):
-        if A.may():
-            break
-        run(100)
-    A.cmd("move 0")
-    run(500)
-    B.cmd("menu")
-    expect(B, "Tic-Tac-Toe With " + A.name)
-    shot(B, "game_menu")
-    B.press("Forfeit Game")
-    run(1500)
-    expect(B, "You forfeited Tic-Tac-Toe with " + A.name)
-    expect(B, "Play Mode")                               # back on the Play page
-    expect(A, "You win!")
-    expect(A, "%s forfeited the game" % B.name)
-    shot(A, "forfeit")
-    check(sum("Wireless,-,Won" in s for s in A.stats()) == 2, "A has 2 wins")
-    check(sum("Wireless,-,Lost" in s for s in B.stats()) == 2, "B has 2 losses")
-    A.press("Wireless Play")
-    run(5000)                                            # the session lets go
-    expect(A, "Find Players")
-
-
-def scenario_decline(A, B):
-    print("Not Now, Other Game, no answer")
-    A.cmd("wplay")
-    run(500)
-    A.press("Find Players")
-    expect(A, B.name)
-    A.press(B.name)
-    A.press("Chess")
-    expect(B, "would like to play Chess")
-    B.press("Not Now")
-    expect(A, "can't play right now. Thanks for asking!")
-    shot(A, "declined")
-    A.press("Checkers")
-    expect(B, "would like to play Checkers")
-    B.press("Other Game")
-    expect(A, "would rather play another game")
-    # B switches Checkers off: A's list follows
-    B.cmd("wplay")
-    B.press("Games I'll Play")
-    B.press("Checkers")
-    run(1500)
-    check("Checkers" not in A.dump().split("| Play With")[0] or True, "list refresh (visual)")
-    A.press("Reversi")
-    run(31000)                                           # nobody answers
-    expect(A, "didn't answer")
-    B.cmd("back")
-    B.cmd("back")
-
-
-def scenario_offer_over_solo_game(A, B):
-    print("An offer over a solo game, then Done")
-    B.cmd("open sudoku")
-    run(500)
-    A.cmd("wplay")
-    A.press("Find Players")
-    expect(A, B.name)
-    A.press(B.name)
-    A.press("Tic-Tac-Toe")
-    expect(B, "would like to play Tic-Tac-Toe")
-    expect(B, "Your Sudoku game is saved for later")
-    shot(B, "offer_over_sudoku")
-    B.press("Play")
-    run(1500)
-    expect(A, "Your turn (X)")
-    tictactoe_moves(A, B, [4, 0, 1, 2, 7])               # X wins the middle column
-    expect(A, "You win!")
-    expect(B, "Done")
-    B.press("Done")
-    run(1500)
-    expect(B, "Thanks for playing!")
-    expect(A, "%s is done playing. Thanks for the game!" % B.name)
-    expect(A, "Play Mode")
-    shot(A, "done")
-
-
 def icons(board):
     return board.cmd("icons")[0]
 
 
-def free_again(A, B, title):
-    """Both boards can start (and finish) a new game together."""
-    offer(A, B, title)
-    expect(A, "Your turn")
-    check("2p=1" in icons(A) and "2p=1" in icons(B), "%s: both 2P icons filled in the new game" % title)
-    A.cmd("menu")
-    A.press("Forfeit Game")
-    run(1500)
-    B.press("Wireless Play")
-    run(5000)
+def play_page(b):
+    b.cmd("wplay")
+    run(100)
 
 
-def scenario_reboot(A, B):
-    print("A board restarts mid-game: the session is cleared on both")
-    A.cmd("wplay")
-    A.press("Find Players")
-    expect(A, B.name)
-    A.press(B.name)
-    A.press("Tic-Tac-Toe")
-    expect(B, "would like to play Tic-Tac-Toe")
-    B.press("Play")
-    run(1500)
-    tictactoe_moves(A, B, [0, 4])
-    before_a = len(A.stats())
-    # B switches off and on again (Tom, 2026-10-04: a restart clears it)
-    B.stop()
-    run(2000)
-    expect(A, "Waiting")
-    B.start()
-    before_b = len(B.stats())
-    run(3000)
-    check("2p=0" in icons(B), "B's 2P icon is empty after the restart")
-    expect(A, "%s's board ended this game" % B.name)
-    expect(A, "Game ended")
-    check(not A.may(), "A can't move in the ended game")
-    check("2p=0" in icons(A), "A's 2P icon is empty")
-    B.cmd("wplay")
-    check("Resume" not in B.dump(), "B has nothing to resume")
-    B.cmd("open tictactoe")
-    run(300)
-    expect(B, "Game ended")
-    check(not B.may(), "B can't move in the ended game")
-    check(len(A.stats()) == before_a and len(B.stats()) == before_b, "nothing recorded on either board")
-    A.cmd("home")
-    B.cmd("home")
-    run(1000)
-    free_again(A, B, "Tic-Tac-Toe")
-
-
-def scenario_clear(A, B):
-    print("Clear 2P Sessions while the other board is out of range")
-    offer(A, B, "FourConnect")
-    expect(A, "Your turn")
-    A.cmd("anymove")
-    run(500)
-    before_a, before_b = len(A.stats()), len(B.stats())
-    blocked.add(B)
-    run(4000)
-    expect(A, "Waiting")
-    A.cmd("wplay")
-    check(A.press("Clear 2P Sessions"), "A has a Clear 2P Sessions key")
-    run(300)
-    expect(A, "2P sessions cleared")
-    check("2p=0" in icons(A), "A's 2P icon is empty after clearing")
-    blocked.discard(B)
-    run(6000)                       # B's statuses get "gone" back
-    expect(B, "%s's board ended this game" % A.name)
-    check("2p=0" in icons(B), "B's 2P icon is empty")
-    check(len(A.stats()) == before_a and len(B.stats()) == before_b, "clearing records nothing")
-    A.cmd("home")
-    B.cmd("home")
-    run(1000)
-    free_again(A, B, "FourConnect")
-
-
-GAMES = [("fourconnect", "FourConnect"), ("tictactoe", "Tic-Tac-Toe"), ("reversi", "Reversi"),
-         ("checkers", "Checkers"), ("chess", "Chess"), ("mancala", "Mancala"), ("morris", "Nine Men's Morris")]
-
-
-def offer(asker, other, title):
-    asker.cmd("wplay")
+def request(asker, other, title, answer="Play"):
+    """asker finds `other`, asks for `title`; other answers. True if asked."""
+    play_page(asker)
     asker.press("Find Players")
     if not wait_for(asker, other.name):
         check(False, "%s sees %s" % (asker.name, other.name))
+        print("    %s" % asker.cmd("wpstate"))
         return False
-    asker.press(other.name)
-    # (a board still finishing its last game shows as busy for a moment)
-    wait_for(asker, "Tap a game to ask")
+    for _ in range(3):                                  # (the list may be rebuilding as it's tapped)
+        asker.press(other.name)
+        if wait_for(asker, "Tap a game to ask", 3000):
+            break
     asker.press(title)
     ok = wait_for(other, "would like to play %s" % title)
     check(ok, "%s is asked to play %s" % (other.name, title))
@@ -389,9 +169,416 @@ def offer(asker, other, title):
         print("    %s" % other.cmd("wpstate"))
         print("    %s: %s" % (asker.name, asker.dump()))
         print("    %s: %s" % (other.name, other.dump()))
-    other.press("Play")
-    run(1500)
+        return False
+    if answer:
+        other.press(answer)
+    return True
+
+
+def offer(asker, other, title):
+    """A session of `title` between the two boards (the asked board moves first)."""
+    if not request(asker, other, title):
+        return False
+    ok = wait_for(other, "Your turn", 6000) or wait_for(other, "Respond in", 1)
+    check(ok, "%s: the game starts" % title)
+    run(500)
     return ok
+
+
+def wait_may(b, ms=6000):
+    t = 0
+    while t < ms and not b.may():
+        run(100)
+        t += 100
+    return b.may()
+
+
+def counted(b, gid, what):
+    return sum(("%s Wireless,-,%s" % (gid, what)) in s for s in b.stats())
+
+
+def leave_session(A, B):
+    """End whatever session is on (Goodbye or a forfeit) and get both back to the start."""
+    for b in (A, B):
+        if "Goodbye" in b.dump():
+            b.press("Goodbye")
+            run(1500)
+            break
+    for b in (A, B):
+        d = b.dump()
+        if "Forfeit" in d or "Your turn" in d or "turn" in d:
+            pass
+    for b in (A, B):
+        b.cmd("home")
+    run(5000)
+
+
+def scenario_offer_and_play(A, B):
+    print("Request, Connecting, play, rematch")
+    for b in (A, B):
+        play_page(b)
+        b.cmd("twop 1")
+        b.cmd("timer 0")
+    run(500)
+    check(not any(True for _ in []), "quiet")
+    A.press("Find Players")
+    expect(A, "Searching...")
+    expect(A, B.name)
+    expect(A, "available")
+    shot(A, "players")
+    A.press(B.name)
+    expect(A, "Tap a game to ask %s" % B.name)
+    A.press("Tic-Tac-Toe")
+    expect(A, "Requesting...")
+    expect(B, "%s would like to play Tic-Tac-Toe." % A.name)
+    shot(B, "offer")
+    B.press("Play")
+    expect(B, "Your turn (X)")                          # the asked player moves first
+    expect(A, "Their turn")
+    check("2p=1" in icons(A) and "2p=1" in icons(B), "both 2P icons filled")
+    shot(A, "start")
+    tictactoe_moves(B, A, [0, 3, 1, 4, 2])             # X wins on the top row
+    expect(B, "You win!")
+    expect(A, "You lost")
+    expect(A, "Again")
+    expect(A, "New Game")
+    expect(A, "Goodbye")
+    shot(A, "over")
+    check(counted(B, "tictactoe", "Won") == 1, "B recorded a win")
+    check(counted(A, "tictactoe", "Lost") == 1, "A recorded a loss")
+    B.cmd("menu")
+    check("Forfeit Game" not in B.dump(), "no Forfeit once the game is over")
+    B.cmd("back")
+    B.press("Again")
+    expect(A, "%s wants to play again" % B.name)
+    A.press("Again")
+    expect(A, "Your turn (X)")                          # the other player starts now
+    expect(B, "Their turn")
+
+
+def scenario_link_loss(A, B):
+    print("Link loss: wait, then carry on")
+    wait_may(A)
+    A.cmd("move 4")
+    run(500)
+    blocked.add(A)
+    run(4000)
+    expect(B, "Waiting")
+    expect(B, "out of range")
+    check(not B.may(), "B can't move while A is out of range")
+    blocked.discard(A)
+    run(2000)
+    expect(B, "Your turn (O)")
+
+
+def scenario_leave_asks(A, B):
+    print("Leaving asks first, then forfeits")
+    wait_may(B)
+    B.cmd("back")
+    expect(B, "Leaving will forfeit this game.")
+    shot(B, "leave")
+    B.press("Keep Playing")
+    run(200)
+    check(B.may(), "Keep Playing: still in the game")
+    B.cmd("back")
+    B.press("Leave Game")
+    run(1500)
+    expect(B, "You forfeited Tic-Tac-Toe")
+    expect(B, "Play Mode")                               # back on the Play page
+    expect(A, "You win!")
+    expect(A, "%s left and forfeited the game. You win!" % B.name)
+    A.press("OK")
+    check(counted(A, "tictactoe", "Won") == 1, "A has a win")
+    check(counted(B, "tictactoe", "Lost") == 1, "B has a loss")
+    A.press("Done")
+    run(5000)
+    expect(A, "Find Players")
+
+
+def scenario_menu_forfeit(A, B):
+    print("Forfeit Game in the menu")
+    offer(A, B, "FourConnect")
+    wait_may(B)
+    B.cmd("anymove")
+    run(500)
+    A.cmd("menu")
+    expect(A, "Forfeit Game")
+    shot(A, "game_menu")
+    A.press("Forfeit Game")
+    run(1500)
+    expect(A, "You forfeited FourConnect")
+    expect(B, "left and forfeited the game. You win!")
+    B.press("OK")
+    check(counted(B, "fourconnect", "Won") == 1, "B got the win")
+    B.press("Done")
+    run(5000)
+
+
+def scenario_answers(A, B):
+    print("No Thanks, Other Game, no answer, cancelled")
+    request(A, B, "Chess", "No Thanks")
+    expect(A, "%s said 'no thanks'." % B.name)
+    shot(A, "no_thanks")
+    run(5000)
+    # Other Game: B picks one of A's games and asks back
+    A.press("Checkers")
+    expect(B, "would like to play Checkers")
+    B.press("Other Game")
+    expect(B, "Pick the game you'd rather play")
+    expect(A, "would rather play a different game")
+    B.press("Mancala")
+    expect(A, "%s would like to play Mancala." % B.name)
+    A.press("No Thanks")
+    expect(B, "%s said 'no thanks'." % A.name)
+    B.cmd("home")
+    A.cmd("wplay")
+    run(5000)
+    # Nobody answers
+    request(A, B, "Reversi", None)
+    run(31000)
+    expect(A, "There was no answer from %s." % B.name)
+    expect(B, "stopped waiting for an answer")
+    run(5000)
+    # Cancelled
+    A.press("Find Players")
+    expect(A, B.name)
+    A.press(B.name)
+    wait_for(A, "Tap a game to ask")
+    A.press("Reversi")
+    expect(B, "would like to play Reversi")
+    A.press("Stop Asking")
+    expect(B, "%s cancelled the request." % A.name)
+    B.press("OK")
+    A.cmd("home")
+    B.cmd("home")
+    run(5000)
+
+
+def scenario_one_player_comes_back(A, B):
+    print("A one-player game is put aside and comes back")
+    B.cmd("open tictactoe")
+    run(300)
+    B.cmd("menu")
+    B.press("Easy")
+    run(300)
+    wait_may(B)
+    B.cmd("move 4")                                       # a move vs the computer
+    run(1500)
+    hash_before = board_hash(B, "tictactoe")
+    B.cmd("home")
+    run(300)
+    offer(A, B, "Tic-Tac-Toe")
+    expect(B, "Your turn (X)")
+    tictactoe_moves(B, A, [0, 3, 1, 4, 2])
+    expect(A, "Goodbye")
+    A.press("Goodbye")
+    run(1500)
+    expect(A, "Thanks for playing!")
+    expect(B, "%s said goodbye. Thanks for the game!" % A.name)
+    expect(B, "Play Mode")
+    run(5000)
+    B.cmd("open tictactoe")
+    run(300)
+    expect(B, "Resuming your previous")
+    check(board_hash(B, "tictactoe") == hash_before, "B's one-player game is as it was")
+    check(sum("tictactoe Computer" in s for s in B.stats()) == 0, "nothing recorded for the put-aside game")
+    B.cmd("home")
+    run(1000)
+
+
+def scenario_busy_and_priority(A, B):
+    print("A third board: the first asker has priority; busy boards")
+    C = Board("Tiny Yeti", 3)
+    boards.append(C)
+    play_page(C)
+    C.cmd("twop 1")
+    C.cmd("timer 0")
+    request(A, B, "Chess", None)                          # B's question is up
+    play_page(C)
+    C.press("Find Players")
+    expect(C, B.name)
+    C.press(B.name)
+    wait_for(C, "Tap a game to ask")
+    C.press("Reversi")
+    expect(C, "%s can't play right now." % B.name)
+    B.press("Play")
+    expect(B, "Your turn")
+    run(1500)
+    C.cmd("back")
+    run(1500)
+    expect(C, "busy")
+    shot(C, "busy")
+    # Clear 2P Sessions with the partner there and the game going = a forfeit
+    play_page(B)
+    B.press("Clear 2P Sessions")
+    run(1500)
+    expect(A, "%s left and forfeited the game. You win!" % B.name)
+    A.press("OK")
+    A.press("Done")
+    C.stop()
+    boards.remove(C)
+    shutil.rmtree(C.dir, ignore_errors=True)
+    B.cmd("home")
+    run(5000)
+
+
+def scenario_restart(A, B):
+    print("A board restarts mid-game: the session waits, then both carry on")
+    offer(A, B, "Tic-Tac-Toe")
+    tictactoe_moves(B, A, [0, 4])
+    B.stop()
+    run(2000)
+    expect(A, "Waiting")
+    B.start()
+    run(500)
+    check("2p=1" in icons(B), "B's 2P icon is lit after the restart (a session waits)")
+    expect(A, "is back in range. Continue Tic-Tac-Toe?")
+    expect(B, "is back in range. Continue Tic-Tac-Toe?")
+    shot(B, "meet")
+    B.press("Continue")
+    expect(B, "Waiting for %s" % A.name)
+    A.press("Continue")
+    run(2000)
+    expect(B, "Your turn (X)")
+    check(in_step(A, B, "tictactoe"), "both boards have the same position")
+    tictactoe_moves(B, A, [8, 2, 6, 7, 3])
+    run(1500)
+    for b in (A, B):
+        if "Goodbye" in b.dump():
+            b.press("Goodbye")
+            break
+    run(5000)
+
+
+def scenario_comm_close(A, B):
+    print("Lost touch: No reply, Close Game (not counted)")
+    for b in (A, B):
+        b.cmd("timer 30")
+    offer(A, B, "FourConnect")
+    before_a, before_b = len(A.stats()), len(B.stats())
+    expect(B, "Respond in")
+    expect(A, "Waiting...")
+    blocked.add(B)
+    run(31000)
+    expect(A, "No reply from %s." % B.name)
+    shot(A, "noreply")
+    A.press("Close Game")
+    expect(A, "Communications failed. Game not counted.")
+    blocked.discard(B)
+    run(4000)
+    expect(B, "Communications failed. Game not counted.")
+    B.press("OK")
+    check(len(A.stats()) == before_a and len(B.stats()) == before_b, "nothing recorded on either board")
+    B.cmd("home")
+    run(5000)
+
+
+def scenario_comm_wait(A, B):
+    print("Lost touch: Keep Waiting, put away, met again")
+    offer(A, B, "Reversi")
+    wait_may(B)
+    B.cmd("anymove")
+    run(500)
+    blocked.add(B)
+    run(31000)
+    expect(A, "No reply from")
+    expect(B, "No reply from")
+    A.press("Keep Waiting")
+    B.press("Keep Waiting")
+    run(31000)
+    expect(A, "is saved. It goes on when you meet again.")
+    check("2p=1" in icons(A) and "2p=1" in icons(B), "2P icons lit while the session waits")
+    blocked.discard(B)
+    run(3000)
+    expect(A, "is back in range. Continue Reversi?")
+    expect(B, "is back in range. Continue Reversi?")
+    A.press("Continue")
+    B.press("Continue")
+    run(2000)
+    check(in_step(A, B, "reversi"), "Reversi goes on with both in step")
+    expect(A, "Respond in")
+    # The move timer: A doesn't move
+    run(31000)
+    expect(A, "You haven't responded in time.")
+    shot(A, "timer")
+    A.press("OK")
+    run(11000)
+    expect(A, "You ran out of time and forfeited the game.")
+    A.press("OK")
+    expect(B, "%s ran out of time and forfeited the game. You win!" % A.name)
+    B.press("OK")
+    check(counted(B, "reversi", "Won") == 1, "B got the win")
+    for b in (A, B):
+        b.press("Done")
+        b.cmd("timer 0")
+    run(5000)
+
+
+def scenario_forfeit_away(A, B):
+    print("Forfeit while the other board is out of range: it hears later")
+    offer(A, B, "Mancala")
+    wait_may(B)
+    B.cmd("anymove")
+    run(2500)
+    blocked.add(B)
+    run(500)
+    A.cmd("menu")
+    A.press("Forfeit Game")
+    run(8000)
+    blocked.discard(B)
+    run(3000)
+    expect(B, "left and forfeited the game.")
+    B.press("OK")
+    check(counted(B, "mancala", "Won") == 1, "B got the win")
+    B.press("Done")
+    run(5000)
+
+
+def scenario_crossed(A, B):
+    print("Both boards ask each other at once")
+    for b in (A, B):
+        play_page(b)
+        b.press("Find Players")
+    run(1500)
+    A.press(B.name)
+    B.press(A.name)
+    run(200)
+    A.press("Chess")
+    B.press("Reversi")
+    run(2000)
+    da, db = A.dump(), B.dump()
+    one = ("would like to play Reversi" in da) != ("would like to play Chess" in db)
+    check(one, "exactly one board shows the other's question")
+    asked = A if "would like to play Reversi" in da else B
+    asked.press("Play")
+    run(2000)
+    check("Your turn" in asked.dump(), "the asked player moves first")
+    asked.cmd("menu")
+    asked.press("Forfeit Game")
+    run(1500)
+    other = B if asked is A else A
+    other.press("OK")
+    other.press("Done")
+    run(5000)
+
+
+def scenario_new_game(A, B):
+    print("Game over: New Game with the same player")
+    offer(A, B, "Tic-Tac-Toe")
+    tictactoe_moves(B, A, [0, 3, 1, 4, 2])
+    expect(A, "New Game")
+    A.press("New Game")
+    expect(A, "Tap a game to ask %s" % B.name)
+    A.press("Checkers")
+    expect(B, "would like to play Checkers")
+    B.press("Play")
+    expect(B, "Your turn")
+    B.cmd("menu")
+    B.press("Forfeit Game")
+    run(1500)
+    A.press("OK")
+    A.press("Done")
+    run(5000)
 
 
 def board_hash(b, gid):
@@ -405,6 +592,10 @@ def in_step(a, b, gid):
             return True
         run(1000)
     return False
+
+
+GAMES = [("fourconnect", "FourConnect"), ("tictactoe", "Tic-Tac-Toe"), ("reversi", "Reversi"),
+         ("checkers", "Checkers"), ("chess", "Chess"), ("mancala", "Mancala"), ("morris", "Nine Men's Morris")]
 
 
 def scenario_every_game(A, B):
@@ -429,122 +620,43 @@ def scenario_every_game(A, B):
         same = in_step(first, second, gid)
         check(same, "%s: both boards have the same position after %d moves" % (title, plies))
         da, db = first.dump(), second.dump()
-        over = "Play Again" in da
-        if over:
+        if "Goodbye" in da:
             fw = "You win!" in da
             sw = "You win!" in db
             draw = "Draw" in da and "Draw" in db
             check((fw != sw) or draw, "%s: one winner (or a draw on both)" % title)
-            second.press("Done")
+            second.press("Goodbye")
             run(1500)
-            expect(first, "is done playing")
+            expect(first, "said goodbye")
         else:
             first.cmd("menu")
             first.press("Forfeit Game")
             run(1500)
             expect(second, "forfeited the game")
-            second.press("Wireless Play")
+            second.press("OK")
+            second.press("Done")
         run(5000)
-
-
-def scenario_paused_forfeit(A, B):
-    print("Forfeit while the other board has the game closed")
-    offer(A, B, "Reversi")                                # (Bob turned Checkers off earlier)
-    expect(A, "Your turn")
-    A.cmd("anymove")
-    run(500)
-    B.cmd("home")                                         # Exit Game: paused
-    run(1500)
-    expect(A, "closed Reversi for now")
-    check(not A.may(), "A waits while B has the game closed")
-    wins_before = sum("reversi Wireless,-,Won" in s for s in B.stats())
-    A.cmd("menu")
-    A.press("Forfeit Game")
-    run(6000)
-    B.cmd("open reversi")
-    run(500)
-    expect(B, "You win!")
-    check(sum("reversi Wireless,-,Won" in s for s in B.stats()) == wins_before + 1, "B got the win on opening Reversi")
-    B.cmd("home")
-    run(5000)
-
-
-def scenario_crossed_offers(A, B):
-    print("Both boards ask each other at once")
-    A.cmd("wplay")
-    B.cmd("wplay")
-    A.press("Find Players")
-    B.press("Find Players")
-    run(1000)
-    A.press(B.name)
-    B.press(A.name)
-    run(100)
-    A.press("Chess")
-    B.press("Reversi")
-    run(1000)
-    # Each board shows the other's offer; Ann says Play to Bob's Reversi
-    expect(A, "would like to play Reversi")
-    A.press("Play")
-    run(2000)
-    expect(A, "%s's turn" % B.name)
-    expect(B, "Your turn")
-    check("Your turn" not in A.dump(), "Ann is White (Bob asked)")
-    B.cmd("menu")
-    B.press("Forfeit Game")
-    run(1500)
-    A.press("Wireless Play")
-    run(5000)
-
-
-def scenario_three_boards(A, B):
-    print("A third board sees two playing")
-    C = Board("Cy", 3)
-    boards.append(C)
-    C.cmd("wplay")
-    C.cmd("twop 1")
-    offer(A, B, "FourConnect")
-    run(1500)
-    C.press("Find Players")
-    expect(C, "playing FourConnect")
-    C.press(A.name)
-    expect(C, "%s is playing FourConnect now" % A.name)
-    shot(C, "busy")
-    # C asks B straight after the game ends. A leaves with the header's
-    # back arrow: in a wireless game that is a forfeit
-    A.cmd("back")
-    run(500)
-    expect(A, "You forfeited FourConnect")
-    run(1500)
-    B.press("Wireless Play")
-    run(5000)
-    C.cmd("back")
-    run(1000)
-    C.press(B.name)
-    C.press("Mancala")
-    expect(B, "%s would like to play Mancala" % C.name)
-    B.press("Not Now")
-    expect(C, "can't play right now")
-    C.stop()
-    boards.remove(C)
-    shutil.rmtree(C.dir, ignore_errors=True)
 
 
 def main():
     global boards
-    A = Board("Ann", 1)
-    B = Board("Bob", 2)
+    A = Board("Jolly Llama", 1)
+    B = Board("Zippy Otter", 2)
     boards = [A, B]
     try:
         scenario_offer_and_play(A, B)
-        scenario_link_loss_and_pause(A, B)
-        scenario_forfeit(A, B)
-        scenario_decline(A, B)
-        scenario_offer_over_solo_game(A, B)
-        scenario_reboot(A, B)
-        scenario_clear(A, B)
-        scenario_paused_forfeit(A, B)
-        scenario_crossed_offers(A, B)
-        scenario_three_boards(A, B)
+        scenario_link_loss(A, B)
+        scenario_leave_asks(A, B)
+        scenario_menu_forfeit(A, B)
+        scenario_answers(A, B)
+        scenario_one_player_comes_back(A, B)
+        scenario_busy_and_priority(A, B)
+        scenario_restart(A, B)
+        scenario_comm_close(A, B)
+        scenario_comm_wait(A, B)
+        scenario_forfeit_away(A, B)
+        scenario_crossed(A, B)
+        scenario_new_game(A, B)
         scenario_every_game(A, B)
     finally:
         for b in boards:

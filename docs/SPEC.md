@@ -160,8 +160,14 @@ Chinese checkers, Dots and Boxes (thin tap targets).
   alternates); Done takes both boards back to the Play page ("Bob is done
   playing. Thanks for the game!"). A board whose game is over isn't busy:
   accepting a new offer ends that session.
-- **Redesign decided 2026-10-04 (Tom, situation review; to build).**
-  Replaces the matching parts above.
+- **Redesign decided 2026-10-04 (Tom, situation review); built in v0.21.0.**
+  Replaces the matching parts above. Built as written, plus: the request
+  popup going away says "Ann cancelled the request." (names are silly
+  words: no her/his), or "... stopped waiting for an answer." after 30 s;
+  a partner's forfeit / closed game pops a notice with OK over the board;
+  game-over keys read Again / New Game / Goodbye (no room for the name);
+  Move Timer Off waits 60 s before "No reply"; titles show the player's
+  name alone ("Play With Bob" doesn't fit 240 px).
   - Finding: a board doesn't look for players all the time. 2P = the board
     listens and answers; it only sends when its player searches (a "who's
     there?" call that boards in 2P answer with their info) or is in a game.

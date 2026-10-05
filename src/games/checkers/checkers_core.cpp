@@ -241,3 +241,28 @@ int best_move(const Game& g, int level, uint32_t seed, volatile bool* stop)
 }
 
 } // namespace checkers
+
+namespace checkers {
+
+uint32_t move_key(const Move& m)
+{
+    uint32_t k = uint32_t(m.from) | uint32_t(m.n) << 6;
+    int prev = m.from;
+    for (int i = 0; i < m.n && i < kMaxPath; ++i) {
+        const int to = m.path[i];
+        const uint32_t dir = (to / 8 > prev / 8 ? 2u : 0u) | (to % 8 > prev % 8 ? 1u : 0u);
+        k |= dir << (10 + 2 * i);
+        prev = to;
+    }
+    return k;
+}
+
+int find_key(const Game& g, uint32_t key)
+{
+    MoveList l;
+    g.legal(l);
+    for (int k = 0; k < l.n; ++k) if (move_key(l.m[k]) == key) return k;
+    return -1;
+}
+
+} // namespace checkers

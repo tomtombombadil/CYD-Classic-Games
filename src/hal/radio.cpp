@@ -13,7 +13,7 @@ namespace {
 
 // Every board uses this channel: they hear each other without a router
 constexpr uint8_t kChannel = 1;
-constexpr size_t  kMaxPacket = 100;
+constexpr size_t  kMaxPacket = 128;     // = net::kPacketMax (later Hellos may be longer)
 constexpr int     kQueueLen = 16;
 
 struct Rx {

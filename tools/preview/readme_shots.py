@@ -42,6 +42,8 @@ SHOTS = {
     "s_light_80_wl_main": "small_wireless_menu",
     "s_light_80_wl_offer": "small_wireless_offer",
     "s_light_80_wl_game": "small_wireless_game",
+    "s_light_80_wl_name": "small_wireless_name",
+    "s_light_80_wl_player": "small_wireless_player",
     "s_light_51_blackjack_done": "small_blackjack",
     "s_light_54_vpoker_held": "small_vpoker",
     "s_light_56_holdem_flop": "small_holdem",
