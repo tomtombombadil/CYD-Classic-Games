@@ -13,9 +13,9 @@ const HelpPage kPages[] = {
         "Each side hides a fleet in a 10 x 10 sea: Carrier 5 squares, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2. Ships lie across or down; they may touch but not overlap.\n"
         "Take turns firing one shot into the other sea. Sink every ship to win."},
     {"Your Fleet",
-        "Biggest ship first: tap the square where one end goes (it turns gold), then one of the lit squares - the way the ship points. Undo takes back the last ship. When all five are in, tap Ready.\n"
-        "Options in the menu: Ship Placement Random instead - Shuffle until you like it.\n"
-        "In pass-and-play the board says who to pass it to and waits for Ready."},
+        "Biggest ship first: tap where one end goes (it turns gold), then a lit square the way it points (near an edge it slides in). Undo takes one back; Ready when all five are in.\n"
+        "Options (menu): Ship Placement Random - Shuffle until you like it.\n"
+        "Pass-and-play: the board says who to pass it to, then waits for Ready."},
     {"Firing",
         "Their Waters is the sea you fire at: tap a square. A white peg is a miss, red a hit; a sunk ship shows.\n"
         "My Fleet shows your ships and their shots. The last shot has a gold frame.\n"

@@ -58,6 +58,9 @@ bool       pending_call = false;                        // a computer spun money
 // For the log (Tom, 2026-10-05: a Spin that seemed to pass straight to Max):
 // how often the wheel was drawn during a spin, and the longest gap
 uint32_t   spin_draws = 0, spin_gap = 0, last_draw_ms = 0;
+// The spin ends only once its last position has been on screen for kHoldMs
+bool       final_drawn = false;
+uint32_t   final_at = 0;
 int        spin_by = -1;
 
 kit::TopBar bar;
@@ -156,7 +159,17 @@ int wedge_at(float r)
 
 void anim_cb(lv_timer_t*)
 {
-    if (wheel_obj) lv_obj_invalidate(wheel_obj);
+    if (wheel_obj && ui_mode == Ui::Spinning) {
+        // only the wheel itself (the text line under it changes once, at the end)
+        lv_area_t a;
+        lv_obj_get_coords(wheel_obj, &a);
+        const int w = lv_area_get_width(&a), h = lv_area_get_height(&a);
+        const int R = (w < h ? w : h) / 2 + 4;
+        const int cx = a.x1 + w / 2, cy = a.y1 + h / 2 + (metrics().large ? 8 : 5);
+        lv_area_t r{cx - R, cy - R - 12, cx + R, cy + R};
+        lv_obj_invalidate_area(wheel_obj, &r);
+        if (final_drawn) lv_obj_invalidate(wheel_obj);
+    }
     if (board_obj && ui_mode == Ui::Revealing) lv_obj_invalidate(board_obj);
 }
 
@@ -186,6 +199,7 @@ void do_spin()
     pending_call = false;
     spin_by = p;
     spin_draws = spin_gap = 0;
+    final_drawn = false;
     last_draw_ms = lv_tick_get();
     const int16_t v = kWheel[w];
     char m[16];
@@ -546,6 +560,7 @@ void wheel_draw_cb(lv_event_t* e)
     // Where the wheel is: ease out over kSpinMs
     float t = float(now_ms - anim_start) / float(kSpinMs);
     if (t > 1) t = 1;
+    if (t >= 1 && ui_mode == Ui::Spinning && !final_drawn) { final_drawn = true; final_at = now_ms; }
     const float k = 1 - (1 - t) * (1 - t) * (1 - t);
     rot = rot_from + (rot_to - rot_from) * k;
     const int w = lv_area_get_width(&a), h = lv_area_get_height(&a);
@@ -553,20 +568,23 @@ void wheel_draw_cb(lv_event_t* e)
     const int cx = a.x1 + w / 2, cy = a.y1 + h / 2 + (M.large ? 8 : 5);
     const float step = 360.0f / kWedges;
     kit::fill_circle(layer, cx, cy, R + 3, P.stone_dark);
+    // Each wedge is a fan of triangles from the hub: far cheaper to draw than
+    // thick arcs (v0.26.1's arcs were too slow for the 3.5" - Tom saw no wheel)
+    constexpr int kSeg = 4;
+    lv_draw_triangle_dsc_t wd;
+    lv_draw_triangle_dsc_init(&wd);
+    wd.opa = LV_OPA_COVER;
     for (int i = 0; i < kWedges; ++i) {
         lv_color_t ink;
-        const lv_color_t c = wedge_color(i, &ink);
-        lv_draw_arc_dsc_t d;
-        lv_draw_arc_dsc_init(&d);
-        d.center.x = cx;
-        d.center.y = cy;
-        d.radius = uint16_t(R);
-        d.width = R;
-        d.color = c;
-        const float s0 = rot + step * i;
-        d.start_angle = int(floorf(s0));
-        d.end_angle = int(ceilf(s0 + step)) + 1;
-        lv_draw_arc(layer, &d);
+        wd.color = wedge_color(i, &ink);
+        const float s0 = (rot + step * i) * 3.14159265f / 180.0f, ds = step / kSeg * 3.14159265f / 180.0f;
+        for (int k2 = 0; k2 < kSeg; ++k2) {
+            const float a0 = s0 + ds * k2, a1 = a0 + ds + 0.02f;          // a hair of overlap: no seams
+            wd.p[0].x = cx; wd.p[0].y = cy;
+            wd.p[1].x = cx + int(lroundf(cosf(a0) * R)); wd.p[1].y = cy + int(lroundf(sinf(a0) * R));
+            wd.p[2].x = cx + int(lroundf(cosf(a1) * R)); wd.p[2].y = cy + int(lroundf(sinf(a1) * R));
+            lv_draw_triangle(layer, &wd);
+        }
     }
     // Labels: upright, near the rim
     const lv_font_t* lf = M.large ? &lv_font_montserrat_14 : &lv_font_montserrat_10;
@@ -708,15 +726,18 @@ void update()
 // Animations end, the turn goes on
 void ui_tick()
 {
-    if (ui_mode == Ui::Spinning && now_ms - anim_start >= kSpinMs + kHoldMs) {
+    // (if the wheel somehow can't be drawn, give up waiting after 10 s more)
+    if (ui_mode == Ui::Spinning && ((final_drawn && now_ms - final_at >= kHoldMs)
+                                    || now_ms - anim_start >= kSpinMs + kHoldMs + 10000)) {
         ui_mode = Ui::Idle;
         anim_on(false);
         rot = fmodf(rot_to, 360.0f);
         const Game& g = S->g;
         const int16_t v = kWheel[g.wedge];
         if (spin_by >= 0 && !computer(spin_by))
-            log_event("Wheel: %s spun %s (round %d); wheel drawn %u times, longest gap %u ms", name_of(spin_by),
-                      v == kBust ? "BUST" : v == kSkip ? "SKIP" : "money", g.round + 1, unsigned(spin_draws), unsigned(spin_gap));
+            log_event("Wheel: %s spun %s (round %d); wheel drawn %u times, longest gap %u ms%s", name_of(spin_by),
+                      v == kBust ? "BUST" : v == kSkip ? "SKIP" : "money", g.round + 1, unsigned(spin_draws), unsigned(spin_gap),
+                      final_drawn ? "" : ", never drawn stopped");
         if (v == kBust || v == kSkip) {
             if (!computer((g.turn + g.players - 1) % g.players)) sound(Sound::Error);   // the spinner's turn passed
         } else if (!computer(g.turn)) {

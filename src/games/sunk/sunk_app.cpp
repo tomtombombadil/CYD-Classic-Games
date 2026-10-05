@@ -96,16 +96,28 @@ void start_placing()
     else { new_seed(); V.n = kShips; }
 }
 
-// Manual: the ship placed from the anchor toward direction d (0 up, 1 right,
-// 2 down, 3 left); 0xFFFF when it doesn't fit there
+// Manual: how far the ship can be aimed from the anchor toward direction d
+// (0 up, 1 right, 2 down, 3 left): the squares to tap, up to the ship's
+// length - 1, or fewer near the edge (Tom, 2026-10-05: aiming at an edge
+// slides the ship in so it fits, its end against the edge)
+int ray(int anchor, int d)
+{
+    const int r = anchor / kN, c = anchor % kN, len = kLen[V.n];
+    const int to_edge = d == 0 ? r : d == 1 ? kN - 1 - c : d == 2 ? kN - 1 - r : c;
+    return to_edge < len - 1 ? to_edge : len - 1;
+}
+
+// The ship placed from the anchor toward d; 0xFFFF when it doesn't fit
 uint32_t aimed(int anchor, int d)
 {
+    if (ray(anchor, d) == 0) return 0xFFFF;
     const int len = kLen[V.n], r = anchor / kN, c = anchor % kN;
-    int top = anchor;
-    if (d == 0) top = (r - len + 1) * kN + c;
-    if (d == 3) top = r * kN + c - len + 1;
-    if ((d == 0 && r - len + 1 < 0) || (d == 3 && c - len + 1 < 0)) return 0xFFFF;
-    const uint32_t key = ship_key(top, d == 0 || d == 2);
+    int tr = r, tc = c;                                    // top / left cell
+    if (d == 0) tr = r - len + 1 < 0 ? 0 : r - len + 1;
+    if (d == 1) tc = c + len - 1 > kN - 1 ? kN - len : c;
+    if (d == 2) tr = r + len - 1 > kN - 1 ? kN - len : r;
+    if (d == 3) tc = c - len + 1 < 0 ? 0 : c - len + 1;
+    const uint32_t key = ship_key(tr * kN + tc, d == 0 || d == 2);
     return ship_fits(V.preview, V.n, key) ? key : 0xFFFF;
 }
 
@@ -113,13 +125,13 @@ uint32_t aimed(int anchor, int d)
 int aim_of(int t)
 {
     if (V.anchor < 0 || t == V.anchor) return -1;
-    const int len = kLen[V.n], ar = V.anchor / kN, ac = V.anchor % kN, r = t / kN, c = t % kN;
-    int d = -1;
-    if (c == ac && r < ar && ar - r < len) d = 0;
-    else if (r == ar && c > ac && c - ac < len) d = 1;
-    else if (c == ac && r > ar && r - ar < len) d = 2;
-    else if (r == ar && c < ac && ac - c < len) d = 3;
-    return d >= 0 && aimed(V.anchor, d) != 0xFFFF ? d : -1;
+    const int ar = V.anchor / kN, ac = V.anchor % kN, r = t / kN, c = t % kN;
+    int d = -1, k = 0;
+    if (c == ac && r < ar) { d = 0; k = ar - r; }
+    else if (r == ar && c > ac) { d = 1; k = c - ac; }
+    else if (c == ac && r > ar) { d = 2; k = r - ar; }
+    else if (r == ar && c < ac) { d = 3; k = ac - c; }
+    return d >= 0 && k <= ray(V.anchor, d) && aimed(V.anchor, d) != 0xFFFF ? d : -1;
 }
 
 bool can_anchor(int t)
@@ -465,13 +477,11 @@ void draw_cb(lv_event_t* e)
         if (manual && V.anchor >= 0 && V.n < kShips) {
             // The squares the ship can point to light up; the anchor is gold
             const lv_color_t lit = lv_color_mix(P.lit, water, 225);     // strong: TN panels wash out pale tints
+            static const int kDr[4] = {-1, 0, 1, 0}, kDc[4] = {0, 1, 0, -1};
             for (int d = 0; d < 4; ++d) {
-                const uint32_t key = aimed(V.anchor, d);
-                if (key == 0xFFFF) continue;
-                const Ship sh{uint8_t(key & 0x7F), (key & 0x80) != 0};
-                for (int k = 0; k < kLen[V.n]; ++k) {
-                    const int c = sh.cell_at(k, kLen[V.n]);
-                    if (c == V.anchor) continue;
+                if (aimed(V.anchor, d) == 0xFFFF) continue;
+                for (int k = 1; k <= ray(V.anchor, d); ++k) {     // the squares to tap that way
+                    const int c = (V.anchor / kN + k * kDr[d]) * kN + V.anchor % kN + k * kDc[d];
                     const int x = x0 + (c % kN) * cell, y = y0 + (c / kN) * cell;
                     kit::fill_rect(layer, x + 1, y + 1, x + cell - 1, y + cell - 1, lit);
                 }

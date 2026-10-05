@@ -212,7 +212,7 @@ write("morris", [
 
 write("sunk", [
  ("The Idea", "Each side hides a fleet in a 10 x 10 sea: Carrier 5 squares, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2. Ships lie across or down; they may touch but not overlap.\nTake turns firing one shot into the other sea. Sink every ship to win."),
- ("Your Fleet", "Biggest ship first: tap the square where one end goes (it turns gold), then one of the lit squares - the way the ship points. Undo takes back the last ship. When all five are in, tap Ready.\nOptions in the menu: Ship Placement Random instead - Shuffle until you like it.\nIn pass-and-play the board says who to pass it to and waits for Ready."),
+ ("Your Fleet", "Biggest ship first: tap where one end goes (it turns gold), then a lit square the way it points (near an edge it slides in). Undo takes one back; Ready when all five are in.\nOptions (menu): Ship Placement Random - Shuffle until you like it.\nPass-and-play: the board says who to pass it to, then waits for Ready."),
  ("Firing", "Their Waters is the sea you fire at: tap a square. A white peg is a miss, red a hit; a sunk ship shows.\nMy Fleet shows your ships and their shots. The last shot has a gold frame.\nThe side that placed its fleet first fires first. At the end, tap the sea to see both."),
  ("The Computer", "Easy fires at random, and after a hit tries the squares around it.\nMedium fires on a spaced pattern and follows a line of hits.\nHard works out every way the ships left could lie and fires where most of them cross."),
  TP,

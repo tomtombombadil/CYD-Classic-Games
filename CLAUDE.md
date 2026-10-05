@@ -293,7 +293,9 @@ never typed (SPEC section 5).
   "Ship Placement" Random (o) Manual, default Manual (`/games/sunk_opt.bin`
   "SKO1"; changing it restarts the fleet being placed): Manual = biggest
   ship first, tap one end (gold), the squares it can point to light up,
-  tap one = placed; Undo; Ready when all 5 are in. Random = Shuffle / Ready.
+  tap one = placed (Tom, 2026-10-05: aimed at a nearby edge the ship
+  slides in so its end is against the edge - that way lights only the
+  squares up to the edge); Undo; Ready when all 5 are in. Random = Shuffle / Ready.
   A ship is a move: plies 0-4 side 0's ships, 5-9 side 1's
   (`ship_key` = cell | down << 7), then shots = cell 0-99, side 0 first
   (wireless version 2; v1 sent a seed a fleet; "SNK1" saves still load
@@ -334,7 +336,11 @@ never typed (SPEC section 5).
   game Win / Lose; log (v0.26.1, Tom's 3.5": a Spin seemed to pass straight
   to Max - not reproduced in 12 simulated games): each of your spins
   ("spun BUST/SKIP/money", how often the wheel was drawn and the longest
-  gap), letters not in the puzzle, wrong solves; key taps to log_step), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,
+  gap), letters not in the puzzle, wrong solves; key taps to log_step;
+  Tom then saw NO wheel at all on the 3.5" - v0.26.2 draws wedges as
+  triangle fans, not thick arcs, invalidates only the wheel's square, and
+  a spin ends only after its last position was drawn + 1.1 s (or 10 s
+  late), so the result is always seen), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,
   X first anywhere; the square played sends the other player to that
   board, a won or full board = play anywhere; a full board counts for
   nobody, all boards done without three = draw; move = cell 0-80 (board *

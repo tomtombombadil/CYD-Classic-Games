@@ -1299,12 +1299,13 @@ int main(int argc, char** argv)
         shot(out + "_light_63_sunk_new.ppm");                       // Manual: the Carrier first
         sunk::Board* b = sunk_preview::board();
         if (b) {
-            // Manual placement: the Carrier's end at C3, then aimed right (to G3)
-            sunk_preview::tap(22);
+            // Manual placement: the Carrier's end at H3, two from the edge; aimed right
+            // it slides in to F3-J3
+            sunk_preview::tap(27);
             shot(out + "_light_63_sunk_aim.ppm");
-            sunk_preview::tap(26);
-            // Battleship I2 down to I5, Cruiser A6 down, Submarine D8 across, Destroyer touching it
-            const int ends[3][2] = {{18, 48}, {50, 70}, {73, 75}};
+            sunk_preview::tap(28);
+            // Battleship B5 down to B8, Cruiser A6 down, Submarine D8 across, Destroyer touching it
+            const int ends[3][2] = {{41, 71}, {50, 70}, {73, 75}};
             for (auto& e : ends) { sunk_preview::tap(e[0]); sunk_preview::tap(e[1]); }
             sunk_preview::tap(86);
             shot(out + "_light_63_sunk_place.ppm");
