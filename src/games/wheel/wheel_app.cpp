@@ -55,6 +55,10 @@ char       guess[kCols * kRows + 1] = "";               // Solving: letters type
 int        guess_n = 0;
 char       message[64] = "";
 bool       pending_call = false;                        // a computer spun money: call a letter next
+// For the log (Tom, 2026-10-05: a Spin that seemed to pass straight to Max):
+// how often the wheel was drawn during a spin, and the longest gap
+uint32_t   spin_draws = 0, spin_gap = 0, last_draw_ms = 0;
+int        spin_by = -1;
 
 kit::TopBar bar;
 kit::Clock  clock_;
@@ -180,6 +184,9 @@ void do_spin()
     anim_start = now_ms;
     ui_mode = Ui::Spinning;
     pending_call = false;
+    spin_by = p;
+    spin_draws = spin_gap = 0;
+    last_draw_ms = lv_tick_get();
     const int16_t v = kWheel[w];
     char m[16];
     money_text(m, sizeof m, v);
@@ -207,6 +214,7 @@ void show_letter_result(int p, char c, int n, bool vowel)
         else sound(Sound::Turn);
     } else {
         snprintf(message, sizeof message, "No %c. %s's turn", c, name_of(S->g.turn));
+        if (!computer(p)) log_event("Wheel: %s %s %c, not in the puzzle", name_of(p), vowel ? "bought" : "called", c);
         if (!computer(p) || !vs_computer()) sound(Sound::Error);
     }
     if (S->g.phase == Phase::RoundOver) {
@@ -250,6 +258,7 @@ void try_solve(const char* letters)
         sound(computer(p) ? Sound::Turn : Sound::Trill);
     } else {
         snprintf(message, sizeof message, "%s: not quite. %s's turn", computer(p) ? name_of(p) : "Sorry", name_of(g.turn));
+        if (!computer(p)) log_event("Wheel: %s solved wrong", name_of(p));
         if (!computer(p)) sound(Sound::Error);
     }
     next_at = now_ms + 1400;
@@ -522,6 +531,12 @@ void wedge_label(int i, char* buf, size_t cap)
 void wheel_draw_cb(lv_event_t* e)
 {
     if (!S) return;
+    if (ui_mode == Ui::Spinning) {
+        const uint32_t t = lv_tick_get();
+        if (t - last_draw_ms > spin_gap) spin_gap = t - last_draw_ms;
+        last_draw_ms = t;
+        ++spin_draws;
+    }
     lv_area_t a;
     lv_obj_get_coords(lv_event_get_target_obj(e), &a);
     lv_layer_t* layer = lv_event_get_layer(e);
@@ -602,12 +617,14 @@ void act_cb(lv_event_t* e)
     if (!S || overlay_open()) return;
     const int k = int(intptr_t(lv_event_get_user_data(e)));
     Game& g = S->g;
+    log_step("Wheel: key %d (turn %d, phase %d, ui %d)", k, g.turn, int(g.phase), int(ui_mode));
     if (g.over()) { if (k == kActC) new_game(S->mode, S->level); return; }
     if (g.phase == Phase::RoundOver) { if (k == kActC) next_round(); return; }
     if (!human_turn()) return;
     switch (ui_mode) {
         case Ui::Idle:
             if (g.phase != Phase::Choose) return;
+            if (k == kActA && !g.can_spin()) log_event("Wheel: Spin tapped, no consonants left");
             if (k == kActA && g.can_spin()) do_spin();
             else if (k == kActB && g.can_buy()) { ui_mode = Ui::Buying; snprintf(message, sizeof message, "Pick a vowel ($%d)", kVowelCost); update(); }
             else if (k == kActC) { ui_mode = Ui::Solving; guess_n = 0; guess[0] = 0; snprintf(message, sizeof message, "Fill in the blanks, then Solve"); update(); }
@@ -697,6 +714,9 @@ void ui_tick()
         rot = fmodf(rot_to, 360.0f);
         const Game& g = S->g;
         const int16_t v = kWheel[g.wedge];
+        if (spin_by >= 0 && !computer(spin_by))
+            log_event("Wheel: %s spun %s (round %d); wheel drawn %u times, longest gap %u ms", name_of(spin_by),
+                      v == kBust ? "BUST" : v == kSkip ? "SKIP" : "money", g.round + 1, unsigned(spin_draws), unsigned(spin_gap));
         if (v == kBust || v == kSkip) {
             if (!computer((g.turn + g.players - 1) % g.players)) sound(Sound::Error);   // the spinner's turn passed
         } else if (!computer(g.turn)) {

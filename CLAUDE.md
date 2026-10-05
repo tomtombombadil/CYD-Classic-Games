@@ -331,7 +331,10 @@ never typed (SPEC section 5).
   calls the letter most fitting puzzles have; Easy picks among the 8 most
   common letters, Medium the most common; sounds: your letter found Place,
   not found "aww", BUST "aww", a computer's find Turn, your solve Trill,
-  game Win / Lose), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,
+  game Win / Lose; log (v0.26.1, Tom's 3.5": a Spin seemed to pass straight
+  to Max - not reproduced in 12 simulated games): each of your spins
+  ("spun BUST/SKIP/money", how often the wheel was drawn and the longest
+  gap), letters not in the puzzle, wrong solves; key taps to log_step), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,
   X first anywhere; the square played sends the other player to that
   board, a won or full board = play anywhere; a full board counts for
   nobody, all boards done without three = draw; move = cell 0-80 (board *
