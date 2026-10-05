@@ -98,9 +98,9 @@ Candidates, grouped. Order of building is in section 6.
 | Reversi (Othello) | Strong AI is cheap |
 | FourConnect (Connect Four) | Can play perfectly; easy levels hold back |
 | Mancala (Kalah) | Two rows of six pits (*built 2026-10-03*: portrait, pits in two columns, stores in the middle) |
-| Tic-Tac-Toe / Ultimate Tic-Tac-Toe | Ultimate is the interesting one |
+| Tic-Tac-Toe / Ultimate Tic-Tac-Toe | Ultimate is the interesting one (*built 2026-10-05*: id `ultimate`, wireless key 9) |
 | Nine Men's Morris | Big targets (*built 2026-10-03*) |
-| Gomoku | 15x15, 16 px cells on 240-wide boards |
+| Gomoku | 15x15, 16 px cells on 240-wide boards (*built 2026-10-05*: freestyle five, wireless key 10) |
 | You Sunk My CYD! (Battleship) | Two grids, flip between them (*built 2026-10-05*: id `sunk`; classic rules - ships may touch; manual placement by default, Random in Options; wireless key 8, version 2) |
 
 **Word**

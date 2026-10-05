@@ -51,6 +51,8 @@ SHOTS = {
     "s_light_60_mancala_sowing": "small_mancala",
     "s_light_62_morris_take": "small_morris",
     "s_light_63_sunk": "small_sunk",
+    "s_light_64_ultimate": "small_ultimate",
+    "s_light_64_gomoku": "small_gomoku",
     "s_light_63_sunk_aim": "small_sunk_place",
     "s_light_27_wheel_reveal": "small_wheel",
     "s_light_27_wheel_spin": "small_wheel_spin",

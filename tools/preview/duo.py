@@ -682,7 +682,7 @@ def in_step(a, b, gid):
 
 GAMES = [("fourconnect", "FourConnect"), ("tictactoe", "Tic-Tac-Toe"), ("reversi", "Reversi"),
          ("checkers", "Checkers"), ("chess", "Chess"), ("mancala", "Mancala"), ("morris", "Nine Men's Morris"),
-         ("sunk", "You Sunk My CYD!")]
+         ("sunk", "You Sunk My CYD!"), ("ultimate", "Ultimate Tic-Tac-Toe"), ("gomoku", "Gomoku")]
 
 
 def scenario_every_game(A, B):

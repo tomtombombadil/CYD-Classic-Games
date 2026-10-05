@@ -9,3 +9,5 @@ mancala 6 1 dca3cbd2
 morris 7 1 6569d7ea
 sunk 8 1 3eba8af0
 sunk 8 2 0af8d8c2
+ultimate 9 1 9bda7654
+gomoku 10 1 5a8ba7bd

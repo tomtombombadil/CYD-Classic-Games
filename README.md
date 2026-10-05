@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Twenty-nine games and an RPG dice roller so far: **Sudoku** (from
+> under way. Thirty-one games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sunk My CYD!**, **CYD-dle**, **Wheel of CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sunk My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **CYD-dle**, **Wheel of CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sunk My CYD!, CYD-dle, Wheel of CYD (and its wheel), Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sunk My CYD!, Ultimate Tic-Tac-Toe, Gomoku, CYD-dle, Wheel of CYD (and its wheel), Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -60,6 +60,8 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_morris.png" width="240" alt="Nine Men's Morris: a mill made, pick a man to take">
 <img src="docs/screenshots/small_sunk_place.png" width="240" alt="You Sunk My CYD!: placing the Carrier - its end picked, the lit squares show the ways it can point">
 <img src="docs/screenshots/small_sunk.png" width="240" alt="You Sunk My CYD!: firing at their waters">
+<img src="docs/screenshots/small_ultimate.png" width="240" alt="Ultimate Tic-Tac-Toe: two boards won, the board to play in lit">
+<img src="docs/screenshots/small_gomoku.png" width="240" alt="Gomoku: stones on a 15x15 board">
 <img src="docs/screenshots/small_wheel.png" width="240" alt="Wheel of CYD: a called letter showing on the puzzle board">
 <img src="docs/screenshots/small_wheel_spin.png" width="240" alt="Wheel of CYD: the wheel turning">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
@@ -98,6 +100,8 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Mancala | Strategy Games | Kalah, six pits a side, sown seed by seed; vs computer or pass-and-play |
 | Nine Men's Morris | Strategy Games | Place, move and fly; mills take men; vs computer or pass-and-play |
+| Ultimate Tic-Tac-Toe | Strategy Games | Nine boards in one; vs computer (Easy / Medium / Hard) or pass-and-play |
+| Gomoku | Strategy Games | Five in a row on 15x15; vs computer (Easy / Medium / Hard) or pass-and-play |
 | You Sunk My CYD! | Strategy Games | Hide a fleet, fire at theirs; vs computer (Easy / Medium / Hard) or pass-and-play |
 | Checkers | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Reversi | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -118,7 +122,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | RPG Dice | Dice Games | Every role-playing die, each shown as rolled; presets and history |
 
 The board games (Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe,
-Mancala, Nine Men's Morris, You Sunk My CYD!) also play **wireless, CYD to CYD**: two boards
+Mancala, Nine Men's Morris, You Sunk My CYD!, Ultimate Tic-Tac-Toe, Gomoku) also play **wireless, CYD to CYD**: two boards
 in the same room or house, no router or setup (see
 [Wireless play](#wireless-play-cyd-to-cyd)). The plan is in
 [docs/SPEC.md](docs/SPEC.md).
@@ -197,7 +201,7 @@ The **gear** (on the picker, or Settings in a game's menu) opens Settings:
 ## Two-player games
 
 Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine
-Men's Morris and You Sunk My CYD! share one menu: **New Game vs Computer** (Easy, Medium, Hard),
+Men's Morris, You Sunk My CYD!, Ultimate Tic-Tac-Toe and Gomoku share one menu: **New Game vs Computer** (Easy, Medium, Hard),
 **Pass and Play** (two people share one board and take turns), and
 **Wireless** (two boards: Wireless play, below). Farkle has the first two. Against the computer
 you and the computer take turns going first, game by game. The computer
@@ -466,6 +470,25 @@ passed and waits for **Ready**, so nobody sees the other sea. The computer:
 Easy fires at random and tries round a hit, Medium fires on a spaced
 pattern and follows a line of hits, Hard works out where the ships left
 can still lie (about 62 / 50 / 45 shots to sink a fleet).
+
+## Ultimate Tic-Tac-Toe
+
+Nine small tic-tac-toe boards make one big board. Win a small board with
+three in a row; win the game with three small boards in a row. X starts
+anywhere; after that, the square you pick sends the other player to the
+small board in the same place (play a top right square, and they must play
+in the top right board). If that board is won or full, they may play in
+any open board. The board(s) you may play in are lit, and the line under
+the board says where. The computer looks 2 / 4 moves ahead, or thinks
+about a second on Hard.
+
+## Gomoku
+
+Five in a row on a 15x15 board. Black places first; then take turns
+placing a stone on any empty point. Five or more in a line - across, down
+or diagonal - wins. The last stone has a gold ring. The computer: Easy
+plays its own lines and blocks only a five, Medium and Hard look 4 and 6
+moves ahead among the most promising points.
 
 ## Wheel of CYD
 

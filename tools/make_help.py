@@ -227,6 +227,22 @@ write("wheel", [
  TP,
 ], two_player=True)
 
+write("ultimate", [
+ ("The Idea", "Nine small tic-tac-toe boards make one big board. Win a small board with three in a row; win the game with three small boards in a row on the big board.\nX starts, anywhere."),
+ ("Where You Play", "The square you pick sends the other player to the small board in the same place: play the top right square of a board, and they must play in the top right board.\nIf that board is already won or full, they may play in any open board.\nThe board(s) you may play in are lit."),
+ ("The Board", "A won board shows a big X or O; a full board with no winner turns grey and counts for nobody. All boards done with no three in a row is a draw.\nThe last mark has a gold square.\nComputer: Easy looks 2 moves ahead, Medium 4, Hard thinks about a second."),
+ TP,
+ WL,
+], two_player=True)
+
+write("gomoku", [
+ ("The Idea", "A 15 x 15 board. Black places a stone first, then the players take turns placing one stone on any empty point (where the lines cross).\nFive or more of your stones in a row - across, down or diagonal - wins."),
+ ("Playing", "Tap a point to place your stone there. The last stone has a gold ring; the winning five gets a line through it.\nWatch out: four in a row with both ends open can't be stopped, and three with both ends open soon becomes four. Block those early!"),
+ ("The Computer", "Easy plays its own lines and blocks only a five.\nMedium and Hard look 4 and 6 moves ahead among the most promising points.\nA full board with no five is a draw."),
+ TP,
+ WL,
+], two_player=True)
+
 write("vpoker", [
  ("The Idea", "The classic Jacks or Better machine. Bet 1 to 5 credits and get five cards. Tap the cards you want to keep: they say HELD. Then Draw replaces the rest, once.\nYour final hand pays by the table at the top, times your bet. The hand you hold lights up."),
  ("Paying Hands", "• Jacks or Better: a pair of Jacks, Queens, Kings or Aces\n• Two Pair, Three of a Kind\n• Straight: five in a row (A-2-3-4-5 and 10-J-Q-K-A count)\n• Flush: five of one suit\n• Full House, Four of a Kind, Straight Flush\n• Royal Flush: 10 to Ace of one suit, 4000 at a 5 credit bet"),

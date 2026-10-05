@@ -1419,6 +1419,41 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
     }
 
+    {   // Ultimate Tic-Tac-Toe and Gomoku: a game part-way against the computer, dark
+        for (const char* id : {"ultimate", "gomoku"}) {
+            ui::app_open_game_now(games::find(id));
+            run(30);
+            const bool ult = id[0] == 'u';
+            // You (X / Black) play toward the middle; the computer answers
+            for (int k = 0; k < (ult ? 14 : 4); ++k) {
+                for (int w = 0; w < 30 && !match::human_may_move(); ++w) run(500);
+                if (!match::human_may_move()) break;
+                static int lm[256];
+                const int n = match::legal_moves(lm, 256);
+                if (n <= 0) break;
+                int pick = lm[0];
+                if (ult) pick = lm[(k * 7) % n];
+                else {                                       // near the centre, a diagonal line
+                    const int want[9] = {112, 96, 128, 80, 144, 98, 126, 110, 114};
+                    for (int i = 0; i < n; ++i) if (lm[i] == want[k]) pick = want[k];
+                    if (pick != want[k]) for (int i = 0; i < n; ++i) if (lm[i] / 15 >= 5 && lm[i] / 15 <= 9) { pick = lm[i]; break; }
+                }
+                match::human_move(pick);
+                run(400);
+            }
+            for (int w = 0; w < 30 && !match::human_may_move(); ++w) run(500);
+            shot(out + "_light_64_" + id + ".ppm");
+            ui::app_save_current();
+            mid_saves[id] = files[id];
+            ui::app_go_home_now();
+            ui::app_set_theme(ui::Theme::Dark);
+            ui::app_open_game_now(games::find(id));
+            shot(out + "_dark_64_" + id + ".ppm");
+            ui::app_go_home_now();
+            ui::app_set_theme(ui::Theme::Light);
+        }
+    }
+
     {   // Farkle: the start, a roll with scoring dice picked, a Farkle, the menu
         ui::app_open_game_now(games::find("farkle"));
         shot(out + "_light_58_farkle_new.ppm");

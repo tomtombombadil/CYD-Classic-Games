@@ -22,6 +22,8 @@
 #include "../../src/games/spider/spider_core.h"
 #include "../../src/games/sunk/sunk_core.h"
 #include "../../src/games/wheel/wheel_core.h"
+#include "../../src/games/ultimate/ultimate_core.h"
+#include "../../src/games/gomoku/gomoku_core.h"
 #include "../../src/games/solitaire/solitaire_core.h"
 #include "../../src/games/solitaire/solitaire_solve.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
@@ -1983,6 +1985,109 @@ static void test_wheel()
     CHECK(wins[2] > wins[0]);
 }
 
+static void test_ultimate()
+{
+    using namespace ultimate;
+    Board b;
+    CHECK(b.turn() == 0 && b.can_play(40) && b.can_play(0));
+    CHECK(b.play(4 * 9 + 2));                 // X in the centre board, top-right square
+    CHECK(b.next == 2 && !b.can_play(4 * 9 + 0) && b.can_play(2 * 9 + 0));
+    // X wins board 0 (squares 0, 1, 2); O is sent around
+    Board w;
+    const int seq[] = {0, 9, 1, 10, 2};       // X 0/0, O 1/0, X 0/1, O 1/1, X 0/2
+    for (int c : seq) {
+        if (!w.can_play(c)) { w.next = -1; }  // (test shortcut: free the move)
+        CHECK(w.play(c));
+    }
+    CHECK(w.small[0] == 1);
+    // Sent to a won board: any open board
+    Board f;
+    for (int k = 0; k < 3; ++k) f.cell[k] = 1;
+    f.small[0] = 1;
+    f.moves = 0;
+    f.next = -1;
+    CHECK(f.play(5 * 9 + 0));                 // X sends O to board 0, which is won
+    CHECK(f.next == -1 && f.can_play(8 * 9 + 8) && !f.can_play(0 * 9 + 5));
+    // Computer games: every move legal, Hard beats Easy, the save
+    int hard_wins = 0, games = 0;
+    for (int g = 0; g < 16; ++g) {
+        Board x;
+        const int strong = g & 1;
+        int guard = 0;
+        while (x.result() == -1 && ++guard < 100) {
+            const int m = best_move(x, x.turn() == strong ? 2 : 0, uint32_t(g * 77 + guard));
+            CHECK(x.can_play(m));
+            x.play(m);
+        }
+        CHECK(x.result() != -1);
+        ++games;
+        if (x.result() == strong) ++hard_wins;
+        if (g == 1) {
+            uint8_t buf[Board::kSaveBytes];
+            Board y;
+            CHECK(x.serialize(buf, sizeof buf) == sizeof buf && y.deserialize(buf, sizeof buf));
+            CHECK(memcmp(y.cell, x.cell, kCells) == 0 && y.next == x.next && y.result() == x.result());
+            buf[4] = 0xFF;                       // a cell of value 3
+            CHECK(!y.deserialize(buf, sizeof buf));
+        }
+    }
+    printf("ultimate: Hard beat Easy %d/%d\n", hard_wins, games);
+    CHECK(hard_wins >= games * 3 / 4);
+}
+
+static void test_gomoku()
+{
+    using namespace gomoku;
+    Board b;
+    // Black has four across row 8 (D8-G8), White to move: White blocks an end
+    const int bl4[] = {7 * kN + 3, 7 * kN + 4, 7 * kN + 5, 7 * kN + 6}, wh3[] = {0, 1, 2};
+    for (int k = 0; k < 4; ++k) { CHECK(b.play(bl4[k])); if (k < 3) CHECK(b.play(wh3[k])); }
+    CHECK(b.turn() == 1 && b.result() == -1);
+    for (int lv = 0; lv < 3; ++lv) {
+        const int block = best_move(b, lv, 1);
+        CHECK(block == 7 * kN + 2 || block == 7 * kN + 7);
+    }
+    Board w;
+    for (int k = 0; k < 4; ++k) { w.play(5 * kN + k); w.play(10 * kN + k); }
+    CHECK(best_move(w, 1, 3) == 5 * kN + 4);                        // Black takes the win
+    w.play(5 * kN + 4);
+    int a = -1, z = -1;
+    CHECK(w.result() == 0 && w.winning_line(&a, &z) && a == 5 * kN && z == 5 * kN + 4);
+    // An overline wins too (freestyle)
+    Board o;
+    const int bl[] = {0, 1, 2, 4, 5}, wh[] = {30, 31, 32, 34, 60};
+    for (int k = 0; k < 5; ++k) { o.play(bl[k]); if (k < 4) o.play(wh[k]); }
+    o.play(wh[4]);
+    o.play(3);                                                       // B: 0-5 = six in a row
+    CHECK(o.result() == 0);
+    // Computer games: legal, Hard beats Easy, the save
+    int hard_wins = 0, med_wins = 0;
+    for (int g = 0; g < 6; ++g) {
+        for (int pair = 0; pair < 2; ++pair) {
+            // a different first stone each game, so the games differ
+            Board x;
+            const int strong = g & 1, lv_strong = pair ? 1 : 2, lv_weak = 0;
+            x.play((5 + g % 5) * kN + 5 + g / 2);
+            int guard = 0;
+            while (x.result() == -1 && ++guard < 230) {
+                const int m = best_move(x, x.turn() == strong ? lv_strong : lv_weak, uint32_t(g * 131 + guard));
+                if (!x.can_play(m)) printf("gomoku: bad move %d at %d (level %d)\n", m, x.moves, x.turn() == strong ? lv_strong : lv_weak);
+                CHECK(x.can_play(m));
+                x.play(m);
+            }
+            if (x.result() == strong) (pair ? med_wins : hard_wins)++;
+            if (g == 2 && pair == 0) {
+                uint8_t buf[Board::kSaveBytes];
+                Board y;
+                CHECK(x.serialize(buf, sizeof buf) == sizeof buf && y.deserialize(buf, sizeof buf));
+                CHECK(memcmp(y.stone, x.stone, kPoints) == 0 && y.result() == x.result() && y.moves == x.moves);
+            }
+        }
+    }
+    printf("gomoku: Hard beat Easy %d/6, Medium beat Easy %d/6\n", hard_wins, med_wins);
+    CHECK(hard_wins >= 4 && med_wins >= 4);
+}
+
 static void test_mancala()
 {
     using namespace mancala;
@@ -2183,6 +2288,8 @@ int main()
     test_mancala();
     test_sunk();
     test_wheel();
+    test_ultimate();
+    test_gomoku();
     test_morris();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);

@@ -23,6 +23,8 @@
 #include "games/morris/morris_core.h"
 #include "games/reversi/reversi_core.h"
 #include "games/sunk/sunk_core.h"
+#include "games/ultimate/ultimate_core.h"
+#include "games/gomoku/gomoku_core.h"
 #include "games/tictactoe/tictactoe_core.h"
 #include "net/names.h"
 
@@ -198,6 +200,42 @@ uint32_t sunk_hash()
     });
 }
 
+uint32_t ultimate_hash()
+{
+    return play_games([](Rng& r, Hash& h) {
+        ultimate::Board b;
+        while (b.result() == -1) {
+            uint8_t m[ultimate::kCells];
+            const int n = b.legal(m);
+            std::vector<uint32_t> keys(m, m + n);
+            const uint32_t key = pick(keys, r);
+            h.add(key);
+            b.play(int(key));
+        }
+        h.add(uint32_t(b.result()));
+    });
+}
+
+uint32_t gomoku_hash()
+{
+    return play_games([](Rng& r, Hash& h) {
+        auto* b = new gomoku::Board();
+        // random moves near the centre (a random game on the whole board rarely ends in a five)
+        while (b->result() == -1) {
+            std::vector<uint32_t> keys;
+            for (int p = 0; p < gomoku::kPoints; ++p)
+                if (b->can_play(p) && p / gomoku::kN >= 5 && p / gomoku::kN <= 9 && p % gomoku::kN >= 5 && p % gomoku::kN <= 9)
+                    keys.push_back(uint32_t(p));
+            if (keys.empty()) for (int p = 0; p < gomoku::kPoints; ++p) if (b->can_play(p)) keys.push_back(uint32_t(p));
+            const uint32_t key = pick(keys, r);
+            h.add(key);
+            b->play(int(key));
+        }
+        h.add(uint32_t(b->result()));
+        delete b;
+    });
+}
+
 uint32_t hash_for(const char* id)
 {
     if (!strcmp(id, "fourconnect")) return fourconnect_hash();
@@ -208,6 +246,8 @@ uint32_t hash_for(const char* id)
     if (!strcmp(id, "mancala"))     return mancala_hash();
     if (!strcmp(id, "morris"))      return morris_hash();
     if (!strcmp(id, "sunk"))        return sunk_hash();
+    if (!strcmp(id, "ultimate"))    return ultimate_hash();
+    if (!strcmp(id, "gomoku"))      return gomoku_hash();
     return 0;
 }
 
@@ -249,7 +289,8 @@ int main()
     // wplay puts a one-player game aside in a 1 KB stack buffer (kStashMax)
     const size_t biggest[] = {fourconnect::Board::kSaveBytes, tictactoe::Board::kSaveBytes, reversi::Board::kSaveBytes,
                               checkers::Game::kSaveBytes, chess::Game::kSaveBytes, mancala::Board::kSaveBytes,
-                              morris::Game::kSaveBytes, sunk::Board::kSaveBytes};
+                              morris::Game::kSaveBytes, sunk::Board::kSaveBytes,
+                              ultimate::Board::kSaveBytes, gomoku::Board::kSaveBytes};
     for (size_t b : biggest) check(b + 8 < 1024, "a wireless game's save fits wplay's 1 KB stash buffer");
     // net_moves.txt: "<id> <key> <version> <hash>" per line, '#' comments
     std::vector<std::string> lines;

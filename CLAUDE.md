@@ -331,7 +331,23 @@ never typed (SPEC section 5).
   calls the letter most fitting puzzles have; Easy picks among the 8 most
   common letters, Medium the most common; sounds: your letter found Place,
   not found "aww", BUST "aww", a computer's find Turn, your solve Trill,
-  game Win / Lose). The match
+  game Win / Lose), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,
+  X first anywhere; the square played sends the other player to that
+  board, a won or full board = play anywhere; a full board counts for
+  nobody, all boards done without three = draw; move = cell 0-80 (board *
+  9 + square), wireless key 9; lit = the boards you may play in, a won
+  board gets one big mark, a full one greys, last mark on a gold square;
+  note "Play in the top right board"; computer negamax with a lines eval,
+  Easy depth 2, Medium 4, Hard deepening within 40k nodes (~1-2 s on the
+  board; beats Easy 15/16), ai_stack 12 KB), Gomoku (id `gomoku`,
+  Strategy; 15x15, Black first, freestyle: five or more wins, full board
+  = draw; points on line crossings, a tap = the nearest point where the
+  stylus came down; move = point 0-224, wireless key 10; computer: five-
+  point windows scored by stones in them, kept incrementally with "fours"
+  (a window one short of five); Easy greedy, mostly its own lines (blocks
+  a five), Medium depth 4 on the 5 best points, Hard depth 6 on the 7
+  best (within 200k nodes); all take a five and block one; odd depths
+  played worse (horizon) - keep them even). The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
@@ -665,7 +681,8 @@ never typed (SPEC section 5).
   away, crossed requests, New Game, every game random) clean and 30 % loss.
   Run it after any wireless change.
 - Games: FourConnect, Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala,
-  Morris, You Sunk My CYD! (key 8). Farkle not yet. Internet play out of scope.
+  Morris, You Sunk My CYD! (key 8), Ultimate Tic-Tac-Toe (9), Gomoku (10).
+  Farkle not yet. Internet play out of scope.
 - Battery (Tom, 2026-10-04, v0.22.0): the radio is never stopped and
   started to save power (esp_wifi init + start takes tens to hundreds of ms
   with RF calibration and would cost more than it saves); instead an idle
