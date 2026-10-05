@@ -272,7 +272,7 @@ Nearby* Presence::lookup(const Mac& m)
 
 void Presence::send_call(uint32_t now)
 {
-    call_ms_ = now + kWakeSendMs;            // boards nearby may be dozing
+    call_ms_ = now + kCallMs;                // boards nearby may be dozing
     if (!air_.send) return;
     uint8_t buf[kPacketMax];
     Writer w(buf, sizeof buf);
@@ -463,6 +463,10 @@ void Presence::hear_request(const Mac& from, const uint8_t* d, size_t n, uint32_
     if (in_on_ && in_from_ == from && in_session_ == session) { in_heard_ms_ = now; return; }
     if (session == session_ && from == partner_ && !inviter_) return;     // said Play already (repeating)
     if (ans_to_ == from && ans_session_ == session && int32_t(ans_until_ms_ - now) > 0) return;   // answered
+    // The partner of the game going here asks for the next one (New Game)
+    // a moment before this board has seen that game end: no answer yet -
+    // the request repeats, and is taken up once the game here is over
+    if (me_p_.busy && from == me_p_.partner) return;
     Answer no = Answer::None;
     if (!me_p_.available || me_p_.busy || in_on_) {
         no = Answer::Busy;                               // the first asker has priority

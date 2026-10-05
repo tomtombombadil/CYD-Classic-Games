@@ -196,6 +196,7 @@ void drop_session()
 // ---- The one-player game put aside while a session plays its game ----------------------------
 void stash_name(const char* id, char* out, size_t cap) { snprintf(out, cap, "1p_%s", id); }
 char resumed_note_id[16] = "";
+constexpr size_t kStashMax = 1024;          // > every wireless game's save
 
 void stash_1p(int reg)
 {
@@ -205,17 +206,18 @@ void stash_1p(int reg)
     if (app_current_game() == reg) app_save_current();
     char sn[24];
     stash_name(id, sn, sizeof sn);
-    uint8_t* buf = static_cast<uint8_t*>(malloc(4096));
-    if (!buf) return;
-    if (H.load_game(sn, buf, 4096) > 4) { free(buf); return; }     // one is put aside already
-    const size_t n = H.load_game(id, buf, 4096);
+    // On the stack, not the heap: a board short of memory must not lose the
+    // one-player game (the biggest wireless save, Chess, is ~620 bytes)
+    uint8_t buf[kStashMax];
+    if (H.load_game(sn, buf, sizeof buf) > 4) return;              // one is put aside already
+    const size_t n = H.load_game(id, buf, sizeof buf);
+    if (n >= sizeof buf) { log_event("Wireless: %s save too big to put aside", id); return; }
     match::State st;
     if (n > match::kStateBytes && match::read_state(buf + n - match::kStateBytes, match::kStateBytes, st)
         && st.mode != twoplayer::Mode::Wireless) {
         H.save_game(sn, buf, n);
         log_step("Wireless: %s one-player game put aside", id);
     }
-    free(buf);
 }
 
 // Put it back (the game isn't open): it opens as it was, with a note
@@ -225,9 +227,8 @@ void restore_1p(const char* id)
     if (!H.load_game || !H.save_game) return;
     char sn[24];
     stash_name(id, sn, sizeof sn);
-    uint8_t* buf = static_cast<uint8_t*>(malloc(4096));
-    if (!buf) return;
-    const size_t n = H.load_game(sn, buf, 4096);
+    uint8_t buf[kStashMax];
+    const size_t n = H.load_game(sn, buf, sizeof buf);
     if (n > 4) {
         H.save_game(id, buf, n);
         const uint8_t none[4] = {'N', 'O', 'N', 'E'};
@@ -235,7 +236,6 @@ void restore_1p(const char* id)
         snprintf(resumed_note_id, sizeof resumed_note_id, "%s", id);
         log_step("Wireless: %s one-player game back", id);
     }
-    free(buf);
 }
 
 // Record a session's ending for a game that isn't open (a put-away session
@@ -343,6 +343,7 @@ net::Profile air_profile()
     p.fw = net::Version::parse(shell().firmware_version);
     p.available = P.available;
     p.busy = busy();
+    if (S) p.partner = S->link.peer();
     p.move_timer = P.timer;
     for (int g = 0; g < game_count() && p.n_games < net::kMaxGames; ++g) {
         if (!game_on(wl_keys[g])) continue;

@@ -156,6 +156,9 @@ def request(asker, other, title, answer="Play"):
     if not wait_for(asker, other.name):
         check(False, "%s sees %s" % (asker.name, other.name))
         print("    %s" % asker.cmd("wpstate"))
+        print("    %s %s" % (other.cmd("wpstate"), other.cmd("radio")))
+        print("    %s: %s" % (other.name, other.dump()))
+        print("    %s: %s" % (asker.name, asker.dump()))
         return False
     for _ in range(3):                                  # (the list may be rebuilding as it's tapped)
         asker.press(other.name)
@@ -582,6 +585,88 @@ def scenario_new_game(A, B):
     run(5000)
 
 
+def scenario_switching(A, B):
+    """Games ended every way, then another game, many times: moves flow after each switch."""
+    print("Switching games: forfeit, leave, New Game, Goodbye - moves flow every time")
+    import random as _r
+    R = _r.Random(11)
+    games = [("tictactoe", "Tic-Tac-Toe"), ("reversi", "Reversi"), ("fourconnect", "FourConnect"),
+             ("checkers", "Checkers"), ("chess", "Chess")]
+
+    def flows(gid):
+        for _ in range(3):
+            mover = None
+            for _ in range(60):
+                if A.may():
+                    mover = A
+                    break
+                if B.may():
+                    mover = B
+                    break
+                run(100)
+            if not mover:
+                print("    stuck: %s / %s" % (A.cmd("wpstate"), B.cmd("wpstate")))
+                return False
+            mover.cmd("anymove")
+            run(400)
+            if "Again" in A.dump():
+                return True
+        return in_step(A, B, gid)
+
+    def to_the_end(p):
+        for _ in range(300):
+            if "Goodbye" in p.dump():
+                return True
+            for b in (A, B):
+                b.cmd("anymove")
+            run(150)
+        return False
+
+    gid, title = "reversi", "Reversi"
+    offer(A, B, title)
+    for step, act in enumerate(["newgame", "forfeit", "goodbye", "leave", "newgame", "newgame"]):
+        check(flows(gid), "switch %d: %s moves flow" % (step, title))
+        p, q = (A, B) if step % 2 == 0 else (B, A)
+        gid, nxt = R.choice(games)
+        if act in ("newgame", "goodbye") and not to_the_end(p):
+            act = "forfeit"
+        if act == "newgame":
+            p.press("New Game")
+            wait_for(p, "Tap a game to ask", 4000)
+            p.press(nxt)
+            if wait_for(q, "would like to play %s" % nxt):
+                q.press("Play")
+            run(2500)
+        else:
+            if act == "forfeit":
+                p.cmd("menu")
+                p.press("Forfeit Game")
+            elif act == "leave":
+                p.cmd("back")
+                p.press("Leave Game")
+            else:
+                p.press("Goodbye")
+            run(1500)
+            for b in (A, B):
+                b.press("OK")
+                b.press("Done")
+                b.cmd("home")
+            run(4000)
+            offer(q, p, nxt)
+        title = nxt
+    check(flows(gid), "after the last switch: %s moves flow" % title)
+    for b in (A, B):
+        b.cmd("menu")
+        if b.press("Forfeit Game"):
+            break
+    run(1500)
+    for b in (A, B):
+        b.press("OK")
+        b.press("Done")
+        b.cmd("home")
+    run(5000)
+
+
 def board_hash(b, gid):
     return b.cmd("board " + gid)[0].split()[1]
 
@@ -658,6 +743,7 @@ def main():
         scenario_forfeit_away(A, B)
         scenario_crossed(A, B)
         scenario_new_game(A, B)
+        scenario_switching(A, B)
         scenario_every_game(A, B)
     finally:
         for b in boards:

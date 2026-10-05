@@ -621,7 +621,7 @@ never typed (SPEC section 5).
   on: searching, requesting, asked, a Call heard in the last 8 s, a live
   session, connecting, a meeting question, a put-away session's burst.
   Anything sent to a maybe-dozing board repeats every `kWakeSendMs` 100 ms
-  (Calls, a request until it rings, statuses while the link is down,
+  (Calls every `kCallMs` 50 ms, a request until it rings, statuses while the link is down,
   put-away bursts of 2.6 s every 10 s), so a window always catches one:
   found / asked within ~2 s. About shows "Radio: Off (1P) / Dozing (2P) /
   Listening"; the log says how long radio_on took. The preview agent drops
@@ -639,6 +639,20 @@ never typed (SPEC section 5).
   like the Move Timer's "Waiting... 30s").
   The stuck Reversi game didn't happen again on v0.22.0 (Tom tried):
   tabled until a log with these lines shows it.
+- Code review 2026-10-05 (v0.22.3): a New Game request from the partner
+  could arrive a moment before this board saw the game end and was
+  answered "can't play right now" - now a request from the session's
+  partner while busy gets no answer yet (it repeats and pops up once the
+  game here is over; `Profile::partner`). The one-player game is put aside
+  through a 1 KB stack buffer (`kStashMax`; test_movekeys checks every
+  wireless save fits), not a 4 KB heap block a low-memory board might not
+  have. duo.py `scenario_switching` ends games every way and checks moves
+  still flow after each switch.
+- Memory note: the 4.0" boots with ~139 KB free, largest block 75 KB
+  (v0.19: 147 / 107). The 8 KB is v0.20's 16 KB main-task stack (the
+  chess crash fix); where that stack lands splits the biggest block.
+  Static RAM barely moved (57.5 -> 58 KB). Watch big contiguous needs
+  (Checkers' 40 KB AI stack) with the radio on.
 
 ## Known hardware issues (from CYD-Sudoku - all still apply)
 - Supported boards: 2.8" ESP32-2432S028 in ILI9341 and ST7789 versions

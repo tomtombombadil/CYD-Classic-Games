@@ -64,6 +64,7 @@ constexpr uint32_t kSendMs = 500;           // repeat of an answer, or a status 
 constexpr uint32_t kDozeIntervalMs = 2000;
 constexpr uint32_t kDozeWindowMs = 120;
 constexpr uint32_t kWakeSendMs = 100;
+constexpr uint32_t kCallMs = 50;            // Calls: two or more land in every wake window
 constexpr uint32_t kBurstMs = 2600;         // a put-away session calls its partner this long...
 constexpr uint32_t kBurstEveryMs = 10000;   // ... this often
 constexpr uint32_t kCalledAwakeMs = 8000;   // after hearing a Call: stay awake (someone is looking)
@@ -140,6 +141,7 @@ struct Profile {
     Version   fw;
     bool      available = false;            // 2P: answers calls and requests
     bool      busy = false;                 // in a game that is going
+    Mac       partner;                      // ... with this board (its requests wait, not Busy)
     int       n_games = 0;                  // the games it will play
     GameOffer games[kMaxGames];
     uint16_t  move_timer = 30;              // seconds, 0 = Off

@@ -219,6 +219,11 @@ void test_names()
 int main()
 {
     test_names();
+    // wplay puts a one-player game aside in a 1 KB stack buffer (kStashMax)
+    const size_t biggest[] = {fourconnect::Board::kSaveBytes, tictactoe::Board::kSaveBytes, reversi::Board::kSaveBytes,
+                              checkers::Game::kSaveBytes, chess::Game::kSaveBytes, mancala::Board::kSaveBytes,
+                              morris::Game::kSaveBytes};
+    for (size_t b : biggest) check(b + 8 < 1024, "a wireless game's save fits wplay's 1 KB stash buffer");
     // net_moves.txt: "<id> <key> <version> <hash>" per line, '#' comments
     std::vector<std::string> lines;
     if (FILE* f = fopen("tools/host_tests/net_moves.txt", "r")) {
