@@ -308,8 +308,21 @@ never typed (SPEC section 5).
   ship shows and a tap on the sea flips the pages; computer Easy random +
   round a hit, Medium parity + lines, Hard placement counting (~59 / 44 /
   39 shots a fleet); the computer reads only what its side knows (hits,
-  misses, sunk); sounds: your miss Place, hit Move, sunk Trill; theirs
-  Turn / Move / "aww" (`match::Game::move_sound`). A wireless board knows
+  misses, sunk); the show (Tom, 2026-10-05: "the anticipation of the hit
+  or miss" - it was boring): ships drawn from above (Carrier flat deck +
+  island, Battleship 3 turrets, Cruiser 2, Submarine slim hull + sail,
+  Destroyer 1; bow at the far end; sunk = dark red wreck; at the end the
+  unfound ones faded); a shot = 0.9 s fall (sights + a shrinking shell,
+  `Sound::Whistle`, info line "Firing at A1..." - no spoiler), then a
+  splash (`Sound::Splash`) or an explosion (`Sound::Boom`) with a big
+  banner "B5 MISS!" / "C6 HIT!" (+ "You sank their Cruiser!" / "Computer
+  fired") held 1.5 / 1.9 / 2.6 s (sunk), clear of the shot; hits are red
+  bursts, misses white pegs; the board already holds the result
+  (`match::Game::busy` holds the computer and wireless moves meanwhile);
+  then the view turns by itself: Their Waters for your shot, My Fleet
+  while they "aim" 0.9 s ("Computer is aiming...") and fire; the last
+  shot lands at once (the win / lose sounds); pass-and-play shows the
+  shot on the shooter's view, then Pass. The keys still switch views. A wireless board knows
   the other fleet's seed - the screen never shows it before the end). Wheel
   of CYD (id `wheel`, Word; Wheel of Fortune; you vs computer players Max
   and Zoe, or 2-player pass-and-play (menu_two_player, no wireless); 3

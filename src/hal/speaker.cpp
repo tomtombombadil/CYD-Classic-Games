@@ -8,7 +8,7 @@
 
 namespace {
 
-constexpr int      kMaxTones = 16;
+constexpr int      kMaxTones = 24;
 constexpr uint8_t  kBits     = 12;           // duty resolution: fine steps at low volume
 constexpr uint32_t kFull     = 1u << kBits;
 constexpr uint32_t kAmpOffMs = 60;           // amp stays on briefly after the last tone

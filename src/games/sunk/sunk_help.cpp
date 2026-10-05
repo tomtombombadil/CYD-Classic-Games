@@ -17,9 +17,8 @@ const HelpPage kPages[] = {
         "Options (menu): Ship Placement Random - Shuffle until you like it.\n"
         "Pass-and-play: the board says who to pass it to, then waits for Ready."},
     {"Firing",
-        "Their Waters is the sea you fire at: tap a square. A white peg is a miss, red a hit; a sunk ship shows.\n"
-        "My Fleet shows your ships and their shots. The last shot has a gold frame.\n"
-        "The side that placed its fleet first fires first. At the end, tap the sea to see both."},
+        "Your turn shows Their Waters: tap a square. The shell falls with a whistle - a splash and MISS!, or an explosion and HIT!. Then the view turns to My Fleet while they aim and fire at you.\n"
+        "White pegs are misses, red bursts hits; a sunk ship shows. The keys switch the view any time."},
     {"The Computer",
         "Easy fires at random, and after a hit tries the squares around it.\n"
         "Medium fires on a spaced pattern and follows a line of hits.\n"

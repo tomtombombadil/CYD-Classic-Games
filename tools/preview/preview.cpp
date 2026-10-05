@@ -48,6 +48,8 @@ void pass();
 void undo();
 void tap(int c);
 void options();
+bool idle();
+bool shooting();
 } // namespace sunk_preview
 namespace morris_preview {
 morris::Game* game();
@@ -1327,11 +1329,24 @@ int main(int argc, char** argv)
             aim.push_back(d.cell_at(0, 2));
             aim.push_back(d.cell_at(1, 2));
             aim.push_back(f.ship[0].cell_at(2, 5));
-            for (int c : aim) {
-                if (!match::human_may_move() || !b->can_play(uint32_t(c))) run(1500);
-                if (match::human_may_move() && b->can_play(uint32_t(c))) match::human_move(c);
-                run(1500);
+            // Each shot: the shell falling, then the splash or the explosion with its banner
+            for (size_t k = 0; k < aim.size(); ++k) {
+                const int c = aim[k];
+                for (int w = 0; w < 30 && !(match::human_may_move() && sunk_preview::idle()); ++w) run(300);
+                if (!b->can_play(uint32_t(c))) continue;
+                match::human_move(c);
+                if (k == 0) { run(450); shot(out + "_light_63_sunk_fall.ppm"); }
+                if (k == 0 || k == 4) { run(k == 0 ? 750 : 1200); shot(out + (k == 0 ? "_light_63_sunk_miss.ppm" : "_light_63_sunk_hit.ppm")); }
+                if (k == 4) { sunk_preview::page(1); }
+                run(4500);                                   // the turn goes to the computer, then back
+                if (k == 3) {                                // the computer's shot on your fleet
+                    for (int w = 0; w < 10 && !sunk_preview::shooting(); ++w) run(200);
+                    run(1300);
+                    shot(out + "_light_63_sunk_incoming.ppm");
+                }
             }
+            for (int w = 0; w < 30 && !(match::human_may_move() && sunk_preview::idle()); ++w) run(300);
+            sunk_preview::page(0);
             shot(out + "_light_63_sunk.ppm");
             sunk_preview::page(1);
             shot(out + "_light_63_sunk_fleet.ppm");

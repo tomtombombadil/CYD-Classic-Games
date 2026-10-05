@@ -11,6 +11,7 @@
 //
 // Pass-and-play hides each player's sea from the other: after a move the
 // board says "Pass to Gold" and waits for Ready.
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <new>
@@ -53,6 +54,24 @@ struct View {
 bool manual = true;                 // Options -> Ship Placement (saved in /games/sunk_opt.bin)
 
 int cell = 20, lab = 12;            // cell size, label strip (px)
+
+// A shot on screen (Tom, 2026-10-05: "the anticipation of the hit or miss"):
+// the shell falls on the target with a whistle, then a splash or an
+// explosion and a big "B5 MISS!" / "C6 HIT!" that stays a while. Then the
+// view turns to the sea the next shot will land in. The board already holds
+// the result; this is only how it is shown.
+constexpr uint32_t kFallMs = 900, kMissHoldMs = 1500, kHitHoldMs = 1900, kSunkHoldMs = 2600;
+constexpr uint32_t kAimMs = 900;      // the other side "aims" with your fleet on screen
+struct ShotAnim {
+    bool     on = false, impact = false, final = false, hit = false, sunk = false;
+    int      cell = -1, shooter = -1, ship = -1;
+    uint32_t start = 0;
+} SA;
+uint32_t   now_ms = 0, aim_until = 0;
+lv_timer_t* anim_timer = nullptr;
+uint32_t hold_ms() { return SA.sunk ? kSunkHoldMs : SA.hit ? kHitHoldMs : kMissHoldMs; }
+bool aiming() { return int32_t(aim_until - now_ms) > 0; }
+bool busy() { return SA.on || aiming(); }
 bool numbers_left = true;           // row numbers away from the stylus hand
 
 bool pnp()     { return match::state().mode == twoplayer::Mode::PassAndPlay; }
@@ -167,23 +186,76 @@ int result() { return B->result(); }
 int turn()   { return B->turn(); }
 int moves()  { return B->moves; }
 
+void anim_tick_cb(lv_timer_t*) { redraw(); }
+
+void anim_timer_on(bool on)
+{
+    if (on && !anim_timer) anim_timer = lv_timer_create(anim_tick_cb, 40, nullptr);
+    if (!on && anim_timer) { lv_timer_delete(anim_timer); anim_timer = nullptr; }
+}
+
+// The next shot's sea: yours to fire at, or your fleet while they aim
+void show_next_turn()
+{
+    if (over() || pnp() || B->setup()) return;
+    if (B->turn() == match::my_side()) V.page = 0;
+    else { V.page = 1; aim_until = now_ms + kAimMs; }
+}
+
 void play(int m)
 {
     const bool shot = !B->setup();
     const int mover = B->turn();
     if (!B->play(uint32_t(m))) return;
-    if (pnp() && !over()) {
-        if (shot) V.result = true;              // see where it landed, then pass
-        else if (B->turn() != mover) V.cover = true;   // the fleet is set: pass at once
+    if (shot) {
+        SA = ShotAnim{};
+        SA.on = true;
+        SA.cell = m;
+        SA.shooter = mover;
+        SA.ship = B->fleet[mover ^ 1].at[m] - 1;
+        SA.hit = SA.ship >= 0;
+        SA.sunk = SA.hit && B->sunk(mover ^ 1, SA.ship);
+        SA.final = over();
+        SA.start = SA.final ? now_ms - kFallMs : now_ms;   // the last shot lands at once (the win sounds)
+        if (!pnp()) V.page = mover == match::my_side() ? 0 : 1;
+        anim_timer_on(true);
+    } else if (pnp() && !over() && B->turn() != mover) {
+        V.cover = true;                         // the fleet is set: pass at once
     }
-    if (B->moves == kSetupPlies) V.page = 0;    // both fleets set: fire away
+    if (B->moves == kSetupPlies) { V.page = 0; show_next_turn(); }    // both fleets set: fire away
     update_keys();
     redraw();
+}
+
+// Every tick: the shot's splash or boom, its end, the turn to the next sea
+void anim_step()
+{
+    if (!SA.on) return;
+    const uint32_t t = now_ms - SA.start;
+    if (!SA.impact && t >= kFallMs) {
+        SA.impact = true;
+        if (!SA.final) sound(SA.hit ? Sound::Boom : Sound::Splash);
+        redraw();
+        match::refresh();
+    }
+    if (t < kFallMs + hold_ms()) return;
+    SA.on = false;
+    anim_timer_on(false);
+    if (!over()) {
+        if (pnp()) V.result = true;             // seen where it landed: now pass
+        else show_next_turn();
+    }
+    update_keys();
+    redraw();
+    match::refresh();
 }
 
 void reset()
 {
     *B = Board{};
+    SA = ShotAnim{};
+    aim_until = now_ms;
+    anim_timer_on(false);
     V.cover = pnp();
     V.viewer = 0;
     V.result = false;
@@ -217,13 +289,25 @@ void move_sound(bool by_other)
         if (B->moves % kShips == 0) sound(by_other ? Sound::Turn : Sound::Place);
         return;
     }
-    if (!by_other) sound(s.sunk ? Sound::Trill : s.hit ? Sound::Move : Sound::Place);
-    else           sound(s.sunk ? Sound::Error : s.hit ? Sound::Move : Sound::Turn);
+    (void)by_other;
+    sound(Sound::Whistle);                      // the splash or boom comes when it lands
 }
 
 void note(char* buf, size_t cap)
 {
     buf[0] = 0;
+    if (SA.on && !SA.impact) {                  // in flight: no telling yet
+        char at[8];
+        coord(SA.cell, at, sizeof at);
+        if (pnp()) snprintf(buf, cap, "%s fires at %s...", SA.shooter == 0 ? kSides.side1 : kSides.side2, at);
+        else if (SA.shooter == match::my_side()) snprintf(buf, cap, "Firing at %s...", at);
+        else snprintf(buf, cap, "%s fires at %s...", match::opponent_name() ? match::opponent_name() : "They", at);
+        return;
+    }
+    if (aiming() && !pnp() && match::opponent_name()) {
+        snprintf(buf, cap, "%s is aiming...", match::opponent_name());
+        return;
+    }
     if (V.cover) {
         snprintf(buf, cap, "Pass the board to %s", B->turn() == 0 ? kSides.side1 : kSides.side2);
         return;
@@ -283,6 +367,7 @@ match::Game make_game()
     g.note = note;
     g.score = score;
     g.move_sound = move_sound;
+    g.busy = busy;
     g.ai_stack = 6 * 1024;
     g.legal = [](int m) { return B->can_play(uint32_t(m)); };
     g.list = list;
@@ -423,12 +508,136 @@ void frame_rect(lv_layer_t* layer, int x1, int y1, int x2, int y2, int w, lv_col
     lv_draw_rect(layer, &d, &a);
 }
 
-void ship_shape(lv_layer_t* layer, int x0, int y0, const Ship& s, int len, lv_color_t c)
+// ---- Ships, drawn from above --------------------------------------------------------------
+// A ship's own frame: u runs along it (0 at the stern, the bow at the far
+// end), v across (0..cell); `down` turns it to run down the sea.
+struct Frame { lv_layer_t* layer; int x, y; bool down; };
+void map_pt(const Frame& f, int u, int v, int32_t* x, int32_t* y) { *x = f.x + (f.down ? v : u); *y = f.y + (f.down ? u : v); }
+
+void lrect(const Frame& f, int u1, int v1, int u2, int v2, lv_color_t c, int radius = 0)
 {
-    const int r = s.cell / kN, col = s.cell % kN;
-    const int x1 = x0 + col * cell + 2, y1 = y0 + r * cell + 2;
-    const int x2 = x0 + (col + (s.down ? 1 : len)) * cell - 2, y2 = y0 + (r + (s.down ? len : 1)) * cell - 2;
-    kit::fill_rect(layer, x1, y1, x2, y2, c, (cell - 4) / 2);
+    int32_t x1, y1, x2, y2;
+    map_pt(f, u1, v1, &x1, &y1);
+    map_pt(f, u2, v2, &x2, &y2);
+    kit::fill_rect(f.layer, x1 < x2 ? x1 : x2, y1 < y2 ? y1 : y2, x1 < x2 ? x2 : x1, y1 < y2 ? y2 : y1, c, radius);
+}
+
+void ltri(const Frame& f, int u1, int v1, int u2, int v2, int u3, int v3, lv_color_t c)
+{
+    lv_draw_triangle_dsc_t d;
+    lv_draw_triangle_dsc_init(&d);
+    d.color = c;
+    d.opa = LV_OPA_COVER;
+    int32_t x, y;
+    map_pt(f, u1, v1, &x, &y); d.p[0].x = x; d.p[0].y = y;
+    map_pt(f, u2, v2, &x, &y); d.p[1].x = x; d.p[1].y = y;
+    map_pt(f, u3, v3, &x, &y); d.p[2].x = x; d.p[2].y = y;
+    lv_draw_triangle(f.layer, &d);
+}
+
+void lcircle(const Frame& f, int u, int v, int r, lv_color_t c)
+{
+    int32_t x, y;
+    map_pt(f, u, v, &x, &y);
+    kit::fill_circle(f.layer, x, y, r, c);
+}
+
+void lline(const Frame& f, int u1, int v1, int u2, int v2, int w, lv_color_t c)
+{
+    int32_t x1, y1, x2, y2;
+    map_pt(f, u1, v1, &x1, &y1);
+    map_pt(f, u2, v2, &x2, &y2);
+    kit::line(f.layer, x1, y1, x2, y2, w, c);
+}
+
+struct ShipPaint { lv_color_t hull, deck, dark; };
+
+ShipPaint ship_paint(int how)     // 0 afloat, 1 sunk, 2 shown at the end (faded)
+{
+    const Palette& P = pal();
+    if (how == 1) {
+        const lv_color_t wreck = lv_color_mix(P.piece_a, P.stone_dark, 110);
+        return {wreck, lv_color_mix(P.piece_a, P.stone_dark, 70), P.stone_dark};
+    }
+    ShipPaint s{lv_color_mix(P.stone_light, P.stone_dark, 125), lv_color_mix(P.stone_light, P.stone_dark, 175),
+                lv_color_mix(P.stone_light, P.stone_dark, 55)};
+    if (how == 2) {
+        s.hull = lv_color_mix(s.hull, P.frame, 150);
+        s.deck = lv_color_mix(s.deck, P.frame, 150);
+        s.dark = lv_color_mix(s.dark, P.frame, 150);
+    }
+    return s;
+}
+
+// A gun turret at u (barrel toward the bow when `fore`)
+void turret(const Frame& f, int u, int mid, int r, bool fore, const ShipPaint& c)
+{
+    lline(f, u, mid, fore ? u + r * 2 : u - r * 2, mid, r > 3 ? 2 : 1, c.dark);
+    lcircle(f, u, mid, r, c.dark);
+    lcircle(f, u, mid, r - 1 > 1 ? r - 1 : 1, c.deck);
+}
+
+void draw_ship(lv_layer_t* layer, int x0, int y0, int i, const Ship& sh, const ShipPaint& c)
+{
+    const int len = kLen[i];
+    const Frame f{layer, x0 + (sh.cell % kN) * cell, y0 + (sh.cell / kN) * cell, sh.down};
+    const int L = len * cell, p = cell / 8 > 1 ? cell / 8 : 1, mid = cell / 2, w = cell - 2 * p;
+    const int bow = cell * 7 / 10;
+    if (i == 3) {                                       // Submarine: a slim rounded hull, the sail amidships
+        const int t = w * 15 / 100;
+        lrect(f, p, p + t, L - p, cell - p - t, c.hull, (w - 2 * t) / 2);
+        lrect(f, p + 3, p + t + 2, L - p - 3, cell - p - t - 2, c.deck, (w - 2 * t) / 2 - 2);
+        lrect(f, L * 40 / 100, mid - w / 5, L * 58 / 100, mid + w / 5, c.dark, 3);
+        lline(f, L * 46 / 100, mid, L * 52 / 100, mid, 1, c.deck);
+        return;
+    }
+    if (i == 0) {                                       // Carrier: a long flat deck, the island to one side
+        lrect(f, p, p, L - p - bow / 2, cell - p, c.hull, 3);
+        ltri(f, L - p - bow / 2 - 1, p, L - p, p + w / 4, L - p - bow / 2 - 1, cell - p, c.hull);
+        ltri(f, L - p - bow / 2 - 1, cell - p, L - p, p + w / 4, L - p, cell - p - w / 4, c.hull);
+        lrect(f, p + 2, p + 2, L - p - bow / 2, cell - p - 2, c.deck, 2);
+        for (int u = p + cell / 2; u < L - bow; u += cell / 2 + 2)          // the runway's centre line
+            lline(f, u, mid, u + cell / 4, mid, 1, c.dark);
+        lrect(f, L * 58 / 100, p + 1, L * 74 / 100, p + w * 35 / 100, c.dark, 2);
+        return;
+    }
+    // Battleship, Cruiser, Destroyer: a pointed bow, a bridge, gun turrets
+    lrect(f, p, p, L - bow, cell - p, c.hull, cell / 5);
+    ltri(f, L - bow - 1, p, L - p, mid, L - bow - 1, cell - p, c.hull);
+    lrect(f, p + 2, p + 2, L - bow, cell - p - 2, c.deck, cell / 5 - 1);
+    ltri(f, L - bow - 1, p + 2, L - p - 3, mid, L - bow - 1, cell - p - 2, c.deck);
+    const int r = w * 26 / 100 > 2 ? w * 26 / 100 : 2;
+    if (i == 1) {                                       // Battleship: three big guns
+        lrect(f, L * 34 / 100, mid - w / 4, L * 50 / 100, mid + w / 4, c.dark, 2);
+        turret(f, L * 18 / 100, mid, r, false, c);
+        turret(f, L * 60 / 100, mid, r, true, c);
+        turret(f, L * 74 / 100, mid, r, true, c);
+    } else if (i == 2) {                                // Cruiser: two
+        lrect(f, L * 38 / 100, mid - w / 4, L * 56 / 100, mid + w / 4, c.dark, 2);
+        turret(f, L * 22 / 100, mid, r * 9 / 10, false, c);
+        turret(f, L * 68 / 100, mid, r * 9 / 10, true, c);
+    } else {                                            // Destroyer: a bridge and one gun
+        lrect(f, L * 26 / 100, mid - w / 5, L * 44 / 100, mid + w / 5, c.dark, 2);
+        turret(f, L * 62 / 100, mid, r * 8 / 10, true, c);
+    }
+}
+
+// A star of `n` points (explosions, hit marks)
+void burst(lv_layer_t* layer, int cx, int cy, int r_out, int r_in, int n, float turn, lv_color_t c)
+{
+    lv_draw_triangle_dsc_t d;
+    lv_draw_triangle_dsc_init(&d);
+    d.color = c;
+    d.opa = LV_OPA_COVER;
+    for (int k = 0; k < n; ++k) {
+        const float a0 = turn + 6.2831853f * k / n, a1 = turn + 6.2831853f * (k + 0.5f) / n, a2 = turn + 6.2831853f * (k + 1) / n;
+        // the point, and the inner corners either side of it
+        d.p[0].x = cx + int32_t(lroundf(cosf(a1) * r_out)); d.p[0].y = cy + int32_t(lroundf(sinf(a1) * r_out));
+        d.p[1].x = cx + int32_t(lroundf(cosf(a0) * r_in));  d.p[1].y = cy + int32_t(lroundf(sinf(a0) * r_in));
+        d.p[2].x = cx + int32_t(lroundf(cosf(a2) * r_in));  d.p[2].y = cy + int32_t(lroundf(sinf(a2) * r_in));
+        lv_draw_triangle(layer, &d);
+    }
+    kit::fill_circle(layer, cx, cy, r_in, c);
 }
 
 void draw_cb(lv_event_t* e)
@@ -451,8 +660,6 @@ void draw_cb(lv_event_t* e)
         kit::text(layer, t, lf, P.muted, numbers_left ? a.x1 : x0 + sea, y0 + i * cell, lab, cell);
     }
     const lv_color_t water = P.frame, deep = lv_color_darken(P.frame, 70);
-    const lv_color_t ship_c = lv_color_mix(P.stone_light, P.stone_dark, 120);
-    const lv_color_t hit_c = P.piece_a, peg = P.stone_light;
     kit::fill_rect(layer, x0, y0, x0 + sea, y0 + sea, deep);
     const bool covered = V.cover && !over();
     for (int c = 0; c < kCells; ++c) {
@@ -461,19 +668,22 @@ void draw_cb(lv_event_t* e)
     }
     if (covered) return;
     const int me = viewer();
-    const int pr = cell / 7 > 2 ? cell / 7 : 2, hr = cell / 3;
+    const int pr = cell / 7 > 2 ? cell / 7 : 2;
     auto cx = [&](int c) { return x0 + (c % kN) * cell + cell / 2; };
     auto cy = [&](int c) { return y0 + (c / kN) * cell + cell / 2; };
-    const lv_color_t wreck = lv_color_mix(hit_c, P.stone_dark, 100);      // a sunk ship
-    // A hit: a red peg (smaller on a sunk ship, so the wreck shows round it)
-    auto hit_peg = [&](int c, bool on_wreck) {
-        const int r = on_wreck ? hr * 2 / 3 : hr;
-        kit::fill_circle(layer, cx(c), cy(c), r + 1, lv_color_darken(hit_c, 90));
-        kit::fill_circle(layer, cx(c), cy(c), r, hit_c);
+    // A hit: a small red burst with a gold heart
+    auto hit_mark = [&](int c, bool small) {
+        const int r = small ? cell * 30 / 100 : cell * 40 / 100;
+        burst(layer, cx(c), cy(c), r, r / 2, 7, 0.3f, P.piece_a);
+        kit::fill_circle(layer, cx(c), cy(c), r / 3 > 1 ? r / 3 : 1, P.piece_b);
+    };
+    auto miss_mark = [&](int c) {
+        kit::fill_circle(layer, cx(c), cy(c), pr + 1, lv_color_mix(P.stone_dark, water, 60));
+        kit::fill_circle(layer, cx(c), cy(c), pr, P.stone_light);
     };
     if (placing()) {                                     // the fleet being placed
         const int shown = manual ? V.n : kShips;
-        for (int i = 0; i < shown; ++i) ship_shape(layer, x0, y0, V.preview.ship[i], kLen[i], ship_c);
+        for (int i = 0; i < shown; ++i) draw_ship(layer, x0, y0, i, V.preview.ship[i], ship_paint(0));
         if (manual && V.anchor >= 0 && V.n < kShips) {
             // The squares the ship can point to light up; the anchor is gold
             const lv_color_t lit = lv_color_mix(P.lit, water, 225);     // strong: TN panels wash out pale tints
@@ -494,37 +704,99 @@ void draw_cb(lv_event_t* e)
     }
     if (me < 0) return;
     const bool own = V.page == 1 || B->setup();
+    // A shot in flight here: its result isn't shown until it lands
+    const int sea_side = own ? me : me ^ 1;             // whose ships are in this sea
+    const bool anim_here = SA.on && (SA.shooter ^ 1) == sea_side;
+    const bool pending = anim_here && !SA.impact;
+    const int last = B->last[sea_side ^ 1];
     if (own) {                                           // my ships and the other side's shots
         const Fleet& f = B->fleet[me];
-        for (int i = 0; i < B->placed(me); ++i)
-            ship_shape(layer, x0, y0, f.ship[i], kLen[i], B->sunk(me, i) ? wreck : ship_c);
-        for (int c = 0; c < kCells; ++c) {
-            if (!B->shot[me ^ 1][c]) continue;
-            if (f.at[c]) hit_peg(c, B->sunk(me, f.at[c] - 1));
-            else kit::fill_circle(layer, cx(c), cy(c), pr, peg);
+        for (int i = 0; i < B->placed(me); ++i) {
+            const bool sunk = B->sunk(me, i) && !(pending && SA.ship == i);
+            draw_ship(layer, x0, y0, i, f.ship[i], ship_paint(sunk ? 1 : 0));
         }
-        const int l = B->last[me ^ 1];
-        if (l >= 0 && B->moves > kSetupPlies)
-            frame_rect(layer, cx(l) - cell / 2, cy(l) - cell / 2, cx(l) + cell / 2, cy(l) + cell / 2, 2, P.piece_b, 2);
+        for (int c = 0; c < kCells; ++c) {
+            if (!B->shot[me ^ 1][c] || (pending && c == SA.cell)) continue;
+            if (f.at[c]) hit_mark(c, B->sunk(me, f.at[c] - 1) && !(pending && SA.ship == f.at[c] - 1));
+            else miss_mark(c);
+        }
+    } else {
+        // Their waters: what I know; sunk ships show; at the end every ship does
+        const Fleet& f = B->fleet[me ^ 1];
+        for (int i = 0; i < kShips; ++i) {
+            if (B->sunk(me ^ 1, i) && !(pending && SA.ship == i)) draw_ship(layer, x0, y0, i, f.ship[i], ship_paint(1));
+            else if (over() && !B->sunk(me ^ 1, i)) draw_ship(layer, x0, y0, i, f.ship[i], ship_paint(2));
+        }
+        for (int c = 0; c < kCells; ++c) {
+            if (pending && c == SA.cell) continue;
+            Known k = B->known(me, c);
+            if (k == kSunk && pending && f.at[c] - 1 == SA.ship) k = kHit;      // not sunk until it lands
+            switch (k) {
+                case kMiss: miss_mark(c); break;
+                case kHit:  hit_mark(c, false); break;
+                case kSunk: hit_mark(c, true); break;
+                default: break;
+            }
+        }
+    }
+    if (last >= 0 && B->moves > kSetupPlies && !anim_here)
+        frame_rect(layer, cx(last) - cell / 2, cy(last) - cell / 2, cx(last) + cell / 2, cy(last) + cell / 2, 2, P.piece_b, 2);
+    if (!anim_here) return;
+    // ---- The shot
+    const uint32_t t = now_ms - SA.start;
+    const int X = cx(SA.cell), Y = cy(SA.cell);
+    if (!SA.impact) {
+        // The target in the sights, and the shell coming down on it (shrinking as it falls)
+        const float fall = t >= kFallMs ? 1.0f : float(t) / kFallMs;
+        kit::ring(layer, X, Y, cell / 2 + 1, 2, P.piece_b);
+        kit::line(layer, X - cell, Y, X - cell / 2, Y, 2, P.piece_b);
+        kit::line(layer, X + cell / 2, Y, X + cell, Y, 2, P.piece_b);
+        kit::line(layer, X, Y - cell, X, Y - cell / 2, 2, P.piece_b);
+        kit::line(layer, X, Y + cell / 2, X, Y + cell, 2, P.piece_b);
+        const int r = int(cell * 0.16f + cell * 0.9f * (1 - fall));
+        kit::fill_circle(layer, X, Y, r + 1, P.stone_light);
+        kit::fill_circle(layer, X, Y, r, P.stone_dark);
         return;
     }
-    // Their waters: what I know; sunk ships show; at the end every ship does
-    const Fleet& f = B->fleet[me ^ 1];
-    for (int i = 0; i < kShips; ++i) {
-        if (B->sunk(me ^ 1, i)) ship_shape(layer, x0, y0, f.ship[i], kLen[i], wreck);
-        else if (over()) ship_shape(layer, x0, y0, f.ship[i], kLen[i], lv_color_mix(ship_c, water, 150));
-    }
-    for (int c = 0; c < kCells; ++c) {
-        switch (B->known(me, c)) {
-            case kMiss:  kit::fill_circle(layer, cx(c), cy(c), pr, peg); break;
-            case kHit:   hit_peg(c, false); break;
-            case kSunk:  hit_peg(c, true); break;
-            default: break;
+    const uint32_t ti = t - kFallMs;
+    const float grow = ti >= 300 ? 1.0f : float(ti) / 300;
+    if (SA.hit) {                                        // the explosion
+        const int ro = int(cell * (0.4f + 0.75f * grow));
+        burst(layer, X, Y, ro, ro * 55 / 100, 9, 0.0f, P.piece_a);
+        burst(layer, X, Y, ro * 65 / 100, ro * 35 / 100, 7, 0.4f, P.piece_b);
+        kit::fill_circle(layer, X, Y, ro / 5 > 1 ? ro / 5 : 1, P.stone_light);
+    } else {                                             // the splash
+        const lv_color_t foam = lv_color_mix(P.stone_light, water, 200);
+        kit::fill_circle(layer, X, Y, int(cell * (0.25f + 0.15f * grow)), foam);
+        kit::ring(layer, X, Y, int(cell * (0.35f + 0.6f * grow)), 2, P.stone_light);
+        for (int k = 0; k < 8; ++k) {
+            const float a = 6.2831853f * k / 8 + 0.2f;
+            const float d = cell * (0.4f + 0.55f * grow);
+            kit::fill_circle(layer, X + int(cosf(a) * d), Y + int(sinf(a) * d), cell / 12 > 1 ? cell / 12 : 1, foam);
         }
     }
-    const int l = B->last[me];
-    if (l >= 0 && B->moves > kSetupPlies)
-        frame_rect(layer, cx(l) - cell / 2, cy(l) - cell / 2, cx(l) + cell / 2, cy(l) + cell / 2, 2, P.piece_b, 2);
+    // The banner: "C6 HIT!" (and a sunk ship, or who fired), clear of the shot
+    char at[8], l1[24], l2[48] = "";
+    coord(SA.cell, at, sizeof at);
+    snprintf(l1, sizeof l1, "%s %s", at, SA.hit ? "HIT!" : "MISS!");
+    const bool mine = SA.shooter == me;
+    if (SA.sunk) {
+        if (pnp()) snprintf(l2, sizeof l2, "%s's %s sank!", SA.shooter == 0 ? kSides.side2 : kSides.side1, ship_name(SA.ship));
+        else if (mine) snprintf(l2, sizeof l2, "You sank their %s!", ship_name(SA.ship));
+        else snprintf(l2, sizeof l2, "Your %s sank!", ship_name(SA.ship));
+    } else if (!mine && !pnp() && match::opponent_name()) {
+        snprintf(l2, sizeof l2, "%s fired", match::opponent_name());
+    }
+    const bool large = metrics().large;
+    const lv_font_t* f1 = large ? &lv_font_montserrat_28 : &lv_font_montserrat_20;
+    const lv_font_t* f2 = large ? &lv_font_montserrat_14 : &lv_font_montserrat_12;
+    const int h1 = lv_font_get_line_height(f1), h2 = l2[0] ? lv_font_get_line_height(f2) : 0;
+    const int bh = h1 + h2 + (large ? 14 : 8), bw = sea - 2 * cell;
+    const int bx = x0 + cell, by = SA.cell / kN >= kN / 2 ? y0 + cell : y0 + sea - cell - bh;
+    kit::fill_rect(layer, bx - 2, by - 2, bx + bw + 1, by + bh + 1, SA.hit ? P.piece_a : P.stone_dark, 8);
+    kit::fill_rect(layer, bx, by, bx + bw - 1, by + bh - 1, P.cell, 7);
+    kit::text(layer, l1, f1, SA.hit ? P.piece_a : P.frame, bx, by + (large ? 6 : 3), bw, h1);
+    if (l2[0]) kit::text(layer, l2, f2, P.ink, bx, by + (large ? 6 : 3) + h1, bw, h2);
 }
 
 // Taps act on release at the point where the stylus came down (lift-off
@@ -570,7 +842,7 @@ void clicked_cb(lv_event_t*)
         changed();
         return;
     }
-    if (V.page != 0 || B->setup() || !match::human_may_move()) return;
+    if (V.page != 0 || B->setup() || busy() || !match::human_may_move()) return;
     if (!B->can_play(uint32_t(c))) { sound(Sound::Error); return; }
     match::human_move(c);
 }
@@ -704,6 +976,9 @@ void close()
 {
     if (!B) return;
     match::detach();
+    anim_timer_on(false);
+    SA = ShotAnim{};
+    aim_until = now_ms;
     save();
     match::closed();
     sea_obj = cover_l = key_a = key_b = key_c = nullptr;
@@ -713,8 +988,10 @@ void close()
 
 void tick(uint32_t now)
 {
+    now_ms = now;
     match::tick(now);
     if (!B) return;
+    anim_step();
     // Ready was tapped before this side's turn to set up: it goes now
     if (V.ready_pending && placing() && B->turn() == viewer() && match::human_may_move()) {
         V.ready_pending = !send_fleet();
@@ -802,6 +1079,8 @@ void tap(int c)                          // a tap on sea cell c
     clicked_cb(nullptr);
 }
 void options() { options_open(); }
+bool idle() { return !busy(); }
+bool shooting() { return SA.on; }
 void cover_ready() { if (V.cover) { V.cover = false; V.viewer = B->turn(); V.page = 0; changed(); } }
 void pass() { if (V.result) { V.result = false; V.cover = true; changed(); } }
 void page(int p) { V.page = p; changed(); }

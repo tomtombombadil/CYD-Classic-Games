@@ -700,7 +700,7 @@ def scenario_every_game(A, B):
                 if r and r[0] != "A -1":
                     plies += 1
                     moved = True
-            run(200 if gid != "mancala" else 1500)       # Mancala shows each seed
+            run({"mancala": 1500, "sunk": 3500}.get(gid, 200))   # Mancala shows each seed, a shot falls and lands
             idle = 0 if moved else idle + 1
             if plies and plies % 10 == 0 and not in_step(first, second, gid):
                 break
