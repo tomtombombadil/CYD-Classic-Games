@@ -366,11 +366,10 @@ void send_log_open()
     // Back key
     const int gap = M.large ? 10 : 6;
     const int avail_w = M.w - 2 * (M.large ? 16 : 10);
-    // (the title is in the header and Back is the header's arrow: neither takes room here)
-    const lv_font_t* hf = menu_font();
-    const int how_lines = (text_width(kQrHow, hf) * 11 / 10 + avail_w - 1) / avail_w;   // (10 % for word wrap)
-    const int avail_h = M.h - 2 * (M.large ? 16 : 10) - lv_font_get_line_height(&lv_font_montserrat_14)
-                      - how_lines * lv_font_get_line_height(hf) - 3 * gap;
+    // (Tom, 2026-10-04: keep the code this size; the line under it is small
+    // print in the room the title and Back key had before the header bar)
+    const int avail_h = M.h - 2 * (M.large ? 16 : 10) - lv_font_get_line_height(title_font())
+                      - lv_font_get_line_height(&lv_font_montserrat_14) - menu_btn_h() - 3 * gap;
     const int avail = avail_w < avail_h ? avail_w : avail_h;
     int maxv = (avail / 2 - 4 - 17) / 4;
     if (maxv > qrcodegen_VERSION_MAX) maxv = qrcodegen_VERSION_MAX;
@@ -416,7 +415,7 @@ void send_log_open()
         lv_obj_set_style_text_font(cap, &lv_font_montserrat_14, 0);
         lv_obj_set_style_text_align(cap, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_t* how = overlay_text(kQrHow, false);
-        lv_obj_set_style_text_font(how, menu_font(), 0);
+        lv_obj_set_style_text_font(how, &lv_font_montserrat_12, 0);
         lv_obj_set_style_text_align(how, LV_TEXT_ALIGN_CENTER, 0);
     } else {
         overlay_text("The log could not be packed into a QR code (out of memory?). "

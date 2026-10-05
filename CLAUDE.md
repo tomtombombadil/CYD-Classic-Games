@@ -500,7 +500,8 @@ never typed (SPEC section 5).
   2 bytes -> 3 chars); QR = byte segment `logpack::kUrl`
   (`https://tomtombombadil.github.io/CYD-Classic-Games/l/#`) + alphanumeric
   segment, ECC L, under it "Point your phone's camera at the QR code to get
-  a link that sends the log to the developer." (Tom), encoder = LVGL's bundled Nayuki qrcodegen
+  a link that sends the log to the developer." (Tom; small print -
+  montserrat_12 - so the code keeps its full size), encoder = LVGL's bundled Nayuki qrcodegen
   (`LV_USE_QRCODE 1`), modules >= 2 px (240 wide: ~150 lines / 5 KB of
   text; 320 wide: ~380 lines / 12 KB). The page `web/l/index.html` decodes
   it (DecompressionStream "deflate-raw") and offers Email (mailto to
@@ -636,6 +637,8 @@ never typed (SPEC section 5).
   (why: move waiting/missing, overlay, busy, turn). The header's short
   status for a lost link is "Out of range" (was "Waiting...", which looked
   like the Move Timer's "Waiting... 30s").
+  The stuck Reversi game didn't happen again on v0.22.0 (Tom tried):
+  tabled until a log with these lines shows it.
 
 ## Known hardware issues (from CYD-Sudoku - all still apply)
 - Supported boards: 2.8" ESP32-2432S028 in ILI9341 and ST7789 versions
