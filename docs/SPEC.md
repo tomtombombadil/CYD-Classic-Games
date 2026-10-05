@@ -109,7 +109,7 @@ Candidates, grouped. Order of building is in section 6.
 | CYD-dle (Wordle-style) | Public-domain word list; on-screen keyboard |
 | Trivia | Question bank license to check (Open Trivia DB is CC BY-SA) |
 | ~~Hangman~~ | Dropped (Tom, 2026-10-03): needs a keyboard, not much fun vs a computer |
-| Wheel of CYD (Wheel of Fortune) | phrase guess with spinning reward/fail aspect |
+| Wheel of CYD (Wheel of Fortune) | phrase guess with spinning reward/fail aspect (*built 2026-10-05*: id `wheel`; you vs Max and Zoe or 2-player pass-and-play; 502 original puzzles) |
 
 **Dice**
 | Game | Notes |

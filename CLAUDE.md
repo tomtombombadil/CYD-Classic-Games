@@ -301,7 +301,30 @@ never typed (SPEC section 5).
   39 shots a fleet); the computer reads only what its side knows (hits,
   misses, sunk); sounds: your miss Place, hit Move, sunk Trill; theirs
   Turn / Move / "aww" (`match::Game::move_sound`). A wireless board knows
-  the other fleet's seed - the screen never shows it before the end). The match
+  the other fleet's seed - the screen never shows it before the end). Wheel
+  of CYD (id `wheel`, Word; Wheel of Fortune; you vs computer players Max
+  and Zoe, or 2-player pass-and-play (menu_two_player, no wireless); 3
+  rounds, round r starts with player r; wheel of 16 wedges 300-1000 + BUST
+  (round money lost) + SKIP; consonant pays value x count and keeps the
+  turn; vowel $250; solve = tap letters into the blanks in reading order
+  (only uncalled letters), Delete / Cancel / Solve; a call showing the last
+  letter solves it; a solve banks round money, at least $500; most banked
+  wins; ties = Draw in the two-player stats CSV (Side1 = you / Player 1);
+  the wheel fills the screen while it turns (2.6 s ease-out, 1.1 s hold)
+  and is decided by the core first (the save never waits on it); letters
+  reveal one tile at a time; puzzles `assets/wheel/phrases.txt` ->
+  `tools/make_phrases.py` (checks A-Z ' - & ., words <= 12, 4 rows of 12,
+  no repeats) -> `wheel_phrases.cpp`: 502 kid-safe originals in 11
+  categories, no brands - never avoid-listed words (Tom's names-review
+  words, e.g. Monkey / Raccoon / Beaver / Woodpecker, stay out); a played
+  bit per puzzle in the save (1024 max) so they don't repeat; computers
+  never read the answer: they see the board and called letters, solve with
+  a puzzle from the list that fits (so a guess can be wrong), at 30 / 38 /
+  45 % hidden (+-10 %), Hard also at 55 % when only one puzzle fits and
+  calls the letter most fitting puzzles have; Easy picks among the 8 most
+  common letters, Medium the most common; sounds: your letter found Place,
+  not found "aww", BUST "aww", a computer's find Turn, your solve Trill,
+  game Win / Lose). The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8

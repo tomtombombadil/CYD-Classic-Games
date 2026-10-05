@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Twenty-eight games and an RPG dice roller so far: **Sudoku** (from
+> under way. Twenty-nine games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sunk My CYD!**, **CYD-dle**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sunk My CYD!**, **CYD-dle**, **Wheel of CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sunk My CYD!, CYD-dle, Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sunk My CYD!, CYD-dle, Wheel of CYD (and its wheel), Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -59,6 +59,8 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_mancala.png" width="240" alt="Mancala: seeds being sown round the board">
 <img src="docs/screenshots/small_morris.png" width="240" alt="Nine Men's Morris: a mill made, pick a man to take">
 <img src="docs/screenshots/small_sunk.png" width="240" alt="You Sunk My CYD!: firing at their waters, a Destroyer sunk">
+<img src="docs/screenshots/small_wheel.png" width="240" alt="Wheel of CYD: a called letter showing on the puzzle board">
+<img src="docs/screenshots/small_wheel_spin.png" width="240" alt="Wheel of CYD: the wheel turning">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -109,6 +111,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Video Poker | Card Games | Jacks or Better, full-pay table, bet 1 to 5 credits, Hint |
 | Texas Hold'em | Card Games | No-limit, you against three computer players: Easy / Medium / Hard |
 | CYD-dle | Word Games | Solo, guess the five-letter word: Easy / Normal / Hard |
+| Wheel of CYD | Word Games | Spin, call letters, solve the phrase; you against two computer players (Easy / Medium / Hard) or pass-and-play |
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 | Farkle | Dice Games | Push-your-luck dice to 10,000, vs computer (Easy / Medium / Hard) or pass-and-play |
 | RPG Dice | Dice Games | Every role-playing die, each shown as rolled; presets and history |
@@ -461,6 +464,20 @@ passed and waits for **Ready**, so nobody sees the other sea. The computer:
 Easy fires at random and tries round a hit, Medium fires on a spaced
 pattern and follows a line of hits, Hard works out where the ships left
 can still lie (about 59 / 44 / 39 shots to sink a fleet).
+
+## Wheel of CYD
+
+Solve the hidden phrase before Max and Zoe, the computer players (or play
+a friend: Pass and Play). Three rounds, a new puzzle each, its category
+under the board. On your turn: **Spin** - the wheel fills the screen and
+stops on a money wedge (pick a consonant; each one in the puzzle pays that
+much and you go again), **BUST** (this round's money is gone, and your
+turn) or **SKIP** (lose your turn); **Vowel** - buy one for $250; **Solve**
+- tap letters into the blanks (the gold tile is next), then Solve. Solving
+banks your round money (at least $500); the others lose theirs. Most money
+banked after three rounds wins. Called letters go grey on the keyboard. The
+502 puzzles in 11 categories were written for this project and are all
+kid-safe (`assets/wheel/phrases.txt`).
 
 ## Farkle
 

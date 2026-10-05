@@ -32,7 +32,13 @@
 #include "games/farkle/farkle_core.h"
 #include "games/mancala/mancala_core.h"
 #include "games/sunk/sunk_core.h"
+#include "games/wheel/wheel_core.h"
 #include "games/morris/morris_core.h"
+namespace wheel_preview {
+wheel::Game* game();
+void key(char c);
+void action(int k);
+} // namespace wheel_preview
 namespace sunk_preview {
 sunk::Board* board();
 void ready();
@@ -1341,6 +1347,57 @@ int main(int argc, char** argv)
         }
         ui::app_go_home_now();
         files["sunk"] = mid_saves["sunk"];
+    }
+
+    {   // Wheel of CYD: the start, the wheel turning, picking a consonant, letters showing, solving, a round won
+        ui::app_open_game_now(games::find("wheel"));
+        run(30);
+        shot(out + "_light_27_wheel_new.ppm");
+        wheel::Game* g = wheel_preview::game();
+        bool spun_shot = false, pick_shot = false, reveal_shot = false;
+        for (int tries = 0; g && tries < 40 && !reveal_shot; ++tries) {
+            if (g->turn != 0 || g->phase == wheel::Phase::RoundOver) { run(1000); continue; }
+            if (g->phase == wheel::Phase::Choose && g->can_spin()) {
+                wheel_preview::action(0);                            // Spin
+                run(1100);
+                if (!spun_shot) { shot(out + "_light_27_wheel_spin.ppm"); spun_shot = true; }
+                run(2700);
+            }
+            if (g->turn == 0 && g->phase == wheel::Phase::Consonant) {
+                if (!pick_shot) { shot(out + "_light_27_wheel_pick.ppm"); pick_shot = true; }
+                char c = 0;                                         // a consonant that is there
+                for (const char* t = g->text(); *t && !c; ++t)
+                    if (wheel::is_letter(*t) && !wheel::is_vowel(*t) && !g->called_letter(*t)) c = *t;
+                wheel_preview::key(c);
+                run(g->count(c) > 1 ? 400 : 120);
+                shot(out + "_light_27_wheel_reveal.ppm");
+                reveal_shot = true;
+                run(1500);
+            }
+        }
+        // Solving: a couple of letters typed in
+        if (g && g->turn == 0 && g->phase == wheel::Phase::Choose) {
+            wheel_preview::action(2);
+            char want[64];
+            int n = 0;
+            for (const char* t = g->text(); *t; ++t) if (wheel::is_letter(*t) && !g->called_letter(*t)) want[n++] = *t;
+            for (int k = 0; k < n && k < 3; ++k) wheel_preview::key(want[k]);
+            shot(out + "_light_27_wheel_solve.ppm");
+            for (int k = 3; k < n; ++k) wheel_preview::key(want[k]);
+            wheel_preview::action(2);                              // Solve
+            run(300);
+            shot(out + "_light_27_wheel_solved.ppm");
+            wheel_preview::action(2);                              // Next Round
+            run(200);
+            for (int k = 0; k < 40 && g->turn != 0; ++k) run(1000);   // the computers play
+            shot(out + "_light_27_wheel_round2.ppm");
+        }
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("wheel"));
+        shot(out + "_dark_27_wheel.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
     }
 
     {   // Farkle: the start, a roll with scoring dice picked, a Farkle, the menu

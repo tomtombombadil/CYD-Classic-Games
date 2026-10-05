@@ -21,6 +21,7 @@
 #include "../../src/games/sliding/sliding_core.h"
 #include "../../src/games/spider/spider_core.h"
 #include "../../src/games/sunk/sunk_core.h"
+#include "../../src/games/wheel/wheel_core.h"
 #include "../../src/games/solitaire/solitaire_core.h"
 #include "../../src/games/solitaire/solitaire_solve.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
@@ -1845,6 +1846,101 @@ static void test_sunk()
     CHECK(s.can_play(best_move(s, 1, 0xFFFFFFFFu)));
 }
 
+static void test_wheel()
+{
+    using namespace wheel;
+    CHECK(kPhraseCount > 300 && kPhraseCount <= kMaxPhrases);
+    // Every puzzle fits the board, tiles inside and distinct
+    for (int i = 0; i < kPhraseCount; ++i) {
+        int8_t pos[kCols * kRows + 1];
+        const char* t = kPhrases[i].text;
+        const int rows = wrap(t, pos, int(sizeof pos));
+        CHECK(rows >= 1 && rows <= kRows);
+        bool used[kCols * kRows] = {};
+        for (int k = 0; t[k]; ++k) {
+            if (t[k] == ' ') { CHECK(pos[k] == -1); continue; }
+            CHECK(pos[k] >= 0 && pos[k] < kCols * kRows && !used[pos[k]]);
+            if (pos[k] >= 0 && pos[k] < kCols * kRows) used[pos[k]] = true;
+        }
+        CHECK(kPhrases[i].cat < kCategoryCount);
+    }
+    // Rules: a spin, a call, a vowel, a solve
+    Game g;
+    Rng r(42);
+    g.start(3, r);
+    CHECK(g.phase == Phase::Choose && g.turn == 0 && g.round == 0 && !g.can_buy());
+    int guard = 0;
+    while (g.phase == Phase::Choose && g.turn == 0 && ++guard < 50) {
+        const int w = g.spin(r);
+        CHECK(w >= 0 && w < kWedges);
+        if (g.phase == Phase::Consonant) {
+            const int v = g.value;
+            char c = 0;
+            for (const char* p = g.text(); *p && !c; ++p) if (is_letter(*p) && !is_vowel(*p) && !g.called_letter(*p)) c = *p;
+            const int32_t before = g.money[0];
+            const int n = g.call(c);
+            CHECK(n == g.count(c) && g.money[0] == before + n * v && g.called_letter(c));
+            CHECK(g.call(c) == -1);                       // not twice
+            break;
+        }
+    }
+    // Solve with the right letters
+    if (g.phase == Phase::Choose) {
+        char letters[64];
+        size_t n = 0;
+        for (const char* p = g.text(); *p; ++p) if (is_letter(*p) && !g.called_letter(*p)) letters[n++] = *p;
+        letters[n] = 0;
+        const int t = g.turn;
+        const int32_t m = g.money[t];
+        CHECK(g.solve(letters) && g.phase == Phase::RoundOver && g.round_winner == t);
+        CHECK(g.bank[t] == (m > kSolveMin ? m : kSolveMin));
+        g.next_round(r);
+        CHECK(g.round == 1 && g.turn == 1 % g.players && g.called == 0 && g.money[t] == 0);
+    }
+    // Three computers play whole games; the save; Hard beats Easy more often than not
+    int wins[3] = {0, 0, 0}, solved_wrong = 0;
+    for (int game = 0; game < 120; ++game) {
+        Game x;
+        Rng rr(uint32_t(game * 7919 + 1));
+        x.start(3, rr);
+        const int lv[3] = {game % 3, (game + 1) % 3, (game + 2) % 3};
+        int steps = 0;
+        while (!x.over() && ++steps < 5000) {
+            const uint32_t seed = rr.next();
+            if (x.phase == Phase::RoundOver) { x.next_round(rr); continue; }
+            const int l = lv[x.turn];
+            const Act a = decide(x, l, seed);
+            if (a == Act::Spin) {
+                CHECK(x.can_spin());
+                x.spin(rr);
+                if (x.phase == Phase::Consonant) CHECK(x.call(pick_consonant(x, l, seed)) >= 0);
+            } else if (a == Act::Buy) {
+                CHECK(x.can_buy());
+                CHECK(x.buy(pick_vowel(x, l, seed)) >= 0);
+            } else {
+                char guess[64];
+                guess_letters(x, seed, guess, sizeof guess);
+                if (!x.solve(guess)) ++solved_wrong;
+            }
+            for (int i = 0; i < 3; ++i) CHECK(x.money[i] >= 0);
+        }
+        CHECK(x.over());
+        const int w = x.leader();
+        if (w >= 0) ++wins[lv[w]];
+        if (game == 5) {
+            uint8_t buf[Game::kSaveBytes];
+            Game y;
+            CHECK(x.serialize(buf, sizeof buf) == sizeof buf && y.deserialize(buf, sizeof buf));
+            CHECK(y.bank[2] == x.bank[2] && y.phase == x.phase && memcmp(y.played, x.played, sizeof x.played) == 0);
+            buf[5] = 9;                                    // round 9
+            CHECK(!y.deserialize(buf, sizeof buf));
+        }
+    }
+    printf("wheel: %d puzzles; games won by Easy %d, Medium %d, Hard %d (wrong solves %d)\n", kPhraseCount,
+           wins[0], wins[1], wins[2], solved_wrong);
+    CHECK(wins[2] > wins[0]);
+}
+
 static void test_mancala()
 {
     using namespace mancala;
@@ -2044,6 +2140,7 @@ int main()
     test_farkle();
     test_mancala();
     test_sunk();
+    test_wheel();
     test_morris();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);

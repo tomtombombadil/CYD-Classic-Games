@@ -38,6 +38,7 @@ GAME(holdem, "Texas Hold'em", Cards, kSolo, "No-limit poker against three comput
 GAME(pyramid, "Pyramid", Cards, kSolo, "Pair up cards that add to 13 and take the pyramid apart; Kings go alone")
 GAME(golf, "Golf", Cards, kSolo, "Clear seven columns onto the waste, one rank up or down at a time")
 GAME(cyddle, "CYD-dle", Word, kSolo, "Guess the five-letter word in six tries; green, gold and grey hints")
+GAME(wheel, "Wheel of CYD", Word, kVsComputer | kPassAndPlay, "Spin the wheel, call letters and solve the phrase before Max and Zoe do")
 GAME(yahtcyd, "Yaht-CYD", Dice, kSolo, "Five dice, three rolls, thirteen boxes; chase the upper bonus and Yaht-CYDs")
 GAME(farkle, "Farkle", Dice, kVsComputer | kPassAndPlay, "Push your luck with six dice: bank your points or roll again, first to 10,000")
 GAME(rpgdice, "RPG Dice", Dice, kSolo, "Every role-playing die from coin to d100: build a roll, see each die, save presets like a fighter's attacks")
