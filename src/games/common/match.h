@@ -54,6 +54,9 @@ struct Game {
     // Optional: true while the board is still showing the last move (an
     // animation); the computer waits for it before thinking or moving
     bool (*busy)() = nullptr;
+    // Optional: plays the sound for a move instead of the usual Place /
+    // Turn (game not over); by_other = the computer's or the other board's
+    void (*move_sound)(bool by_other) = nullptr;
     uint32_t ai_stack = 8192;      // the computer's task stack (bytes)
     // Wireless: is `move` legal for the side to move? nullptr = this game
     // has no wireless play.

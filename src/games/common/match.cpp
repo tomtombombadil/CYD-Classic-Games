@@ -255,7 +255,8 @@ void after_move(bool by_other)
     const bool vs = S.mode == Mode::Computer || wl();     // one player at this board
     if (wl()) start_turn();
     if (r == -1) {
-        sound(by_other ? Sound::Turn : Sound::Place);
+        if (G.move_sound) G.move_sound(by_other);
+        else sound(by_other ? Sound::Turn : Sound::Place);
         if (computer_to_move()) think_after_ms = now_ms + kThinkPauseMs;
     } else if (!S.recorded) {
         S.recorded = 1;

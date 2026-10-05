@@ -20,6 +20,7 @@
 #include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
 #include "../../src/games/spider/spider_core.h"
+#include "../../src/games/sunk/sunk_core.h"
 #include "../../src/games/solitaire/solitaire_core.h"
 #include "../../src/games/solitaire/solitaire_solve.h"
 #include "../../src/games/tictactoe/tictactoe_core.h"
@@ -1756,6 +1757,94 @@ static void test_farkle()
 }
 
 // ---- Mancala ---------------------------------------------------------------------------------
+static void test_sunk()
+{
+    using namespace sunk;
+    // Fleets: in the sea, the right lengths, never touching, deterministic
+    uint32_t h = 2166136261u;
+    for (uint32_t s = 0; s < 3000; ++s) {
+        Fleet f, g;
+        make_fleet(s * 7919u, f);
+        make_fleet(s * 7919u, g);
+        CHECK(memcmp(f.at, g.at, kCells) == 0);
+        int cells = 0;
+        for (int c = 0; c < kCells; ++c) {
+            if (!f.at[c]) continue;
+            ++cells;
+            const int r = c / kN, col = c % kN;
+            for (int y = r - 1; y <= r + 1; ++y)
+                for (int x = col - 1; x <= col + 1; ++x)
+                    if (y >= 0 && y < kN && x >= 0 && x < kN && f.at[y * kN + x])
+                        CHECK(f.at[y * kN + x] == f.at[c]);     // only its own ship around it
+        }
+        CHECK(cells == kShipCells);
+        for (int i = 0; i < kShips; ++i)
+            for (int k = 0; k < kLen[i]; ++k) {
+                const Ship& sh = f.ship[i];
+                CHECK((sh.down ? sh.cell / kN + k : sh.cell % kN + k) < kN);
+                CHECK(f.at[sh.cell_at(k, kLen[i])] == i + 1);
+            }
+        if (s < 50) for (int c = 0; c < kCells; ++c) h = (h ^ f.at[c]) * 16777619u;
+    }
+    printf("sunk: fleet hash %08x\n", h);
+    CHECK(h == 0x7bbd7ef9u);       // make_fleet() is part of the wireless version: never change it
+    // Rules: fleets first, then shots; a cell once; around a sunk ship = clear
+    Board b;
+    CHECK(b.turn() == 0 && b.setup() && b.result() == -1);
+    CHECK(!b.can_play(kSeedMax + 1) && b.play(12345) && b.turn() == 1 && b.play(777) && !b.setup());
+    CHECK(b.turn() == 0 && !b.can_play(100) && b.can_play(0));
+    // Side 0 sinks side 1's Destroyer
+    const Ship d = b.fleet[1].ship[4];
+    for (int k = 0; k < 2; ++k) {
+        const int c = d.cell_at(k, 2);
+        CHECK(b.known(0, c) == kUnknown && b.play(uint32_t(c)));
+        CHECK(!b.can_play(uint32_t(c)) || b.turn() == 1);
+        // side 1 fires somewhere it hasn't
+        int m = 0;
+        while (!b.can_play(uint32_t(m))) ++m;
+        CHECK(b.play(uint32_t(m)));
+    }
+    CHECK(b.sunk(1, 4) && b.afloat(1) == 4 && b.known(0, d.cell) == kSunk);
+    const int end = d.cell_at(1, 2);
+    const int beyond = d.down ? end + kN : end + 1;
+    if (d.down ? end / kN + 1 < kN : end % kN + 1 < kN) CHECK(b.known(0, beyond) == kClear && !b.can_play(uint32_t(beyond)));
+    // Computer levels: shots to sink a fleet (fewer is better), and the save
+    long total[3] = {0, 0, 0};
+    for (int lv = 0; lv < 3; ++lv)
+        for (int g = 0; g < 40; ++g) {
+            Board x;
+            x.play(uint32_t(g * 1000003u) & kSeedMax);
+            x.play(uint32_t(g * 7777u + 5) & kSeedMax);
+            // side 0 = the level under test; side 1 fires at its first open cell (slow, never wins first)
+            int guard = 0;
+            while (x.result() == -1 && ++guard < 400) {
+                uint32_t m;
+                if (x.turn() == 0) m = best_move(x, lv, uint32_t(g * 131 + guard));
+                else { m = 0; while (!x.can_play(m)) ++m; }
+                CHECK(x.can_play(m));
+                x.play(m);
+                // nobody but the computer's own knowledge: it never fires at a known cell
+            }
+            CHECK(x.result() == 0 || x.shots(0) >= 60);
+            total[lv] += x.shots(0);
+            if (g == 3 && lv == 2) {
+                uint8_t buf[Board::kSaveBytes];
+                Board y;
+                CHECK(x.serialize(buf, sizeof buf) == sizeof buf && y.deserialize(buf, sizeof buf));
+                CHECK(y.moves == x.moves && memcmp(y.shot, x.shot, sizeof x.shot) == 0 && y.last[0] == x.last[0]
+                      && memcmp(y.fleet[1].at, x.fleet[1].at, kCells) == 0 && y.result() == x.result());
+                buf[20] ^= 1;                                       // a shot that doesn't fit the moves
+                CHECK(!y.deserialize(buf, sizeof buf));
+            }
+        }
+    printf("sunk: average shots to sink a fleet - Easy %.1f, Medium %.1f, Hard %.1f\n",
+           total[0] / 40.0, total[1] / 40.0, total[2] / 40.0);
+    CHECK(total[2] < total[1] && total[1] < total[0]);
+    // The computer's fleet seed is in range
+    Board s;
+    CHECK(s.can_play(best_move(s, 1, 0xFFFFFFFFu)));
+}
+
 static void test_mancala()
 {
     using namespace mancala;
@@ -1954,6 +2043,7 @@ int main()
     test_holdem();
     test_farkle();
     test_mancala();
+    test_sunk();
     test_morris();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);

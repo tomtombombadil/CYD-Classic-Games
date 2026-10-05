@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Twenty-seven games and an RPG dice roller so far: **Sudoku** (from
+> under way. Twenty-eight games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **CYD-dle**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sunk My CYD!**, **CYD-dle**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, CYD-dle, Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sunk My CYD!, CYD-dle, Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -58,6 +58,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_farkle.png" width="240" alt="Farkle: three dice set aside, Bank 1000">
 <img src="docs/screenshots/small_mancala.png" width="240" alt="Mancala: seeds being sown round the board">
 <img src="docs/screenshots/small_morris.png" width="240" alt="Nine Men's Morris: a mill made, pick a man to take">
+<img src="docs/screenshots/small_sunk.png" width="240" alt="You Sunk My CYD!: firing at their waters, a Destroyer sunk">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
 <img src="docs/screenshots/small_sliding.png" width="240" alt="Sliding Tiles 4x4">
 <img src="docs/screenshots/small_lightswitch.png" width="240" alt="Light Switch">
@@ -94,6 +95,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Mancala | Strategy Games | Kalah, six pits a side, sown seed by seed; vs computer or pass-and-play |
 | Nine Men's Morris | Strategy Games | Place, move and fly; mills take men; vs computer or pass-and-play |
+| You Sunk My CYD! | Strategy Games | Hide a fleet, fire at theirs; vs computer (Easy / Medium / Hard) or pass-and-play |
 | Checkers | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Reversi | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | FourConnect | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -112,7 +114,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | RPG Dice | Dice Games | Every role-playing die, each shown as rolled; presets and history |
 
 The board games (Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe,
-Mancala, Nine Men's Morris) also play **wireless, CYD to CYD**: two boards
+Mancala, Nine Men's Morris, You Sunk My CYD!) also play **wireless, CYD to CYD**: two boards
 in the same room or house, no router or setup (see
 [Wireless play](#wireless-play-cyd-to-cyd)). The plan is in
 [docs/SPEC.md](docs/SPEC.md).
@@ -190,8 +192,8 @@ The **gear** (on the picker, or Settings in a game's menu) opens Settings:
 
 ## Two-player games
 
-Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala and Nine
-Men's Morris share one menu: **New Game vs Computer** (Easy, Medium, Hard),
+Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine
+Men's Morris and You Sunk My CYD! share one menu: **New Game vs Computer** (Easy, Medium, Hard),
 **Pass and Play** (two people share one board and take turns), and
 **Wireless** (two boards: Wireless play, below). Farkle has the first two. Against the computer
 you and the computer take turns going first, game by game. The computer
@@ -444,6 +446,21 @@ empty point, then move them along the lines to a neighbouring empty point
 (tap your man - dots show where it can go - then the point). Three in a
 line is a mill: the men you may take get a red ring, tap one. A side down
 to three men may fly to any empty point. Two men left, or no move, loses.
+
+## You Sunk My CYD!
+
+The classic ships-and-shots game. Each side hides a fleet in a 10 x 10
+sea: Carrier (5), Battleship (4), Cruiser (3), Submarine (3) and Destroyer
+(2), across or down, never touching. Your fleet is placed for you: tap
+**Shuffle** until you like it, then **Ready**. Then take turns firing:
+**Their Waters** is the sea you fire at (tap a cell; white peg = miss, red
+= hit, a sunk ship shows), **My Fleet** shows your ships and their shots.
+The cells round a sunk ship must be water, so they get a dot and can't be
+picked. Sink the whole fleet to win. In pass-and-play the board asks to be
+passed and waits for **Ready**, so nobody sees the other sea. The computer:
+Easy fires at random and tries round a hit, Medium fires on a spaced
+pattern and follows a line of hits, Hard works out where the ships left
+can still lie (about 59 / 44 / 39 shots to sink a fleet).
 
 ## Farkle
 

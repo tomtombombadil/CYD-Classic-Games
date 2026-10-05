@@ -31,7 +31,15 @@
 #include "games/holdem/holdem_core.h"
 #include "games/farkle/farkle_core.h"
 #include "games/mancala/mancala_core.h"
+#include "games/sunk/sunk_core.h"
 #include "games/morris/morris_core.h"
+namespace sunk_preview {
+sunk::Board* board();
+void ready();
+void page(int p);
+void cover_ready();
+void pass();
+} // namespace sunk_preview
 namespace morris_preview {
 morris::Game* game();
 void tap_point(int p);
@@ -1276,6 +1284,65 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
     }
 
+    {   // You Sunk My CYD!: shuffling a fleet, their waters part-way, my fleet, dark, pass-and-play's cover
+        ui::app_open_game_now(games::find("sunk"));
+        run(30);
+        shot(out + "_light_63_sunk_new.ppm");
+        sunk::Board* b = sunk_preview::board();
+        if (b) {
+            sunk_preview::ready();
+            run(1500);                                    // the computer sets up its fleet
+            // A few misses, the Destroyer sunk, a hit on the Carrier
+            const sunk::Fleet& f = b->fleet[1];
+            std::vector<int> aim;
+            for (int c = 0; c < sunk::kCells && aim.size() < 3; c += 7)
+                if (!f.at[c] && b->can_play(uint32_t(c))) aim.push_back(c);
+            const sunk::Ship& d = f.ship[4];
+            aim.push_back(d.cell_at(0, 2));
+            aim.push_back(d.cell_at(1, 2));
+            aim.push_back(f.ship[0].cell_at(2, 5));
+            for (int c : aim) {
+                if (!match::human_may_move() || !b->can_play(uint32_t(c))) run(1500);
+                if (match::human_may_move() && b->can_play(uint32_t(c))) match::human_move(c);
+                run(1500);
+            }
+            shot(out + "_light_63_sunk.ppm");
+            sunk_preview::page(1);
+            shot(out + "_light_63_sunk_fleet.ppm");
+            sunk_preview::page(0);
+            ui::app_save_current();
+            mid_saves["sunk"] = files["sunk"];
+        }
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        ui::app_open_game_now(games::find("sunk"));
+        shot(out + "_dark_63_sunk.ppm");
+        match::state().mode = twoplayer::Mode::PassAndPlay;
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        ui::app_open_game_now(games::find("sunk"));
+        shot(out + "_light_63_sunk_pass.ppm");
+        if (sunk::Board* p = sunk_preview::board()) {     // Blue fires: the result, then Pass to Gold
+            sunk_preview::cover_ready();
+            for (int c = 0; c < sunk::kCells; ++c)
+                if (p->can_play(uint32_t(c)) && p->fleet[1].at[c]) { match::human_move(c); break; }
+            shot(out + "_light_63_sunk_passed.ppm");
+            // ... and on to the end: Blue sinks the rest
+            for (int guard = 0; guard < 400 && p->result() == -1; ++guard) {
+                int c = 0;
+                if (p->turn() == 0) { while (c < sunk::kCells && !(p->can_play(uint32_t(c)) && p->fleet[1].at[c])) ++c; }
+                else { while (c < sunk::kCells && !p->can_play(uint32_t(c))) ++c; }
+                sunk_preview::cover_ready();
+                match::human_move(c);
+                sunk_preview::pass();
+            }
+            run(100);
+            shot(out + "_light_63_sunk_won.ppm");
+        }
+        ui::app_go_home_now();
+        files["sunk"] = mid_saves["sunk"];
+    }
+
     {   // Farkle: the start, a roll with scoring dice picked, a Farkle, the menu
         ui::app_open_game_now(games::find("farkle"));
         shot(out + "_light_58_farkle_new.ppm");
@@ -1935,7 +2002,7 @@ int main(int argc, char** argv)
 
     {   // Left-handed: the games whose layout follows the stylus hand
         ui::settings().left_handed = true;
-        for (const char* id : {"solitaire", "golf", "pyramid", "spider", "freecell", "mancala", "nonogram", "yahtcyd"}) {
+        for (const char* id : {"solitaire", "golf", "pyramid", "spider", "freecell", "mancala", "nonogram", "yahtcyd", "sunk"}) {
             if (mid_saves.count(id)) files[id] = mid_saves[id];
             ui::app_open_game_now(games::find(id));
             run(30);

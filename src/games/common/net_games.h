@@ -32,6 +32,7 @@ constexpr Entry kGames[] = {
     {"chess",       5, 1},   // move = chess::move_key (from, to, promotion)
     {"mancala",     6, 1},   // move = pit 0-5 of the side to move
     {"morris",      7, 1},   // move = morris::Move::code() (from, to, man taken)
+    {"sunk",        8, 1},   // ply 0 / 1 = each fleet's seed (sunk::make_fleet), then cell 0-99
 };
 constexpr int kCount = int(sizeof kGames / sizeof kGames[0]);
 

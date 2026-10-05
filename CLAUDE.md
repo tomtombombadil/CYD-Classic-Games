@@ -284,7 +284,24 @@ never typed (SPEC section 5).
   new man again to take the move back); men in mills safe unless all are;
   2 men or blocked = loss; 100 quiet plies after placing = draw; computer
   Easy 1 ply, Medium 3, Hard deepening within 150k nodes, removals
-  searched first, move lists on the stack - ai_stack 24 KB). The match
+  searched first, move lists on the stack - ai_stack 24 KB). You Sunk My
+  CYD! (id `sunk`, Strategy; Battleship - Tom's name, "Sunk"; 10x10, Carrier
+  5, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2, never touching, so
+  the cells round a sunk ship are known water and can't be picked; a hit
+  doesn't fire again; fleets are placed by Shuffle / Ready, no hand
+  placement; ply 0/1 = each side's fleet SEED (`make_fleet()`, part of the
+  wireless version - host test pins its hash), then shots = cell 0-99,
+  side 0 first; Ready may be tapped before that side's turn to set up and
+  goes when it comes; one sea on screen, Their Waters | My Fleet keys in
+  the Play Again row; row numbers on the side away from the hand;
+  pass-and-play: a cover "Pass the board to Gold" + Ready after each
+  fleet, and after a shot its result then "Pass to Gold"; at the end every
+  ship shows and a tap on the sea flips the pages; computer Easy random +
+  round a hit, Medium parity + lines, Hard placement counting (~59 / 44 /
+  39 shots a fleet); the computer reads only what its side knows (hits,
+  misses, sunk); sounds: your miss Place, hit Move, sunk Trill; theirs
+  Turn / Move / "aww" (`match::Game::move_sound`). A wireless board knows
+  the other fleet's seed - the screen never shows it before the end). The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
@@ -611,7 +628,7 @@ never typed (SPEC section 5).
   away, crossed requests, New Game, every game random) clean and 30 % loss.
   Run it after any wireless change.
 - Games: FourConnect, Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala,
-  Morris. Farkle not yet. Internet play out of scope.
+  Morris, You Sunk My CYD! (key 8). Farkle not yet. Internet play out of scope.
 - Battery (Tom, 2026-10-04, v0.22.0): the radio is never stopped and
   started to save power (esp_wifi init + start takes tens to hundreds of ms
   with RF calibration and would cost more than it saves); instead an idle

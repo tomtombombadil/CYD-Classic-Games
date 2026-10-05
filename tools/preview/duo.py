@@ -681,7 +681,8 @@ def in_step(a, b, gid):
 
 
 GAMES = [("fourconnect", "FourConnect"), ("tictactoe", "Tic-Tac-Toe"), ("reversi", "Reversi"),
-         ("checkers", "Checkers"), ("chess", "Chess"), ("mancala", "Mancala"), ("morris", "Nine Men's Morris")]
+         ("checkers", "Checkers"), ("chess", "Chess"), ("mancala", "Mancala"), ("morris", "Nine Men's Morris"),
+         ("sunk", "You Sunk My CYD!")]
 
 
 def scenario_every_game(A, B):
@@ -692,7 +693,7 @@ def scenario_every_game(A, B):
             continue
         plies = 0
         idle = 0
-        while plies < 120 and idle < 60:
+        while plies < (260 if gid == "sunk" else 120) and idle < 60:
             moved = False
             for b in (first, second):
                 r = b.cmd("anymove")

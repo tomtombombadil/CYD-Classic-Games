@@ -210,6 +210,15 @@ write("morris", [
  WL,
 ], two_player=True)
 
+write("sunk", [
+ ("The Idea", "Each side hides a fleet in a 10 x 10 sea: Carrier 5 cells, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2. Ships lie across or down and never touch.\nTake turns firing one shot into the other sea. Sink every ship to win."),
+ ("Your Fleet", "Your fleet is placed for you: Shuffle until you like it, then Ready.\nWhen both fleets are set, the side that sets up first fires first.\nIn pass-and-play the board says who to pass it to and waits for Ready, so nobody sees the other sea."),
+ ("Firing", "Their Waters is the sea you fire at: tap a cell. A white peg is a miss, red a hit; a sunk ship shows. The cells round a sunk ship must be water, so they get a small dot and can't be picked.\nMy Fleet shows your ships and their shots. The last shot has a gold frame.\nAt the end, tap the sea to see both."),
+ ("The Computer", "Easy fires at random, and after a hit tries the cells around it.\nMedium fires on a spaced pattern and follows a line of hits.\nHard works out every way the ships left could lie and fires where most of them cross."),
+ TP,
+ WL,
+], two_player=True)
+
 write("vpoker", [
  ("The Idea", "The classic Jacks or Better machine. Bet 1 to 5 credits and get five cards. Tap the cards you want to keep: they say HELD. Then Draw replaces the rest, once.\nYour final hand pays by the table at the top, times your bet. The hand you hold lights up."),
  ("Paying Hands", "• Jacks or Better: a pair of Jacks, Queens, Kings or Aces\n• Two Pair, Three of a Kind\n• Straight: five in a row (A-2-3-4-5 and 10-J-Q-K-A count)\n• Flush: five of one suit\n• Full House, Four of a Kind, Straight Flush\n• Royal Flush: 10 to Ace of one suit, 4000 at a 5 credit bet"),

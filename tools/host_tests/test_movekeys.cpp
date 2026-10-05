@@ -22,6 +22,7 @@
 #include "games/mancala/mancala_core.h"
 #include "games/morris/morris_core.h"
 #include "games/reversi/reversi_core.h"
+#include "games/sunk/sunk_core.h"
 #include "games/tictactoe/tictactoe_core.h"
 #include "net/names.h"
 
@@ -172,6 +173,30 @@ uint32_t morris_hash()
     });
 }
 
+uint32_t sunk_hash()
+{
+    return play_games([](Rng& r, Hash& h) {
+        auto* b = new sunk::Board();
+        for (int s = 0; s < 2; ++s) {
+            const uint32_t seed = r.next() & sunk::kSeedMax;
+            h.add(seed);
+            b->play(seed);
+        }
+        // The fleets the seeds make are part of what the moves mean
+        for (int s = 0; s < 2; ++s)
+            for (int c = 0; c < sunk::kCells; ++c) h.add(b->fleet[s].at[c]);
+        while (b->result() == -1) {
+            std::vector<uint32_t> keys;
+            for (uint32_t c = 0; c < uint32_t(sunk::kCells); ++c) if (b->can_play(c)) keys.push_back(c);
+            const uint32_t key = pick(keys, r);
+            h.add(key);
+            b->play(key);
+        }
+        h.add(uint32_t(b->result()));
+        delete b;
+    });
+}
+
 uint32_t hash_for(const char* id)
 {
     if (!strcmp(id, "fourconnect")) return fourconnect_hash();
@@ -181,6 +206,7 @@ uint32_t hash_for(const char* id)
     if (!strcmp(id, "chess"))       return chess_hash();
     if (!strcmp(id, "mancala"))     return mancala_hash();
     if (!strcmp(id, "morris"))      return morris_hash();
+    if (!strcmp(id, "sunk"))        return sunk_hash();
     return 0;
 }
 
@@ -222,7 +248,7 @@ int main()
     // wplay puts a one-player game aside in a 1 KB stack buffer (kStashMax)
     const size_t biggest[] = {fourconnect::Board::kSaveBytes, tictactoe::Board::kSaveBytes, reversi::Board::kSaveBytes,
                               checkers::Game::kSaveBytes, chess::Game::kSaveBytes, mancala::Board::kSaveBytes,
-                              morris::Game::kSaveBytes};
+                              morris::Game::kSaveBytes, sunk::Board::kSaveBytes};
     for (size_t b : biggest) check(b + 8 < 1024, "a wireless game's save fits wplay's 1 KB stash buffer");
     // net_moves.txt: "<id> <key> <version> <hash>" per line, '#' comments
     std::vector<std::string> lines;
