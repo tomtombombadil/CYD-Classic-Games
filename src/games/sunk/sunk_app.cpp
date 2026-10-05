@@ -4,8 +4,10 @@
 //
 // One sea on screen at a time, as large as fits: Their Waters (where you
 // fire; tap a cell) or My Fleet (your ships and their shots), switched with
-// the two keys at the bottom. The setup: Shuffle until you like your fleet,
-// then Ready (no dragging ships about on a resistive screen).
+// the two keys at the bottom. The setup (Options -> Ship Placement, Tom,
+// 2026-10-05): Manual (the default) - largest ship first, tap the square
+// where one end goes, then a lit square in the direction it should point;
+// Undo takes one back - or Random: Shuffle until you like it. Then Ready.
 //
 // Pass-and-play hides each player's sea from the other: after a move the
 // board says "Pass to Gold" and waits for Ready.
@@ -32,7 +34,7 @@ const twoplayer::Sides kSides = {"Blue", "Gold"};
 Board*    B = nullptr;
 lv_obj_t* sea_obj = nullptr;
 lv_obj_t* cover_l = nullptr;
-lv_obj_t* key_a = nullptr;      // left half: Their Waters / Shuffle
+lv_obj_t* key_a = nullptr;      // left half: Their Waters / Shuffle / Undo
 lv_obj_t* key_b = nullptr;      // right half: My Fleet / Ready
 lv_obj_t* key_c = nullptr;      // full width: Ready (pass-and-play) / Pass to ...
 
@@ -43,9 +45,12 @@ struct View {
     bool     cover = false;         // pass-and-play: "Pass the board to ..." until Ready
     bool     result = false;        // pass-and-play: a shot's result is up, then Pass
     bool     ready_pending = false; // Ready tapped before this side's turn to set up
-    uint32_t seed = 0;              // the fleet being shuffled
-    Fleet    preview;
+    uint32_t seed = 0;              // Random: the fleet being shuffled
+    Fleet    preview;               // the fleet being placed (not played yet)
+    int      n = 0;                 // Manual: ships placed so far
+    int      anchor = -1;           // Manual: the square picked for the next ship's end
 } V;
+bool manual = true;                 // Options -> Ship Placement (saved in /games/sunk_opt.bin)
 
 int cell = 20, lab = 12;            // cell size, label strip (px)
 bool numbers_left = true;           // row numbers away from the stylus hand
@@ -53,14 +58,91 @@ bool numbers_left = true;           // row numbers away from the stylus hand
 bool pnp()     { return match::state().mode == twoplayer::Mode::PassAndPlay; }
 int  viewer()  { return pnp() ? V.viewer : match::my_side(); }
 bool over()    { return B->result() != -1; }
-// The viewer still sets up a fleet (Shuffle / Ready)
-bool shuffling() { return B->setup() && B->moves <= viewer() && !over(); }
+// The viewer still sets up a fleet (Manual or Random, then Ready)
+bool placing() { return B->setup() && viewer() >= 0 && B->placed(viewer()) < kShips && !over(); }
+bool fleet_done() { return manual ? V.n == kShips : true; }
+
+// Ships this side has already sent (a fleet cut short, e.g. by a restart)
+int sent() { return B && B->setup() && viewer() >= 0 ? B->placed(viewer()) : 0; }
+
+// The preview starts with the ships already sent
+void base_fleet(Fleet& f)
+{
+    f = Fleet{};
+    for (int i = 0; i < sent(); ++i) place_ship(f, i, ship_key(B->fleet[viewer()].ship[i]));
+}
 
 void new_seed()
 {
     const uint32_t r = shell().random_seed ? shell().random_seed() : lv_tick_get();
     V.seed = (r ^ (V.seed * 2654435761u)) & kSeedMax;
-    make_fleet(V.seed, V.preview);
+    if (!sent()) { random_fleet(V.seed, V.preview); return; }
+    base_fleet(V.preview);
+    uint32_t seed = V.seed;
+    for (int i = sent(); i < kShips; ++i) {
+        uint32_t places[2 * kCells];
+        const int n = ship_places(V.preview, i, places);
+        seed = seed * 1103515245u + 12345u;
+        if (n) place_ship(V.preview, i, places[(seed >> 8) % uint32_t(n)]);
+    }
+}
+
+// A fresh fleet to place: empty (Manual) or shuffled (Random)
+void start_placing()
+{
+    V.anchor = -1;
+    V.ready_pending = false;
+    if (manual) { base_fleet(V.preview); V.n = sent(); }
+    else { new_seed(); V.n = kShips; }
+}
+
+// Manual: the ship placed from the anchor toward direction d (0 up, 1 right,
+// 2 down, 3 left); 0xFFFF when it doesn't fit there
+uint32_t aimed(int anchor, int d)
+{
+    const int len = kLen[V.n], r = anchor / kN, c = anchor % kN;
+    int top = anchor;
+    if (d == 0) top = (r - len + 1) * kN + c;
+    if (d == 3) top = r * kN + c - len + 1;
+    if ((d == 0 && r - len + 1 < 0) || (d == 3 && c - len + 1 < 0)) return 0xFFFF;
+    const uint32_t key = ship_key(top, d == 0 || d == 2);
+    return ship_fits(V.preview, V.n, key) ? key : 0xFFFF;
+}
+
+// Manual: which way (0-3) a tap on cell `t` aims the ship from the anchor, -1 none
+int aim_of(int t)
+{
+    if (V.anchor < 0 || t == V.anchor) return -1;
+    const int len = kLen[V.n], ar = V.anchor / kN, ac = V.anchor % kN, r = t / kN, c = t % kN;
+    int d = -1;
+    if (c == ac && r < ar && ar - r < len) d = 0;
+    else if (r == ar && c > ac && c - ac < len) d = 1;
+    else if (c == ac && r > ar && r - ar < len) d = 2;
+    else if (r == ar && c < ac && ac - c < len) d = 3;
+    return d >= 0 && aimed(V.anchor, d) != 0xFFFF ? d : -1;
+}
+
+bool can_anchor(int t)
+{
+    if (V.preview.at[t]) return false;
+    for (int d = 0; d < 4; ++d) if (aimed(t, d) != 0xFFFF) return true;
+    return false;
+}
+
+// Options file: "SKO1" + flags (bit 0 = Random placement)
+void load_options()
+{
+    uint8_t b[5];
+    const Shell& H = shell();
+    manual = true;
+    if (H.load_game && H.load_game("sunk_opt", b, sizeof b) == sizeof b && memcmp(b, "SKO1", 4) == 0)
+        manual = !(b[4] & 1);
+}
+
+void save_options()
+{
+    uint8_t b[5] = {'S', 'K', 'O', '1', uint8_t(manual ? 0 : 1)};
+    if (shell().save_game) shell().save_game("sunk_opt", b, sizeof b);
 }
 
 void coord(int c, char* buf, size_t cap) { snprintf(buf, cap, "%c%u", 'A' + c % kN, unsigned(c) / kN % kN + 1); }
@@ -76,12 +158,13 @@ int moves()  { return B->moves; }
 void play(int m)
 {
     const bool shot = !B->setup();
+    const int mover = B->turn();
     if (!B->play(uint32_t(m))) return;
     if (pnp() && !over()) {
         if (shot) V.result = true;              // see where it landed, then pass
-        else V.cover = true;                    // the fleet is set: pass at once
+        else if (B->turn() != mover) V.cover = true;   // the fleet is set: pass at once
     }
-    if (B->moves == 2) V.page = 0;              // both fleets set: fire away
+    if (B->moves == kSetupPlies) V.page = 0;    // both fleets set: fire away
     update_keys();
     redraw();
 }
@@ -92,9 +175,8 @@ void reset()
     V.cover = pnp();
     V.viewer = 0;
     V.result = false;
-    V.ready_pending = false;
     V.page = 0;
-    new_seed();
+    start_placing();
     update_keys();
 }
 
@@ -105,8 +187,8 @@ struct LastShot { int side = -1, cell = -1, ship = -1; bool hit = false, sunk = 
 LastShot last_shot()
 {
     LastShot s;
-    if (B->moves <= 2) return s;
-    s.side = (B->moves - 1) & 1;
+    if (B->moves <= kSetupPlies) return s;
+    s.side = (B->moves - 1 - kSetupPlies) & 1;
     s.cell = B->last[s.side];
     if (s.cell < 0) return LastShot{};
     s.ship = B->fleet[s.side ^ 1].at[s.cell] - 1;
@@ -118,7 +200,11 @@ LastShot last_shot()
 void move_sound(bool by_other)
 {
     const LastShot s = last_shot();
-    if (B->moves <= 2 || s.side < 0) { sound(by_other ? Sound::Turn : Sound::Place); return; }
+    if (B->moves <= kSetupPlies || s.side < 0) {
+        // A fleet: one sound when its last ship is in
+        if (B->moves % kShips == 0) sound(by_other ? Sound::Turn : Sound::Place);
+        return;
+    }
     if (!by_other) sound(s.sunk ? Sound::Trill : s.hit ? Sound::Move : Sound::Place);
     else           sound(s.sunk ? Sound::Error : s.hit ? Sound::Move : Sound::Turn);
 }
@@ -130,8 +216,12 @@ void note(char* buf, size_t cap)
         snprintf(buf, cap, "Pass the board to %s", B->turn() == 0 ? kSides.side1 : kSides.side2);
         return;
     }
-    if (shuffling()) {
-        snprintf(buf, cap, V.ready_pending ? "Your fleet is ready" : "Shuffle, then tap Ready");
+    if (placing()) {
+        if (V.ready_pending) snprintf(buf, cap, "Your fleet is ready");
+        else if (!manual) snprintf(buf, cap, "Shuffle, then tap Ready");
+        else if (V.n == kShips) snprintf(buf, cap, "All placed: tap Ready");
+        else if (V.anchor >= 0) snprintf(buf, cap, "Tap a lit square to aim it");
+        else snprintf(buf, cap, "%s (%d): tap one end", ship_name(V.n), kLen[V.n]);
         return;
     }
     const LastShot s = last_shot();
@@ -164,12 +254,16 @@ int list(int* out, int cap)
 {
     int n = 0;
     if (B->setup()) {
-        for (uint32_t k = 1; k <= 8 && n < cap; ++k) out[n++] = int((k * 2654435761u) & kSeedMax);
+        uint32_t places[2 * kCells];
+        const int k = ship_places(B->fleet[B->turn()], B->placed(B->turn()), places);
+        for (int i = 0; i < k && n < cap; ++i) out[n++] = int(places[i]);
         return n;
     }
     for (int c = 0; c < kCells && n < cap; ++c) if (B->can_play(uint32_t(c))) out[n++] = c;
     return n;
 }
+
+void options_open();
 
 match::Game make_game()
 {
@@ -180,11 +274,12 @@ match::Game make_game()
     g.ai_stack = 6 * 1024;
     g.legal = [](int m) { return B->can_play(uint32_t(m)); };
     g.list = list;
+    g.options = options_open;
     return g;
 }
 
 // ---- Keys ---------------------------------------------------------------------------------------
-enum Key : intptr_t { kWaters = 1, kFleet, kShuffle, kReady, kCoverReady, kPass };
+enum Key : intptr_t { kWaters = 1, kFleet, kShuffle, kReady, kCoverReady, kPass, kUndo };
 
 void set_key(lv_obj_t* k, bool show, const char* text, bool on)
 {
@@ -219,11 +314,15 @@ void update_keys()
         set_key(key_a, false, "", false);
         set_key(key_b, false, "", false);
         set_key(key_c, true, t, true);
-    } else if (shuffling()) {
-        set_key(key_a, true, "Shuffle", false);
-        set_key(key_b, true, V.ready_pending ? "Waiting..." : "Ready", !V.ready_pending);
+    } else if (placing()) {
+        set_key(key_a, true, manual ? "Undo" : "Shuffle", false);
+        set_key(key_b, true, V.ready_pending ? "Waiting..." : "Ready", !V.ready_pending && fleet_done());
+        set_dim(key_a, V.ready_pending || (manual && V.n == sent() && V.anchor < 0));
+        set_dim(key_b, !V.ready_pending && !fleet_done());
         set_key(key_c, false, "", false);
     } else {
+        set_dim(key_a, false);
+        set_dim(key_b, false);
         set_key(key_a, true, "Their Waters", V.page == 0);
         set_key(key_b, true, "My Fleet", V.page == 1);
         set_key(key_c, false, "", false);
@@ -237,14 +336,23 @@ void changed()
     match::refresh();
 }
 
+// Ready: the fleet's ships go in as moves, Carrier first. Before this
+// side's turn to set up, they wait and go when it comes (tick()).
+bool send_fleet()
+{
+    const int me = viewer();
+    while (B->setup() && B->placed(me) < kShips && B->turn() == me && match::human_may_move()) {
+        const uint32_t key = ship_key(V.preview.ship[B->placed(me)]);
+        if (!B->can_play(key)) break;
+        match::human_move(int(key));
+    }
+    return B->placed(me) == kShips;
+}
+
 void ready()
 {
-    if (match::human_may_move() && B->setup() && B->turn() == viewer()) {
-        V.ready_pending = false;
-        match::human_move(int(V.seed));
-    } else {
-        V.ready_pending = true;                      // goes when this side's turn comes
-    }
+    if (!fleet_done()) return;
+    V.ready_pending = !send_fleet();
     changed();
 }
 
@@ -255,12 +363,22 @@ void do_key(Key k)
         case kWaters:  V.page = 0; break;
         case kFleet:   V.page = 1; break;
         case kShuffle: if (!V.ready_pending) new_seed(); break;
+        case kUndo:
+            if (V.ready_pending) break;
+            if (V.anchor >= 0) V.anchor = -1;
+            else if (V.n > sent()) {
+                --V.n;
+                Fleet f;                                 // rebuild without the last ship
+                for (int i = 0; i < V.n; ++i) place_ship(f, i, ship_key(V.preview.ship[i]));
+                V.preview = f;
+            }
+            break;
         case kReady:   if (!V.ready_pending) { ready(); return; } break;
         case kCoverReady:
             V.cover = false;
             V.viewer = B->turn();
             V.page = 0;
-            if (shuffling()) new_seed();
+            if (placing()) start_placing();
             break;
         case kPass:
             V.result = false;
@@ -274,8 +392,8 @@ void do_key(Key k)
 void key_row_cb(lv_event_t* e)
 {
     lv_obj_t* k = lv_event_get_target_obj(e);
-    if (k == key_a)      do_key(shuffling() ? kShuffle : kWaters);
-    else if (k == key_b) do_key(shuffling() ? kReady : kFleet);
+    if (k == key_a)      do_key(placing() ? (manual ? kUndo : kShuffle) : kWaters);
+    else if (k == key_b) do_key(placing() ? kReady : kFleet);
     else                 do_key(V.cover ? kCoverReady : kPass);
 }
 
@@ -341,15 +459,34 @@ void draw_cb(lv_event_t* e)
         kit::fill_circle(layer, cx(c), cy(c), r + 1, lv_color_darken(hit_c, 90));
         kit::fill_circle(layer, cx(c), cy(c), r, hit_c);
     };
-    if (shuffling()) {                                   // the fleet being picked
-        for (int i = 0; i < kShips; ++i) ship_shape(layer, x0, y0, V.preview.ship[i], kLen[i], ship_c);
+    if (placing()) {                                     // the fleet being placed
+        const int shown = manual ? V.n : kShips;
+        for (int i = 0; i < shown; ++i) ship_shape(layer, x0, y0, V.preview.ship[i], kLen[i], ship_c);
+        if (manual && V.anchor >= 0 && V.n < kShips) {
+            // The squares the ship can point to light up; the anchor is gold
+            const lv_color_t lit = lv_color_mix(P.lit, water, 225);     // strong: TN panels wash out pale tints
+            for (int d = 0; d < 4; ++d) {
+                const uint32_t key = aimed(V.anchor, d);
+                if (key == 0xFFFF) continue;
+                const Ship sh{uint8_t(key & 0x7F), (key & 0x80) != 0};
+                for (int k = 0; k < kLen[V.n]; ++k) {
+                    const int c = sh.cell_at(k, kLen[V.n]);
+                    if (c == V.anchor) continue;
+                    const int x = x0 + (c % kN) * cell, y = y0 + (c / kN) * cell;
+                    kit::fill_rect(layer, x + 1, y + 1, x + cell - 1, y + cell - 1, lit);
+                }
+            }
+            const int x = x0 + (V.anchor % kN) * cell, y = y0 + (V.anchor / kN) * cell;
+            kit::fill_rect(layer, x + 1, y + 1, x + cell - 1, y + cell - 1, P.piece_b);
+            frame_rect(layer, x + 1, y + 1, x + cell - 1, y + cell - 1, 2, P.stone_dark, 0);
+        }
         return;
     }
     if (me < 0) return;
-    const bool own = V.page == 1 || B->moves <= 1;
+    const bool own = V.page == 1 || B->setup();
     if (own) {                                           // my ships and the other side's shots
         const Fleet& f = B->fleet[me];
-        for (int i = 0; i < kShips; ++i)
+        for (int i = 0; i < B->placed(me); ++i)
             ship_shape(layer, x0, y0, f.ship[i], kLen[i], B->sunk(me, i) ? wreck : ship_c);
         for (int c = 0; c < kCells; ++c) {
             if (!B->shot[me ^ 1][c]) continue;
@@ -357,7 +494,7 @@ void draw_cb(lv_event_t* e)
             else kit::fill_circle(layer, cx(c), cy(c), pr, peg);
         }
         const int l = B->last[me ^ 1];
-        if (l >= 0 && B->moves > 2)
+        if (l >= 0 && B->moves > kSetupPlies)
             frame_rect(layer, cx(l) - cell / 2, cy(l) - cell / 2, cx(l) + cell / 2, cy(l) + cell / 2, 2, P.piece_b, 2);
         return;
     }
@@ -372,12 +509,11 @@ void draw_cb(lv_event_t* e)
             case kMiss:  kit::fill_circle(layer, cx(c), cy(c), pr, peg); break;
             case kHit:   hit_peg(c, false); break;
             case kSunk:  hit_peg(c, true); break;
-            case kClear: kit::fill_circle(layer, cx(c), cy(c), 1, lv_color_mix(peg, water, 110)); break;
             default: break;
         }
     }
     const int l = B->last[me];
-    if (l >= 0 && B->moves > 2)
+    if (l >= 0 && B->moves > kSetupPlies)
         frame_rect(layer, cx(l) - cell / 2, cy(l) - cell / 2, cx(l) + cell / 2, cy(l) + cell / 2, 2, P.piece_b, 2);
 }
 
@@ -399,15 +535,59 @@ void clicked_cb(lv_event_t*)
         changed();
         return;
     }
-    if (V.cover || V.result || shuffling() || V.page != 0 || B->setup()) return;
+    if (V.cover || V.result) return;
     lv_area_t a;
     lv_obj_get_coords(sea_obj, &a);
     const int x = press_at.x - a.x1 - (numbers_left ? lab : 0), y = press_at.y - a.y1 - lab;
     if (x < 0 || y < 0 || x >= kN * cell || y >= kN * cell) return;
-    if (!match::human_may_move()) return;
     const int c = (y / cell) * kN + x / cell;
+    if (placing()) {
+        // Manual: tap one end, then a lit square the way it points (silent)
+        if (!manual || V.ready_pending || V.n >= kShips || overlay_open()) return;
+        const int d = aim_of(c);
+        if (d >= 0) {
+            place_ship(V.preview, V.n, aimed(V.anchor, d));
+            ++V.n;
+            V.anchor = -1;
+        } else if (c == V.anchor) {
+            V.anchor = -1;
+        } else if (can_anchor(c)) {
+            V.anchor = c;
+        } else {
+            sound(Sound::Error);                          // no room for this ship there
+            return;
+        }
+        changed();
+        return;
+    }
+    if (V.page != 0 || B->setup() || !match::human_may_move()) return;
     if (!B->can_play(uint32_t(c))) { sound(Sound::Error); return; }
     match::human_move(c);
+}
+
+// ---- Options ------------------------------------------------------------------------------------
+enum Opt : intptr_t { kPlacement = 1, kOptBack };
+
+void opt_cb(lv_event_t* e)
+{
+    const intptr_t id = intptr_t(lv_event_get_user_data(e));
+    if (id == kOptBack) { match::open_menu(); return; }
+    if (id == kPlacement) {
+        manual = lv_obj_has_state(lv_event_get_target_obj(e), LV_STATE_CHECKED);
+        save_options();
+        if (B && placing() && !V.ready_pending) start_placing();   // at once, for the fleet being placed
+        options_open();
+    }
+}
+
+void options_open()
+{
+    overlay_begin("Options");
+    overlay_text("Ship Placement", false);
+    overlay_choice("Random", "Manual", manual, opt_cb, kPlacement);
+    overlay_text(manual ? "Manual: tap where a ship's end goes, then a lit square the way it points. Biggest ship first."
+                        : "Random: Shuffle until you like your fleet.", true);
+    overlay_back(opt_cb, kOptBack);
 }
 
 // ---- Save ---------------------------------------------------------------------------------------
@@ -424,12 +604,21 @@ void save()
     shell().save_game(kId, buf, sizeof buf);
 }
 
+// The board's part of the save, then the controller's (version 1's board part is shorter)
+bool load_image(const uint8_t* buf, size_t n, Board& b, match::State* st)
+{
+    const size_t board = n == kSaveBytes ? Board::kSaveBytes
+                       : n == Board::kSaveBytesV1 + match::kStateBytes ? Board::kSaveBytesV1 : 0;
+    if (!board || !b.deserialize(buf, board)) return false;
+    return st ? match::read_state(buf + board, match::kStateBytes, *st) : match::load_state(buf + board, match::kStateBytes);
+}
+
 bool load(Board& b)
 {
     uint8_t buf[kSaveBytes];
     const Shell& H = shell();
     const size_t n = H.load_game ? H.load_game(kId, buf, sizeof buf) : 0;
-    return n == kSaveBytes && b.deserialize(buf, n) && match::load_state(buf + Board::kSaveBytes, match::kStateBytes);
+    return load_image(buf, n, b, nullptr);
 }
 
 lv_obj_t* make_row_key(lv_obj_t* scr, int w, int h, int x, int y)
@@ -492,10 +681,11 @@ void open()
     B = new (std::nothrow) Board();
     if (!B) { app_go_home(); return; }
     if (!load(*B)) { *B = Board{}; match::state() = match::State{}; }
+    load_options();
     V = View{};
     V.cover = pnp() && !over();
     V.viewer = B->turn();
-    new_seed();
+    start_placing();
     saved_moves = B->moves;
     build();
 }
@@ -516,9 +706,8 @@ void tick(uint32_t now)
     match::tick(now);
     if (!B) return;
     // Ready was tapped before this side's turn to set up: it goes now
-    if (V.ready_pending && shuffling() && B->turn() == viewer() && match::human_may_move()) {
-        V.ready_pending = false;
-        match::human_move(int(V.seed));
+    if (V.ready_pending && placing() && B->turn() == viewer() && match::human_may_move()) {
+        V.ready_pending = !send_fleet();
         changed();
     }
     if (B->moves != saved_moves || kit::save_due(now, last_save_ms, match::state().seconds)) {
@@ -543,8 +732,7 @@ bool summary(char* buf, size_t cap)
     Board* b = new (std::nothrow) Board();
     if (!b) return false;
     match::State st;
-    bool ok = H.load_game && H.load_game(kId, img, sizeof img) == kSaveBytes && b->deserialize(img, kSaveBytes)
-              && match::read_state(img + Board::kSaveBytes, match::kStateBytes, st);
+    bool ok = H.load_game && load_image(img, H.load_game(kId, img, sizeof img), *b, &st);
     if (ok) match::describe(st, b->result(), b->moves, kSides, buf, cap);
     delete b;
     return ok;
@@ -593,6 +781,17 @@ const GameOps sunk_ops = {open, close, save_now, tick, restyle, summary, icon};
 namespace sunk_preview {
 sunk::Board* board() { return B; }
 void ready() { do_key(kReady); }
+void undo() { do_key(kUndo); }
+void tap(int c)                          // a tap on sea cell c
+{
+    if (!sea_obj) return;
+    lv_area_t a;
+    lv_obj_get_coords(sea_obj, &a);
+    press_at.x = a.x1 + (numbers_left ? lab : 0) + (c % kN) * cell + cell / 2;
+    press_at.y = a.y1 + lab + (c / kN) * cell + cell / 2;
+    clicked_cb(nullptr);
+}
+void options() { options_open(); }
 void cover_ready() { if (V.cover) { V.cover = false; V.viewer = B->turn(); V.page = 0; changed(); } }
 void pass() { if (V.result) { V.result = false; V.cover = true; changed(); } }
 void page(int p) { V.page = p; changed(); }

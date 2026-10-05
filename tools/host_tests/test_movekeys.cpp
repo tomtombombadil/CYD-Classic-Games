@@ -177,14 +177,15 @@ uint32_t sunk_hash()
 {
     return play_games([](Rng& r, Hash& h) {
         auto* b = new sunk::Board();
-        for (int s = 0; s < 2; ++s) {
-            const uint32_t seed = r.next() & sunk::kSeedMax;
-            h.add(seed);
-            b->play(seed);
+        // The fleets, a ship a move (any place it fits)
+        while (b->setup()) {
+            uint32_t places[2 * sunk::kCells];
+            const int n = sunk::ship_places(b->fleet[b->turn()], b->placed(b->turn()), places);
+            std::vector<uint32_t> keys(places, places + n);
+            const uint32_t key = pick(keys, r);
+            h.add(key);
+            b->play(key);
         }
-        // The fleets the seeds make are part of what the moves mean
-        for (int s = 0; s < 2; ++s)
-            for (int c = 0; c < sunk::kCells; ++c) h.add(b->fleet[s].at[c]);
         while (b->result() == -1) {
             std::vector<uint32_t> keys;
             for (uint32_t c = 0; c < uint32_t(sunk::kCells); ++c) if (b->can_play(c)) keys.push_back(c);

@@ -208,7 +208,7 @@ void flash_stop()
 }
 
 // ---- Menus -----------------------------------------------------------------------------
-void menu_two_player(const char* title, const MenuHandlers& h, bool wireless)
+void menu_two_player(const char* title, const MenuHandlers& h, bool wireless, const char* options)
 {
     handlers = h;
     wireless_ok = wireless;
@@ -220,16 +220,18 @@ void menu_two_player(const char* title, const MenuHandlers& h, bool wireless)
     lv_obj_t* r2 = row(menu_btn_h());
     row_key(r2, "Pass and Play", kPassAndPlay);
     set_dim(row_key(r2, "Wireless", kWireless), !wireless);   // CYD to CYD (not every game has it)
+    if (options) overlay_button(overlay(), options, menu_cb, kOptions);
     menu_tail();
 }
 
-void menu_wireless(const char* title, const char* line, const MenuHandlers& h)
+void menu_wireless(const char* title, const char* line, const MenuHandlers& h, const char* options)
 {
     handlers = h;
     wireless_ok = false;
     overlay_begin(title);
     if (line) overlay_text(line, true);
     overlay_button(overlay(), "Forfeit Game", menu_cb, kForfeit);
+    if (options) overlay_button(overlay(), options, menu_cb, kOptions);
     menu_tail();
 }
 

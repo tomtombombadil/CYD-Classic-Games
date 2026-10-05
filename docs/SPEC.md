@@ -101,7 +101,7 @@ Candidates, grouped. Order of building is in section 6.
 | Tic-Tac-Toe / Ultimate Tic-Tac-Toe | Ultimate is the interesting one |
 | Nine Men's Morris | Big targets (*built 2026-10-03*) |
 | Gomoku | 15x15, 16 px cells on 240-wide boards |
-| You Sunk My CYD! (Battleship) | Two grids, flip between them (*built 2026-10-05*: id `sunk`; fleets placed by Shuffle, wireless key 8) |
+| You Sunk My CYD! (Battleship) | Two grids, flip between them (*built 2026-10-05*: id `sunk`; classic rules - ships may touch; manual placement by default, Random in Options; wireless key 8, version 2) |
 
 **Word**
 | Game | Notes |

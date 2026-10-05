@@ -58,7 +58,8 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_farkle.png" width="240" alt="Farkle: three dice set aside, Bank 1000">
 <img src="docs/screenshots/small_mancala.png" width="240" alt="Mancala: seeds being sown round the board">
 <img src="docs/screenshots/small_morris.png" width="240" alt="Nine Men's Morris: a mill made, pick a man to take">
-<img src="docs/screenshots/small_sunk.png" width="240" alt="You Sunk My CYD!: firing at their waters, a Destroyer sunk">
+<img src="docs/screenshots/small_sunk_place.png" width="240" alt="You Sunk My CYD!: placing the Carrier - its end picked, the lit squares show the ways it can point">
+<img src="docs/screenshots/small_sunk.png" width="240" alt="You Sunk My CYD!: firing at their waters">
 <img src="docs/screenshots/small_wheel.png" width="240" alt="Wheel of CYD: a called letter showing on the puzzle board">
 <img src="docs/screenshots/small_wheel_spin.png" width="240" alt="Wheel of CYD: the wheel turning">
 <img src="docs/screenshots/small_help.png" width="240" alt="How To Play page for 2048">
@@ -454,16 +455,17 @@ to three men may fly to any empty point. Two men left, or no move, loses.
 
 The classic ships-and-shots game. Each side hides a fleet in a 10 x 10
 sea: Carrier (5), Battleship (4), Cruiser (3), Submarine (3) and Destroyer
-(2), across or down, never touching. Your fleet is placed for you: tap
-**Shuffle** until you like it, then **Ready**. Then take turns firing:
-**Their Waters** is the sea you fire at (tap a cell; white peg = miss, red
-= hit, a sunk ship shows), **My Fleet** shows your ships and their shots.
-The cells round a sunk ship must be water, so they get a dot and can't be
-picked. Sink the whole fleet to win. In pass-and-play the board asks to be
+(2), across or down; ships may touch but not overlap. Place your fleet
+biggest ship first: tap the square where one end goes, then one of the lit
+squares the way it should point (**Undo** takes one back), then **Ready**.
+Options in the menu switches Ship Placement to Random: **Shuffle** until
+you like it. Then take turns firing: **Their Waters** is the sea you fire
+at (tap a square; white peg = miss, red = hit, a sunk ship shows), **My
+Fleet** shows your ships and their shots. Sink the whole fleet to win. In pass-and-play the board asks to be
 passed and waits for **Ready**, so nobody sees the other sea. The computer:
 Easy fires at random and tries round a hit, Medium fires on a spaced
 pattern and follows a line of hits, Hard works out where the ships left
-can still lie (about 59 / 44 / 39 shots to sink a fleet).
+can still lie (about 62 / 50 / 45 shots to sink a fleet).
 
 ## Wheel of CYD
 

@@ -18,8 +18,9 @@ struct Rng {
     int below(int n) { return int((next() >> 8) % uint32_t(n)); }
 };
 
-// Can a ship of `len` go at (r, c) without leaving the sea or touching another?
-bool fits(const Fleet& f, int r, int c, int len, bool down)
+// Version 1's spacing rule (ships never touched): kept only so make_fleet()
+// still makes the same fleets for version-1 saves
+bool fits_apart(const Fleet& f, int r, int c, int len, bool down)
 {
     const int r2 = down ? r + len - 1 : r, c2 = down ? c : c + len - 1;
     if (r2 >= kN || c2 >= kN) return false;
@@ -29,9 +30,53 @@ bool fits(const Fleet& f, int r, int c, int len, bool down)
     return true;
 }
 
+// The rules: in the sea, not on another ship (ships may touch)
+bool fits(const Fleet& f, int r, int c, int len, bool down)
+{
+    const int r2 = down ? r + len - 1 : r, c2 = down ? c : c + len - 1;
+    if (r2 >= kN || c2 >= kN) return false;
+    for (int k = 0; k < len; ++k)
+        if (f.at[(down ? r + k : r) * kN + (down ? c : c + k)]) return false;
+    return true;
+}
+
 } // namespace
 
 const char* ship_name(int ship) { return ship >= 0 && ship < kShips ? kNames[ship] : "?"; }
+
+bool ship_fits(const Fleet& f, int ship, uint32_t key)
+{
+    if (ship < 0 || ship >= kShips || key > 0xFF || (key & 0x7F) >= uint32_t(kCells)) return false;
+    const int cell = int(key & 0x7F);
+    return fits(f, cell / kN, cell % kN, kLen[ship], (key & 0x80) != 0);
+}
+
+void place_ship(Fleet& f, int ship, uint32_t key)
+{
+    f.ship[ship].cell = uint8_t(key & 0x7F);
+    f.ship[ship].down = (key & 0x80) != 0;
+    for (int k = 0; k < kLen[ship]; ++k) f.at[f.ship[ship].cell_at(k, kLen[ship])] = uint8_t(ship + 1);
+}
+
+int ship_places(const Fleet& f, int ship, uint32_t* out)
+{
+    int n = 0;
+    for (int down = 0; down < 2; ++down)
+        for (int c = 0; c < kCells; ++c)
+            if (ship_fits(f, ship, ship_key(c, down != 0))) out[n++] = ship_key(c, down != 0);
+    return n;
+}
+
+void random_fleet(uint32_t seed, Fleet& f)
+{
+    f = Fleet{};
+    for (int i = 0; i < kShips; ++i) {
+        uint32_t places[2 * kCells];
+        const int n = ship_places(f, i, places);
+        seed = seed * 1103515245u + 12345u;
+        place_ship(f, i, places[(seed >> 8) % uint32_t(n)]);       // largest first: always room
+    }
+}
 
 void make_fleet(uint32_t seed, Fleet& f)
 {
@@ -46,7 +91,7 @@ void make_fleet(uint32_t seed, Fleet& f)
                 const int span = kN - kLen[i] + 1;
                 const int row = down ? r.below(span) : r.below(kN);
                 const int col = down ? r.below(kN) : r.below(span);
-                if (!fits(f, row, col, kLen[i], down)) continue;
+                if (!fits_apart(f, row, col, kLen[i], down)) continue;
                 f.ship[i].cell = uint8_t(row * kN + col);
                 f.ship[i].down = down;
                 for (int k = 0; k < kLen[i]; ++k) f.at[f.ship[i].cell_at(k, kLen[i])] = uint8_t(i + 1);
@@ -60,9 +105,15 @@ void make_fleet(uint32_t seed, Fleet& f)
 
 // ---- Board ------------------------------------------------------------------------------------
 
+int Board::placed(int side) const
+{
+    const int n = int(moves) - side * kShips;
+    return n < 0 ? 0 : n > kShips ? kShips : n;
+}
+
 bool Board::sunk(int side, int ship) const
 {
-    if (moves <= side) return false;                  // no fleet yet
+    if (placed(side) <= ship) return false;           // not placed yet
     const Ship& s = fleet[side].ship[ship];
     for (int k = 0; k < kLen[ship]; ++k)
         if (!shot[side ^ 1][s.cell_at(k, kLen[ship])]) return false;
@@ -79,20 +130,12 @@ int Board::afloat(int side) const
 Known Board::known(int shooter, int c) const
 {
     const int target = shooter ^ 1;
-    if (moves < 2) return kUnknown;
+    if (setup()) return kUnknown;
     const Fleet& f = fleet[target];
     if (shot[shooter][c]) {
         if (!f.at[c]) return kMiss;
         return sunk(target, f.at[c] - 1) ? kSunk : kHit;
     }
-    // Next to a sunk ship (ships never touch): known water
-    const int r = c / kN, col = c % kN;
-    for (int y = r - 1; y <= r + 1; ++y)
-        for (int x = col - 1; x <= col + 1; ++x) {
-            if (y < 0 || y >= kN || x < 0 || x >= kN) continue;
-            const int n = y * kN + x;
-            if (f.at[n] && shot[shooter][n] && sunk(target, f.at[n] - 1)) return kClear;
-        }
     return kUnknown;
 }
 
@@ -106,7 +149,7 @@ int Board::shots(int side) const
 bool Board::can_play(uint32_t move) const
 {
     if (result() != -1) return false;
-    if (setup()) return move <= kSeedMax;
+    if (setup()) return ship_fits(fleet[turn()], placed(turn()), move);
     return move < uint32_t(kCells) && known(turn(), int(move)) == kUnknown;
 }
 
@@ -115,8 +158,7 @@ bool Board::play(uint32_t move)
     if (!can_play(move)) return false;
     const int side = turn();
     if (setup()) {
-        seed[side] = move;
-        make_fleet(move, fleet[side]);
+        place_ship(fleet[side], placed(side), move);
     } else {
         shot[side][move] = 1;
         last[side] = int8_t(move);
@@ -127,7 +169,7 @@ bool Board::play(uint32_t move)
 
 int Board::result() const
 {
-    if (moves < 2) return -1;
+    if (setup()) return -1;
     for (int s = 0; s < 2; ++s)
         if (afloat(s) == 0) return s ^ 1;
     return -1;
@@ -139,10 +181,10 @@ size_t Board::serialize(uint8_t* buf, size_t cap) const
 {
     if (cap < kSaveBytes) return 0;
     uint8_t* p = buf;
-    memcpy(p, "SNK1", 4);
+    memcpy(p, "SNK2", 4);
     p += 4;
     for (int s = 0; s < 2; ++s)
-        for (int b = 0; b < 4; ++b) *p++ = uint8_t(seed[s] >> (8 * b));
+        for (int i = 0; i < kShips; ++i) *p++ = i < placed(s) ? uint8_t(ship_key(fleet[s].ship[i])) : 0;
     *p++ = uint8_t(moves);
     *p++ = uint8_t(moves >> 8);
     *p++ = uint8_t(last[0]);
@@ -161,16 +203,25 @@ size_t Board::serialize(uint8_t* buf, size_t cap) const
 
 bool Board::deserialize(const uint8_t* buf, size_t len)
 {
-    if (len < kSaveBytes || memcmp(buf, "SNK1", 4) != 0) return false;
+    const bool v1 = len >= kSaveBytesV1 && memcmp(buf, "SNK1", 4) == 0;
+    if (!v1 && (len < kSaveBytes || memcmp(buf, "SNK2", 4) != 0)) return false;
     Board b;
     const uint8_t* p = buf + 4;
-    for (int s = 0; s < 2; ++s) {
-        b.seed[s] = uint32_t(p[0]) | uint32_t(p[1]) << 8 | uint32_t(p[2]) << 16 | uint32_t(p[3]) << 24;
-        p += 4;
-        if (b.seed[s] > kSeedMax) return false;
+    uint8_t keys[2][kShips] = {};
+    uint32_t seeds[2] = {};
+    if (v1) {
+        for (int s = 0; s < 2; ++s) {
+            seeds[s] = uint32_t(p[0]) | uint32_t(p[1]) << 8 | uint32_t(p[2]) << 16 | uint32_t(p[3]) << 24;
+            p += 4;
+            if (seeds[s] > kSeedMax) return false;
+        }
+    } else {
+        for (int s = 0; s < 2; ++s)
+            for (int i = 0; i < kShips; ++i) keys[s][i] = *p++;
     }
-    b.moves = uint16_t(p[0] | p[1] << 8);
+    int moves = p[0] | p[1] << 8;
     p += 2;
+    if (v1) moves = moves >= 2 ? moves + kSetupPlies - 2 : moves * kShips;   // a seed was a whole fleet
     b.last[0] = int8_t(p[0]);
     b.last[1] = int8_t(p[1]);
     p += 2;
@@ -182,15 +233,26 @@ bool Board::deserialize(const uint8_t* buf, size_t len)
                 if (c >= kCells) return false;
                 b.shot[s][c] = 1;
             }
+    if (moves > kSetupPlies + 2 * kCells) return false;
+    // The fleets: every ship where it fits, in order
+    for (int s = 0; s < 2; ++s) {
+        Fleet whole;
+        if (v1) make_fleet(seeds[s], whole);
+        const int n = moves - s * kShips < 0 ? 0 : moves - s * kShips > kShips ? kShips : moves - s * kShips;
+        for (int i = 0; i < n; ++i) {
+            const uint32_t key = v1 ? ship_key(whole.ship[i]) : keys[s][i];
+            if (!ship_fits(b.fleet[s], i, key)) return false;
+            place_ship(b.fleet[s], i, key);
+        }
+    }
+    b.moves = uint16_t(moves);
     // The shots must match the moves: side 0 fires first, after both fleets
-    if (b.moves > 2 + 2 * kCells) return false;
-    const int fired = b.moves > 2 ? b.moves - 2 : 0;
+    const int fired = b.moves > kSetupPlies ? b.moves - kSetupPlies : 0;
     if (b.shots(0) != (fired + 1) / 2 || b.shots(1) != fired / 2) return false;
     for (int s = 0; s < 2; ++s) {
         if (b.last[s] < -1 || b.last[s] >= kCells) return false;
         if (b.shots(s) ? (b.last[s] < 0 || !b.shot[s][b.last[s]]) : b.last[s] != -1) return false;
     }
-    for (int s = 0; s < 2 && s < b.moves; ++s) make_fleet(b.seed[s], b.fleet[s]);
     *this = b;
     return true;
 }
@@ -246,7 +308,15 @@ long line_end_score(const Known* k, int c)
 
 uint32_t best_move(const Board& b, int level, uint32_t seed)
 {
-    if (b.setup()) return (seed * 2654435761u ^ (seed >> 7)) & kSeedMax;
+    if (b.setup()) {
+        // The next ship anywhere it fits (largest first: there is always room)
+        const int side = b.turn(), ship = b.placed(side);
+        uint32_t places[2 * kCells];
+        const int n = ship_places(b.fleet[side], ship, places);
+        if (!n) return 0;
+        seed = seed * 2654435761u ^ (seed >> 15);
+        return places[(seed >> 8) % uint32_t(n)];
+    }
     const int me = b.turn(), them = me ^ 1;
     Known k[kCells];
     bool any_hit = false;

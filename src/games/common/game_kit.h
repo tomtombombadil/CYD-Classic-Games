@@ -71,12 +71,14 @@ struct MenuHandlers {
 // Two-player: "New game vs computer: Easy Medium Hard", Pass and play,
 // Wireless (greyed and ignored unless `wireless`; picks kWireless), How To
 // Play, Stats | Settings, and at the bottom Exit Menu | Exit Game.
-void menu_two_player(const char* title, const MenuHandlers& h, bool wireless = false);
+// options: label of an extra key (id kOptions) under the new-game keys,
+// e.g. "Options"; nullptr = none (the same in menu_wireless).
+void menu_two_player(const char* title, const MenuHandlers& h, bool wireless = false, const char* options = nullptr);
 // A wireless game in progress: a line about it, Forfeit Game (picks
 // kForfeit: a loss here, a win on the other board - at once), How To Play,
 // Stats | Settings, Exit Menu | Exit Game (the game's exit_game asks
 // first: leaving forfeits).
-void menu_wireless(const char* title, const char* line, const MenuHandlers& h);
+void menu_wireless(const char* title, const char* line, const MenuHandlers& h, const char* options = nullptr);
 // Solo puzzle: "New Game:" three levels, Restart, How To Play,
 // Stats | Settings, and at
 // the bottom Exit Menu | Exit Game.

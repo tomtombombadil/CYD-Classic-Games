@@ -45,6 +45,9 @@ void ready();
 void page(int p);
 void cover_ready();
 void pass();
+void undo();
+void tap(int c);
+void options();
 } // namespace sunk_preview
 namespace morris_preview {
 morris::Game* game();
@@ -1293,11 +1296,27 @@ int main(int argc, char** argv)
     {   // You Sunk My CYD!: shuffling a fleet, their waters part-way, my fleet, dark, pass-and-play's cover
         ui::app_open_game_now(games::find("sunk"));
         run(30);
-        shot(out + "_light_63_sunk_new.ppm");
+        shot(out + "_light_63_sunk_new.ppm");                       // Manual: the Carrier first
         sunk::Board* b = sunk_preview::board();
         if (b) {
+            // Manual placement: the Carrier's end at C3, then aimed right (to G3)
+            sunk_preview::tap(22);
+            shot(out + "_light_63_sunk_aim.ppm");
+            sunk_preview::tap(26);
+            // Battleship I2 down to I5, Cruiser A6 down, Submarine D8 across, Destroyer touching it
+            const int ends[3][2] = {{18, 48}, {50, 70}, {73, 75}};
+            for (auto& e : ends) { sunk_preview::tap(e[0]); sunk_preview::tap(e[1]); }
+            sunk_preview::tap(86);
+            shot(out + "_light_63_sunk_place.ppm");
+            sunk_preview::tap(87);
+            shot(out + "_light_63_sunk_placed.ppm");
+            match::open_menu();
+            shot(out + "_light_63_sunk_menu.ppm");
+            sunk_preview::options();
+            shot(out + "_light_63_sunk_options.ppm");
+            ui::close_overlays();
             sunk_preview::ready();
-            run(1500);                                    // the computer sets up its fleet
+            run(3000);                                    // the computer places its ships
             // A few misses, the Destroyer sunk, a hit on the Carrier
             const sunk::Fleet& f = b->fleet[1];
             std::vector<int> aim;

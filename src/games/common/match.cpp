@@ -477,6 +477,7 @@ void done_cb(lv_event_t*)
 void menu_pick(int id)
 {
     if (id == kit::kForfeit) { forfeit(); return; }
+    if (id == kit::kOptions) { if (G.options) G.options(); return; }
     if (id <= kit::kLevel2) start_new(Mode::Computer, static_cast<twoplayer::Level>(id));
     else if (id == kit::kPassAndPlay) start_new(Mode::PassAndPlay, S.level);
     else if (id == kit::kWireless) wplay::open_menu(open_menu);
@@ -798,10 +799,10 @@ void open_menu()
         char line[112];
         snprintf(line, sizeof line, "Playing %s. Forfeit Game: a loss for you, a win for %s.", peer(), peer());
         h.exit_game = confirm_leave;
-        kit::menu_wireless(G.title, line, h);
+        kit::menu_wireless(G.title, line, h, G.options ? "Options" : nullptr);
         return;
     }
-    kit::menu_two_player(G.title, h, G.legal && wplay::radio_present());
+    kit::menu_two_player(G.title, h, G.legal && wplay::radio_present(), G.options ? "Options" : nullptr);
 }
 
 void describe(const State& st, int r, int moves, const twoplayer::Sides& sides, char* buf, size_t cap)

@@ -57,6 +57,9 @@ struct Game {
     // Optional: plays the sound for a move instead of the usual Place /
     // Turn (game not over); by_other = the computer's or the other board's
     void (*move_sound)(bool by_other) = nullptr;
+    // Optional: the game's Options page (an "Options" key in its menu); the
+    // page's back arrow should call match::open_menu()
+    void (*options)() = nullptr;
     uint32_t ai_stack = 8192;      // the computer's task stack (bytes)
     // Wireless: is `move` legal for the side to move? nullptr = this game
     // has no wireless play.

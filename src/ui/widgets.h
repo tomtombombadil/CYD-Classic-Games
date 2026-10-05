@@ -64,6 +64,13 @@ lv_obj_t* overlay_bottom_button(const char* text, lv_event_cb_t cb, intptr_t use
 // invisible object at the page's bottom (others may align to it).
 lv_obj_t* overlay_back(lv_event_cb_t cb, intptr_t user);
 void      close_overlays();
+// A choice between two words on the overlay, with a switch pointing at the
+// chosen one ("Random (o) Manual"); `name` (optional) leads the row
+// ("Play Mode  1P (o) 2P"). cb(id) runs on LV_EVENT_VALUE_CHANGED; the
+// switch is checked when the right word is chosen. Both sides look the same:
+// a choice, not on / off.
+lv_obj_t* overlay_choice(const char* left, const char* right, bool right_on, lv_event_cb_t cb, intptr_t id,
+                         const char* name = nullptr);
 // The last row of every game's ☰ menu (Tom's layout): "Exit Menu" bottom
 // left (primary), "Exit Game" bottom right, pinned to the bottom.
 void      overlay_exit_row(lv_event_cb_t cb, intptr_t exit_menu_id, intptr_t exit_game_id);

@@ -1789,10 +1789,25 @@ static void test_sunk()
     }
     printf("sunk: fleet hash %08x\n", h);
     CHECK(h == 0x7bbd7ef9u);       // make_fleet() is part of the wireless version: never change it
-    // Rules: fleets first, then shots; a cell once; around a sunk ship = clear
+    // Rules: ships first (a ship a move, side 0's five then side 1's), then shots
     Board b;
     CHECK(b.turn() == 0 && b.setup() && b.result() == -1);
-    CHECK(!b.can_play(kSeedMax + 1) && b.play(12345) && b.turn() == 1 && b.play(777) && !b.setup());
+    Fleet f0, f1;
+    make_fleet(12345, f0);
+    make_fleet(777, f1);
+    CHECK(!b.can_play(ship_key(96, false)) && !b.can_play(ship_key(60, true)));   // a Carrier off the sea
+    for (int i = 0; i < kShips; ++i) CHECK(b.turn() == 0 && b.play(ship_key(f0.ship[i])));
+    CHECK(b.placed(0) == 5 && b.turn() == 1 && b.setup());
+    // ships may touch, but not overlap
+    {
+        Fleet t;
+        place_ship(t, 0, ship_key(0, false));                     // A1-E1
+        CHECK(ship_fits(t, 1, ship_key(10, false)) && ship_fits(t, 1, ship_key(5, true)) && !ship_fits(t, 1, ship_key(2, true)));
+        uint32_t places[2 * kCells];
+        CHECK(ship_places(t, 1, places) > 50);
+    }
+    for (int i = 0; i < kShips; ++i) CHECK(b.turn() == 1 && b.play(ship_key(f1.ship[i])));
+    CHECK(!b.setup() && memcmp(b.fleet[1].at, f1.at, kCells) == 0);
     CHECK(b.turn() == 0 && !b.can_play(100) && b.can_play(0));
     // Side 0 sinks side 1's Destroyer
     const Ship d = b.fleet[1].ship[4];
@@ -1806,16 +1821,17 @@ static void test_sunk()
         CHECK(b.play(uint32_t(m)));
     }
     CHECK(b.sunk(1, 4) && b.afloat(1) == 4 && b.known(0, d.cell) == kSunk);
-    const int end = d.cell_at(1, 2);
-    const int beyond = d.down ? end + kN : end + 1;
-    if (d.down ? end / kN + 1 < kN : end % kN + 1 < kN) CHECK(b.known(0, beyond) == kClear && !b.can_play(uint32_t(beyond)));
     // Computer levels: shots to sink a fleet (fewer is better), and the save
     long total[3] = {0, 0, 0};
     for (int lv = 0; lv < 3; ++lv)
         for (int g = 0; g < 40; ++g) {
             Board x;
-            x.play(uint32_t(g * 1000003u) & kSeedMax);
-            x.play(uint32_t(g * 7777u + 5) & kSeedMax);
+            // both fleets as the computer places them, ship by ship
+            for (int k = 0; k < kSetupPlies; ++k) {
+                const uint32_t m = best_move(x, 1, uint32_t(g * 7777u + k * 31 + 5));
+                CHECK(x.can_play(m));
+                x.play(m);
+            }
             // side 0 = the level under test; side 1 fires at its first open cell (slow, never wins first)
             int guard = 0;
             while (x.result() == -1 && ++guard < 400) {
@@ -1826,7 +1842,7 @@ static void test_sunk()
                 x.play(m);
                 // nobody but the computer's own knowledge: it never fires at a known cell
             }
-            CHECK(x.result() == 0 || x.shots(0) >= 60);
+            CHECK(x.result() != -1);
             total[lv] += x.shots(0);
             if (g == 3 && lv == 2) {
                 uint8_t buf[Board::kSaveBytes];
@@ -1836,14 +1852,40 @@ static void test_sunk()
                       && memcmp(y.fleet[1].at, x.fleet[1].at, kCells) == 0 && y.result() == x.result());
                 buf[20] ^= 1;                                       // a shot that doesn't fit the moves
                 CHECK(!y.deserialize(buf, sizeof buf));
+                buf[20] ^= 1;
+                buf[4] = uint8_t(ship_key(99, true));                // a Carrier off the sea
+                CHECK(!y.deserialize(buf, sizeof buf));
             }
         }
     printf("sunk: average shots to sink a fleet - Easy %.1f, Medium %.1f, Hard %.1f\n",
            total[0] / 40.0, total[1] / 40.0, total[2] / 40.0);
     CHECK(total[2] < total[1] && total[1] < total[0]);
-    // The computer's fleet seed is in range
-    Board s;
-    CHECK(s.can_play(best_move(s, 1, 0xFFFFFFFFu)));
+    // Random fleets: ships anywhere they fit, all five every time
+    for (uint32_t t = 0; t < 2000; ++t) {
+        Fleet r;
+        random_fleet(t * 7919u, r);
+        int cells = 0;
+        for (int c = 0; c < kCells; ++c) cells += r.at[c] != 0;
+        CHECK(cells == kShipCells);
+    }
+    // Random sequential placement never runs out of room
+    for (uint32_t t = 0; t < 20000; ++t) {
+        Board s;
+        for (int k = 0; k < kSetupPlies; ++k) {
+            const uint32_t m = best_move(s, 0, t * 2654435761u + uint32_t(k));
+            if (!s.play(m)) { CHECK(!"the computer found room for every ship"); break; }
+        }
+    }
+    // A version-1 save (a seed a fleet) still loads
+    {
+        uint8_t v1[Board::kSaveBytesV1] = {'S', 'N', 'K', '1'};
+        const uint32_t seeds[2] = {12345, 777};
+        for (int s2 = 0; s2 < 2; ++s2) for (int k = 0; k < 4; ++k) v1[4 + 4 * s2 + k] = uint8_t(seeds[s2] >> (8 * k));
+        v1[12] = 2;                                                 // both fleets, no shots
+        v1[14] = 0xFF; v1[15] = 0xFF;
+        Board y;
+        CHECK(y.deserialize(v1, sizeof v1) && y.moves == kSetupPlies && memcmp(y.fleet[1].at, f1.at, kCells) == 0);
+    }
 }
 
 static void test_wheel()

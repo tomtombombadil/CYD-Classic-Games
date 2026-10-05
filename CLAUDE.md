@@ -286,13 +286,20 @@ never typed (SPEC section 5).
   Easy 1 ply, Medium 3, Hard deepening within 150k nodes, removals
   searched first, move lists on the stack - ai_stack 24 KB). You Sunk My
   CYD! (id `sunk`, Strategy; Battleship - Tom's name, "Sunk"; 10x10, Carrier
-  5, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2, never touching, so
-  the cells round a sunk ship are known water and can't be picked; a hit
-  doesn't fire again; fleets are placed by Shuffle / Ready, no hand
-  placement; ply 0/1 = each side's fleet SEED (`make_fleet()`, part of the
-  wireless version - host test pins its hash), then shots = cell 0-99,
-  side 0 first; Ready may be tapped before that side's turn to set up and
-  goes when it comes; one sea on screen, Their Waters | My Fleet keys in
+  5, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2; classic rules (Tom,
+  2026-10-05): ships may touch, only not overlap, and nothing is "known"
+  round a sunk ship (v1's spacing rule made it too easy - never bring it
+  back); a hit doesn't fire again; placement (Tom, 2026-10-05) Options ->
+  "Ship Placement" Random (o) Manual, default Manual (`/games/sunk_opt.bin`
+  "SKO1"; changing it restarts the fleet being placed): Manual = biggest
+  ship first, tap one end (gold), the squares it can point to light up,
+  tap one = placed; Undo; Ready when all 5 are in. Random = Shuffle / Ready.
+  A ship is a move: plies 0-4 side 0's ships, 5-9 side 1's
+  (`ship_key` = cell | down << 7), then shots = cell 0-99, side 0 first
+  (wireless version 2; v1 sent a seed a fleet; "SNK1" saves still load
+  via `make_fleet()`); Ready sends the 5 ships as moves at once, and may
+  be tapped before that side's turn - they go when it comes; the
+  computer places a ship a ply anywhere it fits; one sea on screen, Their Waters | My Fleet keys in
   the Play Again row; row numbers on the side away from the hand;
   pass-and-play: a cover "Pass the board to Gold" + Ready after each
   fleet, and after a shot its result then "Pass to Gold"; at the end every
@@ -340,6 +347,13 @@ never typed (SPEC section 5).
   it isn't your turn) = only show its moves; the next tap clears that.
   Chess/Checkers use no long-press now (board8 still supports one: own
   750 ms timer - LVGL's 400 ms turned firm taps into long-presses).
+- Game options (Tom, 2026-10-05): a two-player game with settings gives
+  `match::Game::options` - an "Options" key in its menu
+  (`menu_two_player` / `menu_wireless` take the label) opens its page:
+  a heading line, then a two-word choice as `ui::overlay_choice()` (the
+  same switch as Play's Left Hand / Right Hand), a muted line explaining
+  it; the header's < goes back to the menu. Solo games: `menu_solo`'s
+  options key.
 - Shared UI in `src/ui/`: `widgets.*` (keys, hamburger, overlays, tables,
   screen metrics, `scratch_table()`: two shared heap tables for stats
   screens - never `static Table`, each costs ~1 KB of static RAM), `app_shell.cpp` (picker, game switching),

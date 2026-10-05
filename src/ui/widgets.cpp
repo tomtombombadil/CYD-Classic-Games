@@ -322,3 +322,50 @@ void table_show(const Table& t, const char* const head[4], const int8_t pct[4],
 }
 
 } // namespace ui
+
+namespace ui {
+
+lv_obj_t* overlay_choice(const char* left, const char* right, bool right_on, lv_event_cb_t cb, intptr_t id,
+                         const char* name)
+{
+    const int kh = menu_btn_h();
+    lv_obj_t* r = lv_obj_create(overlay());
+    lv_obj_remove_style_all(r);
+    lv_obj_set_size(r, lv_pct(100), kh * 3 / 4);
+    lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
+    lv_obj_set_scrollable(r, false);
+    lv_obj_set_flex_align(r, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(r, metrics().large ? 14 : 10, 0);
+    const lv_font_t* f = &lv_font_montserrat_14;
+    if (name) {
+        lv_obj_t* n = lv_label_create(r);
+        lv_label_set_text(n, name);
+        lv_obj_set_style_text_font(n, f, 0);
+        lv_obj_set_style_text_color(n, pal().ink, 0);
+        lv_obj_set_style_margin_right(n, metrics().large ? 10 : 6, 0);
+    }
+    lv_obj_t* l = lv_label_create(r);
+    lv_label_set_text(l, left);
+    lv_obj_set_style_text_font(l, f, 0);
+    lv_obj_set_style_text_color(l, right_on ? pal().muted : pal().ink, 0);
+    lv_obj_t* sw = lv_switch_create(r);
+    lv_obj_set_size(sw, kh * 3 / 2, kh / 2);
+    static const lv_part_t kParts[] = {LV_PART_MAIN, LV_PART_INDICATOR};
+    for (lv_part_t part : kParts) {
+        lv_obj_set_style_bg_color(sw, pal().key_on, part);
+        lv_obj_set_style_bg_color(sw, pal().key_on, part | LV_STATE_CHECKED);
+        lv_obj_set_style_bg_opa(sw, LV_OPA_COVER, part);
+    }
+    lv_obj_set_style_bg_color(sw, pal().ink, LV_PART_KNOB);
+    lv_obj_set_style_pad_all(sw, -2, LV_PART_KNOB);
+    lv_obj_set_ext_click_area(sw, 6);
+    if (right_on) lv_obj_add_state(sw, LV_STATE_CHECKED);
+    lv_obj_add_event_cb(sw, cb, LV_EVENT_VALUE_CHANGED, reinterpret_cast<void*>(id));
+    lv_obj_t* rl = lv_label_create(r);
+    lv_label_set_text(rl, right);
+    lv_obj_set_style_text_font(rl, f, 0);
+    lv_obj_set_style_text_color(rl, right_on ? pal().ink : pal().muted, 0);
+    return sw;
+}
+
+} // namespace ui

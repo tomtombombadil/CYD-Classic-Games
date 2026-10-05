@@ -8,3 +8,4 @@ chess 5 1 25423ba1
 mancala 6 1 dca3cbd2
 morris 7 1 6569d7ea
 sunk 8 1 3eba8af0
+sunk 8 2 0af8d8c2
