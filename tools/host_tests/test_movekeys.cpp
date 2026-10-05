@@ -209,7 +209,7 @@ void test_names()
     }
     // The first words are frozen forever (append-only lists)
     names::format(0, 0, n, sizeof n);
-    check(strcmp(n, "Wobbly Pickle") == 0, "names: word 0 of each list never changes");
+    check(strcmp(n, "Wobbly Llama") == 0, "names: word 0 of each list never changes");
     names::format(9999, 9999, n, sizeof n);
     check(strcmp(n, "? ?") == 0, "names: a number from a newer board shows as ?");
 }

@@ -71,6 +71,8 @@ def main():
     (out / "firmware").mkdir(parents=True)
     (out / "manifests").mkdir()
     shutil.copytree(ROOT / "web", out, dirs_exist_ok=True)
+    # The first splash screen (320x480) heads the page (Tom, 2026-10-04)
+    shutil.copy2(ROOT / "assets" / "splash" / "splash1_320x480.jpg", out / "splash.jpg")
 
     published = []
     for b in boards_from_ini():

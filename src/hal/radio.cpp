@@ -8,6 +8,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <cstring>
+#include "net/wireless.h"
 
 namespace {
 
@@ -25,6 +26,8 @@ struct Rx {
 
 QueueHandle_t rx_queue = nullptr;
 bool on = false;
+bool dozing = false;
+uint32_t start_ms = 0;
 const uint8_t kBroadcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // Runs in the WiFi task: copy the packet into the queue, never wait
@@ -47,6 +50,7 @@ bool radio_on()
     if (!rx_queue) rx_queue = xQueueCreate(kQueueLen, sizeof(Rx));
     if (!rx_queue) return false;
     xQueueReset(rx_queue);
+    const uint32_t t0 = millis();
     // The WiFi driver by itself (no network stack: nothing here needs IP)
     esp_event_loop_create_default();          // already there = fine
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -72,8 +76,29 @@ bool radio_on()
         return false;
     }
     on = true;
+    dozing = false;
+    start_ms = millis() - t0;
     return true;
 }
+
+void radio_doze(bool doze)
+{
+    if (!on || doze == dozing) return;
+    dozing = doze;
+    if (doze) {
+        // Modem sleep between wake windows: the RF wakes by itself for the
+        // window (and to send), far quicker than a stop and start
+        esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
+        esp_wifi_connectionless_module_set_wake_interval(uint16_t(net::kDozeIntervalMs));
+        esp_now_set_wake_window(uint16_t(net::kDozeWindowMs));
+    } else {
+        esp_now_set_wake_window(65535);           // the default: always awake
+        esp_wifi_connectionless_module_set_wake_interval(ESP_WIFI_CONNECTIONLESS_INTERVAL_DEFAULT_MODE);
+        esp_wifi_set_ps(WIFI_PS_NONE);
+    }
+}
+
+uint32_t radio_start_ms() { return start_ms; }
 
 void radio_off()
 {
@@ -83,6 +108,7 @@ void radio_off()
     esp_wifi_stop();
     esp_wifi_deinit();
     on = false;
+    dozing = false;
     if (rx_queue) xQueueReset(rx_queue);
 }
 

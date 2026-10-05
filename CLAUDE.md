@@ -550,10 +550,13 @@ never typed (SPEC section 5).
 
 ## Multiplayer (CYD to CYD) - redesign built 2026-10-05 (v0.21.0, Tom's design in SPEC section 5)
 - HARD RULE above: only fixed codes on the air. Names = two word numbers
-  (`src/net/names.*`, two APPEND-ONLY lists of 112 kid-safe silly words,
-  <= 8 letters each; Random / Pick From List, 2 or 3 columns by the widest
-  word, paged); a legacy (link < 3) board shows as "Older board", never its
-  typed name.
+  (`src/net/names.*`, two APPEND-ONLY lists - 106 describing words, 100
+  things/creatures - kid-safe and silly, <= 8 letters each; Random / Pick
+  From List, 2 or 3 columns by the widest word, paged); a legacy (link < 3)
+  board shows as "Older board", never its typed name. Tom's review
+  (2026-10-04): every pair checked for innuendo, slang, slurs and bullying
+  meanings; 18 words removed (listed in names.cpp - never add them back);
+  frozen from v0.22.0. Check every new word against the whole other list.
 - `src/games/common/net_games.h`: each wireless game's fixed KEY (on the
   air, never a list position) and VERSION. Moves travel as move keys that
   describe the move (Chess `chess::move_key` from|to<<6|promo<<12, Checkers
@@ -606,7 +609,20 @@ never typed (SPEC section 5).
   Run it after any wireless change.
 - Games: FourConnect, Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala,
   Morris. Farkle not yet. Internet play out of scope.
-- Not built yet: duty-cycled listening for battery (proposed, waiting for Tom).
+- Battery (Tom, 2026-10-04, v0.22.0): the radio is never stopped and
+  started to save power (esp_wifi init + start takes tens to hundreds of ms
+  with RF calibration and would cost more than it saves); instead an idle
+  2P board DOZES with the driver's ESP-NOW power saving
+  (`radio_doze()`: modem sleep, wake window `kDozeWindowMs` 120 ms every
+  `kDozeIntervalMs` 2 s = 6 % listening). Awake whenever something goes
+  on: searching, requesting, asked, a Call heard in the last 8 s, a live
+  session, connecting, a meeting question, a put-away session's burst.
+  Anything sent to a maybe-dozing board repeats every `kWakeSendMs` 100 ms
+  (Calls, a request until it rings, statuses while the link is down,
+  put-away bursts of 2.6 s every 10 s), so a window always catches one:
+  found / asked within ~2 s. About shows "Radio: Off (1P) / Dozing (2P) /
+  Listening"; the log says how long radio_on took. The preview agent drops
+  packets outside the wake window while dozing, so duo.py tests it.
 
 ## Known hardware issues (from CYD-Sudoku - all still apply)
 - Supported boards: 2.8" ESP32-2432S028 in ILI9341 and ST7789 versions
@@ -679,4 +695,12 @@ Backgammon, most chess engines) are reference only. Update
   tag and a GitHub release with the merged factory `.bin` files (flash at
   0x0). Claude's sessions cannot push tags (proxy returns 403), so Claude
   releases via this dispatch (API `workflow_dispatch`), not `git push --tags`.
-- Site source: `web/index.html`; assembled by `tools/make_site.py`.
+- Site source: `web/index.html`; assembled by `tools/make_site.py` (copies
+  `assets/splash/splash1_320x480.jpg` as `splash.jpg`). Layout (Tom,
+  2026-10-04): header (navy + gold from the splash art, the splash image),
+  the kid-safe note ("safe for kids, still fun for grown-ups, like LEGO";
+  no chat), then Install right away: steps (Chrome or Edge on a computer
+  first), ONE board drop-down and ONE Install button (disabled until a
+  board is picked; it sets the esp-web-install-button `manifest`), the
+  picked board's hint + file download. Below: Which board do I have?,
+  the games by category, after installing, logs.

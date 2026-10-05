@@ -68,7 +68,7 @@ void back_after_game(const char* note);
 // The boards lost touch and the player kept waiting a whole move time more:
 // put the session away (it carries on when they meet again) and leave the game
 void suspend_session();
-// The partner's name, e.g. "Wobbly Pickle" ("" with no session)
+// The partner's name, e.g. "Wobbly Llama" ("" with no session)
 const char* partner_name();
 // Game over, New Game: the Play With page for the partner
 void new_game_with_partner();
@@ -92,6 +92,7 @@ void debug_state(char* buf, size_t cap);    // one line for tests and the log
 // signal (just the dot), 1-3 bars; 2P 1 = a session going, put away or starting
 int  wifi_level();
 int  two_player_state();
+const char* radio_state();                  // About: "Off (1P)", "Dozing (2P)", "Listening", "None"
 void resume_session();                      // the 2P icon
 // Tests (preview agent)
 void set_two_player(bool on);

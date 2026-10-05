@@ -19,14 +19,14 @@
 namespace names {
 
 constexpr size_t kWordMax = 8;                 // letters in one word
-constexpr size_t kNameMax = 2 * kWordMax + 1;  // "Wobbly Pickle"
+constexpr size_t kNameMax = 2 * kWordMax + 1;  // "Wobbly Llama"
 
 int  first_count();                            // words in the first list (describing words)
 int  second_count();                           // words in the second list (things and creatures)
 const char* first(int i);                      // "?" when out of range (a newer board's word)
 const char* second(int i);
 
-// The name for a pair of numbers, e.g. "Wobbly Pickle"
+// The name for a pair of numbers, e.g. "Wobbly Llama"
 void format(uint16_t a, uint16_t b, char* out, size_t cap);
 // A pair picked from `seed` (a board's starting name, or the Random key)
 void random_pair(uint32_t seed, uint16_t* a, uint16_t* b);

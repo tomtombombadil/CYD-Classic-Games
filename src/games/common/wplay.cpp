@@ -101,6 +101,7 @@ void save_profile()
 
 // ---- Radio and presence -------------------------------------------------------------------------
 bool           radio_on = false;
+bool           dozing = false;
 uint32_t       radio_retry_ms = 0;
 bool           radio_failed = false;
 net::Air       the_air;
@@ -1321,14 +1322,17 @@ void radio_power(bool want, uint32_t now)
         }
         radio_failed = false;
         radio_on = true;
+        dozing = false;
         uint32_t fr = 0, big = 0;
         if (H.memory) H.memory(&fr, &big);
-        log_event("Wireless: radio on, %lu KB free", (unsigned long)(fr / 1024));
+        log_event("Wireless: radio on in %lu ms, %lu KB free", (unsigned long)(H.radio_start_ms ? H.radio_start_ms() : 0),
+                  (unsigned long)(fr / 1024));
         if (!pres) pres = new (std::nothrow) net::Presence();
         if (pres) pres->begin(my_mac(), the_air, now);
     } else if (!want && radio_on) {
         H.radio_off();
         radio_on = false;
+        dozing = false;
         delete pres;
         pres = nullptr;
         log_step("Wireless: radio off");
@@ -1443,6 +1447,18 @@ void tick(uint32_t now)
             pres->tick(now);
             handle_events(now);
             watch_offer(now);
+        }
+        // Battery (Tom, 2026-10-04): the radio dozes unless something is going on
+        const bool awake = !pres || pres->searching() || pres->requesting() || pres->asked()
+                        || pres->called_lately(now) || ui_now == Ui::Offer || ui_now == Ui::Meet
+                        || ui_now == Ui::Connecting || ui_now == Ui::Pick
+                        || (S && (S->connecting || (S->link.ended() ? !S->link.linger_over(now)
+                                  : !S->link.suspended() || S->link.bursting(now) || S->link.meet()
+                                    || S->link.continue_said())));
+        if (awake == dozing) {
+            dozing = !awake;
+            if (shell().radio_doze) shell().radio_doze(dozing);
+            log_step("Wireless: radio %s", dozing ? "dozing" : "awake");
         }
     }
     session_tick(now);
@@ -1562,6 +1578,13 @@ int wifi_level()
 }
 
 int two_player_state() { return busy() ? 1 : 0; }
+
+const char* radio_state()
+{
+    if (!radio_present()) return "None";
+    if (!radio_on) return "Off (1P)";
+    return dozing ? "Dozing (2P)" : "Listening";
+}
 
 void resume_session()
 {

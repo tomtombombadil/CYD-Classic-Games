@@ -220,7 +220,7 @@ def scenario_offer_and_play(A, B):
         b.cmd("twop 1")
         b.cmd("timer 0")
     run(500)
-    check(not any(True for _ in []), "quiet")
+    check(all("Dozing" in b.cmd("radio")[0] for b in (A, B)), "idle boards in 2P doze (battery)")
     A.press("Find Players")
     expect(A, "Searching...")
     expect(A, B.name)
@@ -234,6 +234,7 @@ def scenario_offer_and_play(A, B):
     shot(B, "offer")
     B.press("Play")
     expect(B, "Your turn (X)")                          # the asked player moves first
+    check(all("Listening" in b.cmd("radio")[0] for b in (A, B)), "in a game both radios stay awake")
     expect(A, "Their turn")
     check("2p=1" in icons(A) and "2p=1" in icons(B), "both 2P icons filled")
     shot(A, "start")

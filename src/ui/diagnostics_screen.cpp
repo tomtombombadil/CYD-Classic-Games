@@ -11,6 +11,7 @@
 #include "src/libs/qrcode/qrcodegen.h"
 #include "theme.h"
 #include "widgets.h"
+#include "games/common/wplay.h"
 
 namespace ui {
 
@@ -259,7 +260,7 @@ void diagnostics_open()
     overlay_begin("About");
     if (H.log_read) overlay_pair("Device Log", key_cb, kLog, "Send Log", key_cb, kSend);
 
-    char info[200];
+    char info[256];
     int n = snprintf(info, sizeof info, "Board: %s\nFirmware: %s%s%s%s",
                      H.board_name ? H.board_name : "?", H.firmware_version ? H.firmware_version : "?",
                      H.firmware_build && *H.firmware_build ? " (" : "",
@@ -271,6 +272,8 @@ void diagnostics_open()
         n += snprintf(info + n, sizeof info - n, "\nMemory: %lu KB free, largest block %lu KB",
                       (unsigned long)(fr / 1024), (unsigned long)(big / 1024));
     }
+    // The radio's state, to measure what each costs with a USB power meter
+    n += snprintf(info + n, sizeof info - n, "\nRadio: %s", wplay::radio_state());
     const uint32_t s = lv_tick_get() / 1000;
     snprintf(info + n, sizeof info - n, "\nOn for %lu:%02lu:%02lu", (unsigned long)(s / 3600),
              (unsigned long)(s / 60 % 60), (unsigned long)(s % 60));

@@ -272,7 +272,7 @@ Nearby* Presence::lookup(const Mac& m)
 
 void Presence::send_call(uint32_t now)
 {
-    call_ms_ = now + kSendMs;
+    call_ms_ = now + kWakeSendMs;            // boards nearby may be dozing
     if (!air_.send) return;
     uint8_t buf[kPacketMax];
     Writer w(buf, sizeof buf);
@@ -300,7 +300,7 @@ void Presence::send_hello(const Mac& to)
 
 void Presence::send_request(uint32_t now)
 {
-    req_ms_ = now + kSendMs;
+    req_ms_ = now + (req_ringing_ ? kSendMs : kWakeSendMs);   // until it rings there: it may be dozing
     if (!air_.send) return;
     uint8_t buf[kPacketMax];
     Writer w(buf, sizeof buf);
@@ -388,6 +388,8 @@ void Presence::receive(const Mac& from, const uint8_t* d, size_t n, uint32_t now
     if (kind == kCall) {
         // Someone looks for players: answer soon (a little later on boards
         // with a higher address, so a room full of boards doesn't answer at once)
+        heard_call_ = true;
+        call_heard_ms_ = now;
         if (me_p_.available && !hello_due_) {
             hello_due_ = true;
             hello_to_ = kEveryone;
@@ -645,7 +647,9 @@ uint16_t Link::end_flags() const
 
 void Link::send_status(uint32_t now, uint16_t extra)
 {
-    next_ms_ = now + (suspended_ && ended_ == End::None ? kSuspendedSendMs : kSendMs);
+    // Link down: the partner may be dozing (its session put away), so
+    // often. Put away and not meeting yet: bursts (tick()). Else twice a second.
+    next_ms_ = now + (heard_ && up(now) ? kSendMs : kWakeSendMs);
     if (!air_.send) return;
     uint16_t flags = extra;
     if (ended_ != End::None) {
@@ -671,6 +675,14 @@ void Link::tick(uint32_t now)
     if (ended_ != End::None && linger_over(now)) return;
     if (ended_ != End::None && ended_ != End::YouForfeited && ended_ != End::YouDone && ended_ != End::YouLeft
         && ended_ != End::Closed) return;
+    if (ended_ == End::None && suspended_ && !meet_ && !cont_) {
+        // Put away: call the partner in bursts (it may be dozing too)
+        if (int32_t(now - next_burst_ms_) >= 0) {
+            burst_until_ms_ = now + kBurstMs;
+            next_burst_ms_ = now + kBurstEveryMs;
+        }
+        if (int32_t(burst_until_ms_ - now) <= 0) return;
+    }
     if (int32_t(now - next_ms_) >= 0) send_status(now);
 }
 
@@ -750,8 +762,10 @@ void Link::receive(const Mac& from, const uint8_t* d, size_t n, uint32_t now)
     peer_suspended_ = (s.flags & kFlagSuspended) != 0;
     peer_cont_ = (s.flags & kFlagContinue) != 0;
     if (suspended_ || peer_suspended_) {
+        const bool was = meet_;
         if (cont_ && peer_cont_) resume(now);
         else meet_ = !cont_;                             // ask this board's player (once they answer, wait)
+        if (meet_ && !was) send_status(now);             // tell the other board at once: it may be in a burst
     } else if (cont_) {
         resume(now);                                     // the other board said yes and went on already
     }

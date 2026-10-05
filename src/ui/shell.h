@@ -65,6 +65,9 @@ struct Shell {
     // 0 = nothing came; rssi (may be nullptr) = its signal strength, dBm
     size_t (*radio_recv)(uint8_t mac[6], uint8_t* buf, size_t cap, int8_t* rssi);
     void   (*radio_mac)(uint8_t mac[6]);
+    // Battery: doze = asleep but for short wake windows (nullptr = always awake)
+    void   (*radio_doze)(bool doze);
+    uint32_t (*radio_start_ms)();              // how long turning the radio on took (log)
 
     const char* firmware_version;              // "v1.2.3" (VERSION file)
     const char* firmware_build;                // git commit of the build, may be empty

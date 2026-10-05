@@ -372,7 +372,10 @@ typed names: only fixed codes go over the air (who's there, the games
 offered, play requests and their fixed answers, moves).
 
 - **Play Mode 2P**: the board listens and can be found by players who
-  look. It stays quiet unless its player looks for others or is in a game.
+  look. It stays quiet unless its player looks for others or is in a game,
+  and while nothing is going on its radio dozes (awake a tenth of a second
+  every 2 seconds) to save battery - being found or asked takes a second or
+  two. Settings → About shows the radio's state.
   It stays on until you switch back to 1P, even after a restart.
 - **Find Players** ("Searching..."): everyone nearby in 2P - "Bob -
   available", "busy" (in a game: can't be asked), "no games", "needs update"

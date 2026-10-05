@@ -76,6 +76,9 @@ struct Board {
     Profile  me;
     int      played_here = 0;
     bool     players = true;           // makes moves by itself
+    bool     dozing = false;           // radio asleep but for a window every kDozeIntervalMs
+    uint32_t doze_phase = 0;
+    bool hears(uint32_t now) const { return !dozing || (now + doze_phase) % kDozeIntervalMs < kDozeWindowMs; }
     std::mt19937 rng;
 
     // games: bit k = game key k+1 (version 1)
@@ -125,7 +128,7 @@ void deliver()
     air.flying = later;
     for (auto& pk : due)
         for (Board* b : boards) {
-            if (b->id == pk.from || !b->on) continue;
+            if (b->id == pk.from || !b->on || !b->hears(air.now)) continue;
             const Mac& from = boards[pk.from]->mac;
             const uint32_t s = status_session(pk.data.data(), pk.data.size());
             if (b->in_game && s && s == b->link.session())
@@ -687,6 +690,69 @@ void test_save_round_trip()
     CHECK(!l.load(buf, sizeof buf - 1, A.a, air.now));
 }
 
+// Dozing boards (battery): found, asked, and met again - each within a couple of seconds
+void test_dozing()
+{
+    for (double loss : {0.0, 0.3}) {
+        reset_air(loss, 0.05, 30);
+        Board A, B;
+        boards = {&A, &B};
+        A.setup(0, 1, "v1");
+        B.setup(1, 2, "v1");
+        B.dozing = true;
+        B.doze_phase = 777;
+        int t = 0;
+        A.p.search(true, air.now);
+        for (; t < 10000 && !A.seen(B); t += 10) step(false);
+        CHECK(A.seen(B));
+        CHECK(t <= (loss > 0 ? 6500 : 2300));
+        // B heard a Call: it stays awake while someone looks (as wplay does)
+        B.dozing = !B.p.called_lately(air.now);
+        CHECK(!B.dozing);
+        B.dozing = true;                       // worst case: it dozes anyway
+        A.p.request(B.mac, 2, 1, 2, 500, air.now);
+        for (t = 0; t < 10000 && !B.p.asked(); t += 10) step(false);
+        CHECK(B.p.asked());
+        CHECK(t <= (loss > 0 ? 6500 : 2300));
+        B.dozing = false;                      // the question is up: awake
+        for (t = 0; t < 3000 && !A.p.ringing(); t += 10) step(false);
+        CHECK(A.p.ringing());
+        B.p.accept(air.now);
+        B.p.poll();
+        B.start();
+        CHECK(wait_event(A, 3000) == Presence::Event::Started);
+        A.start();
+        run(3000);
+        // Both put the session away and doze; when they come back in range they meet
+        air.blocked = true;
+        run(4000);
+        A.link.suspend(air.now);
+        B.link.suspend(air.now);
+        A.dozing = B.dozing = true;
+        A.doze_phase = 1300;
+        run(15000, false);
+        air.blocked = false;
+        for (t = 0; t < 30000 && !(A.link.meet() || B.link.meet()); t += 10) {
+            step(false);
+            // wplay: awake while bursting or once the question is up
+            A.dozing = !(A.link.bursting(air.now) || A.link.meet());
+            B.dozing = !(B.link.bursting(air.now) || B.link.meet());
+        }
+        for (int u = 0; u < 3000 && !(A.link.meet() && B.link.meet()); u += 10) {
+            step(false);
+            A.dozing = !(A.link.bursting(air.now) || A.link.meet());
+            B.dozing = !(B.link.bursting(air.now) || B.link.meet());
+        }
+        CHECK(A.link.meet() && B.link.meet());
+        CHECK(t <= int(kBurstEveryMs + kBurstMs));
+        A.dozing = B.dozing = false;
+        A.link.agree_continue(air.now);
+        B.link.agree_continue(air.now);
+        run(3000, false);
+        CHECK(!A.link.suspended() && !B.link.suspended());
+    }
+}
+
 } // namespace
 
 int main()
@@ -707,6 +773,7 @@ int main()
     test_leave();
     test_disagree();
     test_save_round_trip();
+    test_dozing();
     if (failures) { printf("%d failed\n", failures); return 1; }
     printf("net: all passed\n");
     return 0;

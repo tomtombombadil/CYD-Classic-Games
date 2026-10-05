@@ -53,8 +53,20 @@ constexpr uint8_t  kLink = 3;
 constexpr size_t   kPacketMax = 128;        // biggest packet we send or take
 constexpr int      kRecent = 12;            // moves repeated in every status
 constexpr int      kMaxGames = 16;          // wireless games a board can list
-constexpr uint32_t kSendMs = 500;           // repeat of a request, answer or status
-constexpr uint32_t kSuspendedSendMs = 2000; // a put-away session's status
+constexpr uint32_t kSendMs = 500;           // repeat of an answer, or a status while the link is up
+// Dozing (battery, Tom 2026-10-04): a board in 2P with nothing going on
+// keeps its radio asleep and wakes for kDozeWindowMs every kDozeIntervalMs
+// (the WiFi driver's ESP-NOW power saving: no stop / start). Anything sent
+// to a board that may be dozing is repeated every kWakeSendMs - shorter
+// than the window, so every window catches at least one copy: Calls, a
+// request until it rings, a status while the link is down, and the bursts
+// of a put-away session.
+constexpr uint32_t kDozeIntervalMs = 2000;
+constexpr uint32_t kDozeWindowMs = 120;
+constexpr uint32_t kWakeSendMs = 100;
+constexpr uint32_t kBurstMs = 2600;         // a put-away session calls its partner this long...
+constexpr uint32_t kBurstEveryMs = 10000;   // ... this often
+constexpr uint32_t kCalledAwakeMs = 8000;   // after hearing a Call: stay awake (someone is looking)
 constexpr uint32_t kLostMs = 3000;          // nothing heard this long = link down
 constexpr uint32_t kForgetMs = 6000;        // a board not heard this long leaves the list
 constexpr uint32_t kRequestMs = 30000;      // a request nobody answers runs out
@@ -147,6 +159,8 @@ public:
     // Looking for players: Calls go out while on; the list fills from the Hellos
     void search(bool on, uint32_t now);
     bool searching() const { return searching_; }
+    // Someone looked for players lately (a Call heard): stay awake for them
+    bool called_lately(uint32_t now) const { return heard_call_ && now - call_heard_ms_ < kCalledAwakeMs; }
     int  count() const { return n_; }
     const Nearby& at(int i) const { return near_[i]; }
     const Nearby* find(const Mac& m) const;
@@ -209,6 +223,8 @@ private:
     Nearby   near_[kMaxNearby];
     int      n_ = 0;
     // answering calls
+    bool     heard_call_ = false;
+    uint32_t call_heard_ms_ = 0;
     Mac      hello_to_;
     bool     hello_due_ = false;
     uint32_t hello_ms_ = 0;
@@ -315,6 +331,8 @@ public:
     void agree_continue(uint32_t now);
     bool continue_said() const { return cont_; }
     bool resumed();                          // cleared by reading
+    // A put-away session calling its partner now (the radio stays awake for the answer)
+    bool bursting(uint32_t now) const { return suspended_ && int32_t(burst_until_ms_ - now) > 0; }
 
 private:
     void send_status(uint32_t now, uint16_t extra_flags = 0);
@@ -342,6 +360,7 @@ private:
     uint32_t ended_ms_ = 0;
     bool     suspended_ = false, cont_ = false, meet_ = false, resumed_ = false;
     uint32_t cont_until_ms_ = 0;             // "continue" keeps being said after resuming
+    uint32_t burst_until_ms_ = 0, next_burst_ms_ = 0;
     // the partner
     bool     heard_ = false;
     uint32_t heard_ms_ = 0;

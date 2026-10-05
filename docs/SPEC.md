@@ -231,13 +231,18 @@ Chinese checkers, Dots and Boxes (thin tap targets).
     in a game). Answer only calls from CYD Classic Games boards. The search
     call and its answer must stay readable by every later version, so an
     older board can still say "needs update".
+- **Battery (Tom, 2026-10-04):** an idle 2P board dozes (the radio wakes
+  120 ms every 2 s, the driver's ESP-NOW power saving - no stop/start,
+  which is too slow); boards looking for it repeat every 100 ms, so it is
+  found or asked within about 2 s ("Searching..." / "Requesting..." on
+  screen). Fully awake during anything else (CLAUDE.md has the list).
 - **HARD RULE (Tom, 2026-10-04): no free-form communication between
   players, ever** - no chat, messages or any player-filled field on the
   air. Only fixed codes: presence, versions, games offered, requests and
   their fixed answers, moves, game state. (CLAUDE.md has the full rule.)
 - **Player names are picked, never typed** (Tom, 2026-10-04, from the hard
   rule): two words, one from each of two fixed lists in the firmware -
-  fun, funny and silly, kid-safe ("Wobbly Pickle", "Turbo Llama"). The name
+  fun, funny and silly, kid-safe ("Wobbly Llama", "Turbo Penguin"). The name
   page has **Random** and **Pick From List** (pick a word from each list).
   On the air a name is two numbers plus the board ID; no typed text ever
   leaves a board. The lists are **append-only** (a word's number never

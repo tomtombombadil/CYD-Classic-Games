@@ -504,6 +504,7 @@ static void fake_boards_tick(uint32_t now)
 static std::vector<std::vector<uint8_t>> agent_out;
 static std::vector<std::pair<net::Mac, std::vector<uint8_t>>> agent_in;
 static bool agent_radio = false;
+static bool agent_doze = false;          // dozing: packets only arrive in the wake windows
 static net::Mac agent_mac;
 static std::string agent_dir;
 static std::vector<std::string> agent_stats;
@@ -585,7 +586,7 @@ static int agent_main(int argc, char** argv)
     lv_indev_set_type(stylus, LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(stylus, touch_read);
     agent_load_dir();
-    if (!files.count("player")) {                    // the name to start with ("Wobbly Pickle")
+    if (!files.count("player")) {                    // the name to start with ("Wobbly Llama")
         uint16_t a = 0, b = 0;
         if (!names::parse(name, &a, &b)) { fprintf(stderr, "agent: %s is not a name from the lists\n", name); return 2; }
         const uint8_t p[13] = {'P', 'L', 'R', '3', uint8_t(a), uint8_t(a >> 8), uint8_t(b), uint8_t(b >> 8),
@@ -622,6 +623,7 @@ static int agent_main(int argc, char** argv)
         return n;
     };
     sh.radio_mac = [](uint8_t m[6]) { memcpy(m, agent_mac.b, 6); };
+    sh.radio_doze = [](bool d) { agent_doze = d; };
     sh.firmware_version = "v9.9.9";
     sh.board_name = "agent";
     static ui::CustomThemes themes;
@@ -643,7 +645,9 @@ static int agent_main(int argc, char** argv)
             auto m = unhex(arg.substr(0, s2));
             net::Mac from;
             memcpy(from.b, m.data(), 6);
-            if (agent_radio) agent_in.push_back({from, unhex(arg.substr(s2 + 1))});
+            // A dozing radio hears only during its window (phase differs per board)
+            const bool hears = !agent_doze || (fake_ms + 337u * mb) % net::kDozeIntervalMs < net::kDozeWindowMs;
+            if (agent_radio && hears) agent_in.push_back({from, unhex(arg.substr(s2 + 1))});
         } else if (cmd == "press") {
             printf("K %d\n", press_prefix_anywhere(arg.c_str()) ? 1 : 0);
             run(20);
@@ -695,6 +699,8 @@ static int agent_main(int argc, char** argv)
             char b[512];
             wplay::debug_state(b, sizeof b);
             printf("W %s\n", b);
+        } else if (cmd == "radio") {
+            printf("Z %s\n", wplay::radio_state());
         } else if (cmd == "icons") {           // the header's 2P and wifi icons
             printf("I 2p=%d wifi=%d\n", wplay::two_player_state(), wplay::wifi_level());
         } else if (cmd == "may") {
