@@ -265,6 +265,13 @@ write("whowants", [
  ("The Questions", "The questions come from Open Trivia DB (opentdb.com), shared under CC BY-SA 4.0, screened for young players and changed to plain text. Stats keep what you won and how far you got."),
 ])
 
+write("jeoparcyd", [
+ ("The Idea", "You against Max and Zoe. The board has six categories (one per row) of five clues each, worth $200 to $1,000 - the bigger the value, the harder the question.\nTwo rounds (the second pays double), then a Final clue. Most money wins."),
+ ("Buzzing In", "Whoever has control picks a value. Then everyone may answer: tapping an answer IS buzzing in, so be quick - Max and Zoe buzz in too.\nRight: you win the value and pick next. Wrong: you lose the value, and the others may still try. The bar shows the time left."),
+ ("Daily Doubles", "One value in round 1 and two in round 2 hide a Daily Double: only the picker answers, for a wager - the least, half, all, or the clue's value. You may bet up to your money, or the round's top value if you have less."),
+ ("Final", "Everyone with money bets (nothing, a quarter, half or all), then answers one hard question. Right adds the bet, wrong takes it off.\nComputer: Easy knows less and buzzes slower; Hard knows more and is quick. Questions: Open Trivia DB (CC BY-SA 4.0)."),
+])
+
 write("dealcyd", [
  ("The Idea", "26 cases hide 26 amounts, from 1 cent to $1,000,000. Pick one to be yours - it stays shut until the end.\nThen open the other cases a few at a time. Every amount you open is one your case can't hold: it turns grey on the boards at the sides."),
  ("The Banker", "After each round the Banker calls with an offer for your case. Deal takes the money and ends the game. No Deal plays on.\nRounds open 6, 5, 4, 3 and 2 cases, then one at a time. The offers grow as the game goes on - but so does the risk."),

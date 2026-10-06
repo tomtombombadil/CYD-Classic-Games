@@ -91,6 +91,8 @@ namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool 
 namespace dealcyd_preview { dealcyd::Game* game(); void reveal(bool on); void redraw(); }
 #include "games/presscyd/presscyd_core.h"
 #include "games/cardsharks/cardsharks_core.h"
+#include "games/jeoparcyd/jeoparcyd_core.h"
+namespace jeoparcyd_preview { jcyd::Game* game(); void hold(bool on); void refresh(); void status_line(const char* t); void final_clue(); }
 #include "games/whowants/whowants_core.h"
 namespace whowants_preview { whowants::Game* game(); void refresh(); void hold(bool on); void advance(int n); void ladder(); }
 #include "games/escape/escape_core.h"
@@ -1623,6 +1625,75 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Jeopar-CYD!: the board part-way, a clue with a wrong answer, a Daily Double wager, the Final, the end
+        using namespace jcyd;
+        remove_game("jeoparcyd");
+        ui::app_open_game_now(games::find("jeoparcyd"));
+        jeoparcyd_preview::hold(true);
+        Game* g = jeoparcyd_preview::game();
+        if (g) {
+            // play 9 clues: computers' plans, you take some
+            for (int k = 0; k < 9; ++k) {
+                int c, r; g->pick_cell(1, &c, &r);
+                if (g->cell[c][r].daily) { r = (r + 1) % kRows; if (g->cell[c][r].used || g->cell[c][r].daily) continue; }
+                if (!g->pick(c, r)) continue;
+                g->answer(k % 3 == 0 ? 0 : 1 + k % 2, k % 4 == 3 ? (g->right_slot() + 1) % 4 : g->right_slot());
+                if (g->phase == Phase::Clue) g->time_up();
+                g->done_revealing();
+            }
+            g->chooser = 0;
+            jeoparcyd_preview::refresh();
+            shot(out + "_light_46_jeoparcyd.ppm");
+            ui::app_set_theme(ui::Theme::Dark);
+            ui::app_go_home_now();
+            ui::app_open_game_now(games::find("jeoparcyd"));
+            jeoparcyd_preview::hold(true);
+            g = jeoparcyd_preview::game();
+            shot(out + "_dark_46_jeoparcyd.ppm");
+            ui::app_set_theme(ui::Theme::Light);
+            ui::app_go_home_now();
+            ui::app_open_game_now(games::find("jeoparcyd"));
+            jeoparcyd_preview::hold(true);
+            g = jeoparcyd_preview::game();
+            // a clue: Max was wrong
+            for (int c = 0; c < kCats; ++c) for (int r = 2; r < kRows; ++r)
+                if (g->phase == Phase::Board && !g->cell[c][r].used && !g->cell[c][r].daily) g->pick(c, r);
+            g->answer(1, (g->right_slot() + 2) % 4);
+            jeoparcyd_preview::refresh();
+            jeoparcyd_preview::status_line("Max was wrong");
+            shot(out + "_light_46_jeoparcyd_clue.ppm");
+            g->answer(0, g->right_slot());
+            jeoparcyd_preview::refresh();
+            jeoparcyd_preview::status_line("You got it!");
+            shot(out + "_light_46_jeoparcyd_right.ppm");
+            g->done_revealing();
+            // a Daily Double
+            for (int c = 0; c < kCats; ++c) for (int r = 0; r < kRows; ++r)
+                if (g->phase == Phase::Board && !g->cell[c][r].used && g->cell[c][r].daily) { g->chooser = 0; g->pick(c, r); }
+            jeoparcyd_preview::refresh();
+            shot(out + "_light_46_jeoparcyd_wager.ppm");
+            // the Final
+            Game f = *g;
+            f.phase = Phase::Reveal;
+            for (auto& col : f.cell) for (Cell& x : col) x.used = 1;
+            f.round = 1;
+            f.score[0] = 4200; f.score[1] = 5600; f.score[2] = -400;
+            f.done_revealing();
+            *g = f;
+            jeoparcyd_preview::refresh();
+            shot(out + "_light_46_jeoparcyd_final.ppm");
+            g->final_bet(0, 2100); g->final_bet(1, 3000);
+            jeoparcyd_preview::status_line("");
+            jeoparcyd_preview::final_clue();
+            shot(out + "_light_46_jeoparcyd_final_clue.ppm");
+            g->final_answer(0, g->right_slot()); g->final_answer(1, (g->right_slot() + 1) % 4);
+            jeoparcyd_preview::refresh();
+            shot(out + "_light_46_jeoparcyd_over.ppm");
+            jeoparcyd_preview::hold(false);
+        }
         ui::app_go_home_now();
     }
 

@@ -48,6 +48,7 @@ int  category(int i) { return (i < 0 || i >= kQuestions) ? 0 : kMeta[i] & 0x1F; 
 int  difficulty(int i) { return (i < 0 || i >= kQuestions) ? 0 : (kMeta[i] >> 5) & 3; }
 bool true_false(int i) { return i >= 0 && i < kQuestions && (kMeta[i] & 0x80); }
 const char* category_name(int c) { return (c >= 0 && c < kCategories) ? kNames[c] : ""; }
+const char* category_short(int c) { return c == 10 ? "Math" : c == 4 ? "Theatre" : category_name(c); }
 
 bool get(int i, Question& q)
 {

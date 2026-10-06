@@ -47,6 +47,7 @@
 #include "../../src/games/common/inflate.h"
 #include "../../src/games/common/trivia_bank.h"
 #include "../../src/games/whowants/whowants_core.h"
+#include "../../src/games/jeoparcyd/jeoparcyd_core.h"
 #include <chrono>
 #include <string>
 #include <set>
@@ -3245,6 +3246,101 @@ static void test_whowants()
     trivia::release();
 }
 
+static void test_jeoparcyd()
+{
+    using namespace jcyd;
+    {   // the board: six categories, rows by difficulty, Daily Doubles
+        Game g; g.start(11, 1);
+        int dd = 0;
+        for (int c = 0; c < kCats; ++c) {
+            for (int c2 = 0; c2 < c; ++c2) CHECK(g.cat[c] != g.cat[c2]);
+            for (int r = 0; r < kRows; ++r) {
+                const Cell& x = g.cell[c][r];
+                CHECK(x.q >= 0 && trivia::category(x.q) == g.cat[c] && !trivia::true_false(x.q));
+                dd += x.daily;
+                if (r == 0) CHECK(!x.daily);
+            }
+        }
+        CHECK(dd == 1 && g.value(0) == 200 && g.value(4) == 1000);
+    }
+    {   // a clue: wrong costs, right pays and takes control; everyone wrong = reveal
+        Game g; g.start(12, 1);
+        int c = 0, r = 0;
+        while (g.cell[c][r].daily) ++c;
+        CHECK(g.pick(c, r) && g.phase == Phase::Clue);
+        const int right = g.right_slot(), wrong = (right + 1) % 4;
+        CHECK(g.answer(0, wrong) && g.score[0] == -200 && g.phase == Phase::Clue);
+        CHECK(!g.answer(0, right));                                // you had your try
+        CHECK(!g.answer(1, wrong));                                // that answer was given
+        CHECK(g.answer(1, right) && g.score[1] == 200 && g.chooser == 1 && g.phase == Phase::Reveal);
+        CHECK(g.done_revealing() && g.phase == Phase::Board);
+        int c2 = 1;
+        while (g.cell[c2][0].daily) ++c2;
+        g.pick(c2, 0);
+        const int w0 = (g.right_slot() + 1) % 4, w1 = (g.right_slot() + 2) % 4, w2 = (g.right_slot() + 3) % 4;
+        g.answer(0, w0); g.answer(1, w1);
+        CHECK(g.answer(2, w2) && g.phase == Phase::Reveal);
+    }
+    {   // a Daily Double: the picker alone, a wager within limits
+        Game g; g.start(13, 1);
+        int dc = -1, dr = -1;
+        for (int c = 0; c < kCats; ++c) for (int r = 0; r < kRows; ++r) if (g.cell[c][r].daily) { dc = c; dr = r; }
+        CHECK(g.pick(dc, dr) && g.phase == Phase::Wager);
+        CHECK(g.set_wager(99999) && g.wager == 1000);              // no money yet: up to $1,000
+        CHECK(!g.answer(1, g.right_slot()));
+        CHECK(g.answer(0, g.right_slot()) && g.score[0] == 1000);
+    }
+    {   // whole games: three computers' plans; two rounds, a Final, an end
+        for (uint32_t seed = 1; seed <= 6; ++seed) {
+            Game g; g.start(seed * 77, int(seed % 3));
+            int guard = 0;
+            while (g.phase != Phase::Over && ++guard < 2000) {
+                switch (g.phase) {
+                    case Phase::Board: { int c, r; g.pick_cell(g.level, &c, &r); CHECK(g.pick(c, r)); break; }
+                    case Phase::Wager: CHECK(g.set_wager(g.cpu_wager(g.chooser))); break;
+                    case Phase::Clue: {
+                        if (g.wager) {                                   // the picker answers
+                            const int s = g.chooser == 0 ? g.right_slot() : g.plan[g.chooser].slot;
+                            if (s >= 0) g.answer(g.chooser, s); else g.time_up();
+                            break;
+                        }
+                        int first = -1;
+                        for (int p = 1; p < kPlayers; ++p)
+                            if (g.plan[p].buzz_ms && (first < 0 || g.plan[p].buzz_ms < g.plan[first].buzz_ms)) first = p;
+                        if (first > 0) { g.answer(first, g.plan[first].slot); if (g.phase == Phase::Clue) g.plan_clue(); }
+                        else g.time_up();
+                        break;
+                    }
+                    case Phase::Reveal: CHECK(g.done_revealing()); break;
+                    case Phase::FinalWager:
+                        for (int p = 0; p < kPlayers; ++p) if (g.in_final(p)) g.final_bet(p, g.cpu_final_wager(p));
+                        for (int p = 0; p < kPlayers; ++p) if (g.in_final(p)) g.final_answer(p, g.cpu_final_slot(p));
+                        break;
+                    default: break;
+                }
+                if (g.round == 1) CHECK(g.value(0) == 400);
+            }
+            CHECK(g.phase == Phase::Over && guard < 2000);
+            int firsts = 0;
+            for (int p = 0; p < kPlayers; ++p) firsts += g.place(p) == 1;
+            CHECK(firsts >= 1);
+        }
+    }
+    {   // save round trip; bad saves
+        Game g; g.start(21, 2);
+        int c, r; g.pick_cell(2, &c, &r); g.pick(c, r);
+        std::vector<uint8_t> buf(Game::kSaveBytes);
+        CHECK(g.serialize(buf.data(), buf.size()) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf.data(), buf.size()) && h.q == g.q && h.phase == g.phase && !memcmp(h.cat, g.cat, kCats));
+        std::vector<uint8_t> bad = buf; bad[4] = 7;
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+        bad = buf; bad[6] = 99;                                       // a category that doesn't exist
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+    }
+    trivia::release();
+}
+
 int main()
 {
     test_fourconnect();
@@ -3289,6 +3385,7 @@ int main()
     test_escape();
     test_trivia();
     test_whowants();
+    test_jeoparcyd();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

@@ -38,6 +38,7 @@ SHOTS = {
     "s_light_43_sorrycyd": "small_sorrycyd",
     "s_light_44_escape": "small_escape",
     "s_light_45_whowants_audience": "small_whowants",
+    "s_light_46_jeoparcyd": "small_jeoparcyd",
     "s_light_37_pegs": "small_pegs",
     "s_light_38_memory": "small_memory",
     "s_light_39_nonogram": "small_nonogram",

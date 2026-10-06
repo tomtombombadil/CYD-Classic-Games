@@ -29,6 +29,7 @@ int  category(int i);
 int  difficulty(int i);
 bool true_false(int i);
 const char* category_name(int c);
+const char* category_short(int c);   // for tight spots ("Math")
 bool get(int i, Question& q);      // false when out of range / no memory / bad data
 void release();                    // frees the unpacked block
 
