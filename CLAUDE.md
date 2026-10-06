@@ -363,7 +363,12 @@ never typed (SPEC section 5).
   Tom then saw NO wheel at all on the 3.5" - v0.26.2 draws wedges as
   triangle fans, not thick arcs, invalidates only the wheel's square, and
   a spin ends only after its last position was drawn + 1.1 s (or 10 s
-  late), so the result is always seen), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,
+  late), so the result is always seen; v0.27.3, Tom: the spin "flashes
+  more than spins" - at ~10-20 frames a second a fast wheel jumped
+  several wedges a frame (wagon-wheel effect), so it is drawn with
+  motion blur: from 5 deg a frame (speed x measured frame time) the
+  wedges fade toward their average colour, up to 80 % at 18 deg, labels
+  hidden above 35 %; sharp again as it slows), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,
   X first anywhere; the square played sends the other player to that
   board, a won or full board = play anywhere; a full board counts for
   nobody, all boards done without three = draw; move = cell 0-80 (board *
@@ -517,7 +522,8 @@ never typed (SPEC section 5).
   tapping the board edge in that direction. 2048 (Tom, 2026-10-03): the
   board's two diagonals, extended to the screen edges, split the whole
   play area into 4 invisible tap zones (top = up, right = right, ...);
-  a tap in a zone = a swipe that way.
+  a tap in a zone = a swipe that way. Under the board, in the Play Again
+  key's place while the game is on: "Tap the direction of your move." (Tom).
 - Long-press is not forbidden, just not preferred: never the only way to do
   something. Propose each use to Tom and ask before adding it. Approved
   (2026-10-02): Minesweeper (long-press = flag, besides the Flag toggle);

@@ -40,6 +40,7 @@ kit::Clock  clock_;
 lv_obj_t*   area = nullptr;            // everything below the top bar: board + tap zones
 lv_obj_t*   again_k = nullptr;
 int         bx = 0, by = 0, bsize = 0; // board, relative to `area`
+int         hint_y = 0, hint_h = 0;    // the how-to line, in the Play Again key's place
 int         info_y = 0;
 uint32_t    best_score = 0;            // from the stats, for "Best"
 uint32_t    last_save_ms = 0;
@@ -227,6 +228,10 @@ void area_draw_cb(lv_event_t* e)
         snprintf(t, sizeof t, "Best %lu    Moves %u", (unsigned long)best, (unsigned)S->g.moves);
     kit::text(layer, t, bar_font(), pal().muted, a.x1, a.y1 + info_y, lv_area_get_width(&a),
               lv_font_get_line_height(bar_font()));
+    // Where the Play Again key goes at the end: how to play (Tom, 2026-10-05)
+    if (!S->g.over())
+        kit::text(layer, "Tap the direction of your move.", bar_font(), pal().ink, a.x1, a.y1 + hint_y,
+                  lv_area_get_width(&a), hint_h);
 }
 
 // The four zones: compare the tap with the board's centre. Between the
@@ -278,6 +283,8 @@ void build()
     lv_obj_add_state(again_k, LV_STATE_CHECKED);
     key_label(again_k, "Play Again", menu_font());
     lv_obj_set_pos(again_k, pad, m.h - pad - kh);
+    hint_y = m.h - pad - kh - top;
+    hint_h = kh;
     clock_ = kit::Clock{};
     update_status();
 }

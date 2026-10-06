@@ -58,6 +58,8 @@ bool       pending_call = false;                        // a computer spun money
 // For the log (Tom, 2026-10-05: a Spin that seemed to pass straight to Max):
 // how often the wheel was drawn during a spin, and the longest gap
 uint32_t   spin_draws = 0, spin_gap = 0, last_draw_ms = 0;
+float      frame_ms = 60;      // how often the wheel is drawn (a running average)
+bool       final_full = false; // the whole wheel area redrawn once at the stop (the result line)
 // The spin ends only once its last position has been on screen for kHoldMs
 bool       final_drawn = false;
 uint32_t   final_at = 0;
@@ -168,7 +170,7 @@ void anim_cb(lv_timer_t*)
         const int cx = a.x1 + w / 2, cy = a.y1 + h / 2 + (metrics().large ? 8 : 5);
         lv_area_t r{cx - R, cy - R - 12, cx + R, cy + R};
         lv_obj_invalidate_area(wheel_obj, &r);
-        if (final_drawn) lv_obj_invalidate(wheel_obj);
+        if (final_drawn && !final_full) { final_full = true; lv_obj_invalidate(wheel_obj); }
     }
     if (board_obj && ui_mode == Ui::Revealing) lv_obj_invalidate(board_obj);
 }
@@ -199,7 +201,7 @@ void do_spin()
     pending_call = false;
     spin_by = p;
     spin_draws = spin_gap = 0;
-    final_drawn = false;
+    final_drawn = final_full = false;
     last_draw_ms = lv_tick_get();
     const int16_t v = kWheel[w];
     char m[16];
@@ -548,6 +550,7 @@ void wheel_draw_cb(lv_event_t* e)
     if (ui_mode == Ui::Spinning) {
         const uint32_t t = lv_tick_get();
         if (t - last_draw_ms > spin_gap) spin_gap = t - last_draw_ms;
+        if (t - last_draw_ms < 400) frame_ms = frame_ms * 0.7f + float(t - last_draw_ms) * 0.3f;
         last_draw_ms = t;
         ++spin_draws;
     }
@@ -568,30 +571,52 @@ void wheel_draw_cb(lv_event_t* e)
     const int cx = a.x1 + w / 2, cy = a.y1 + h / 2 + (M.large ? 8 : 5);
     const float step = 360.0f / kWedges;
     kit::fill_circle(layer, cx, cy, R + 3, P.stone_dark);
-    // Each wedge is a fan of triangles from the hub: far cheaper to draw than
-    // thick arcs (v0.26.1's arcs were too slow for the 3.5" - Tom saw no wheel)
-    constexpr int kSeg = 4;
-    lv_draw_triangle_dsc_t wd;
-    lv_draw_triangle_dsc_init(&wd);
-    wd.opa = LV_OPA_COVER;
+    // Motion blur. The panel shows a new frame only every ~50-100 ms, so a
+    // fast wheel turned several wedges between frames and seemed to flash
+    // or even run backwards (the wagon-wheel effect - Tom: "flashes more
+    // than spins"). So, like a camera, a wheel that turns more than a few
+    // degrees a frame is drawn smeared: its wedges fade into their average
+    // colour, the numbers vanish, and it sharpens as it slows.
+    const float speed = t < 1 ? (rot_to - rot_from) * 3 * (1 - t) * (1 - t) / float(kSpinMs) : 0;   // deg / ms
+    const float per_frame = speed * frame_ms;
+    // (at most 80 %: a faint shimmer of the wedges is left, so it still reads as turning)
+    float blur = 0.8f * (per_frame - 5.0f) / (18.0f - 5.0f);
+    blur = blur < 0 ? 0 : blur > 0.8f ? 0.8f : blur;
+    uint32_t sr = 0, sg = 0, sb = 0;
     for (int i = 0; i < kWedges; ++i) {
         lv_color_t ink;
-        wd.color = wedge_color(i, &ink);
-        const float s0 = (rot + step * i) * 3.14159265f / 180.0f, ds = step / kSeg * 3.14159265f / 180.0f;
-        for (int k2 = 0; k2 < kSeg; ++k2) {
-            const float a0 = s0 + ds * k2, a1 = a0 + ds + 0.02f;          // a hair of overlap: no seams
-            wd.p[0].x = cx; wd.p[0].y = cy;
-            wd.p[1].x = cx + int(lroundf(cosf(a0) * R)); wd.p[1].y = cy + int(lroundf(sinf(a0) * R));
-            wd.p[2].x = cx + int(lroundf(cosf(a1) * R)); wd.p[2].y = cy + int(lroundf(sinf(a1) * R));
-            lv_draw_triangle(layer, &wd);
-        }
+        const lv_color_t c = wedge_color(i, &ink);
+        sr += c.red; sg += c.green; sb += c.blue;
     }
-    // Labels: upright, near the rim
+    const lv_color_t avg = lv_color_make(uint8_t(sr / kWedges), uint8_t(sg / kWedges), uint8_t(sb / kWedges));
     const lv_font_t* lf = M.large ? &lv_font_montserrat_14 : &lv_font_montserrat_10;
     const int lh = lv_font_get_line_height(lf), lw = M.large ? 44 : 30;
-    for (int i = 0; i < kWedges; ++i) {
+    {
+        // Each wedge is a fan of triangles from the hub: far cheaper to draw than
+        // thick arcs (v0.26.1's arcs were too slow for the 3.5" - Tom saw no wheel)
+        constexpr int kSeg = 4;
+        lv_draw_triangle_dsc_t wd;
+        lv_draw_triangle_dsc_init(&wd);
+        wd.opa = LV_OPA_COVER;
+        const uint8_t keep = uint8_t(255 * (1 - blur));
+        for (int i = 0; i < kWedges; ++i) {
+            lv_color_t ink;
+            wd.color = lv_color_mix(wedge_color(i, &ink), avg, keep);
+            const float s0 = (rot + step * i) * 3.14159265f / 180.0f, ds = step / kSeg * 3.14159265f / 180.0f;
+            for (int k2 = 0; k2 < kSeg; ++k2) {
+                const float a0 = s0 + ds * k2, a1 = a0 + ds + 0.02f;          // a hair of overlap: no seams
+                wd.p[0].x = cx; wd.p[0].y = cy;
+                wd.p[1].x = cx + int(lroundf(cosf(a0) * R)); wd.p[1].y = cy + int(lroundf(sinf(a0) * R));
+                wd.p[2].x = cx + int(lroundf(cosf(a1) * R)); wd.p[2].y = cy + int(lroundf(sinf(a1) * R));
+                lv_draw_triangle(layer, &wd);
+            }
+        }
+    }
+    // Labels: upright, near the rim (not while they'd be a smear)
+    for (int i = 0; i < kWedges && blur < 0.35f; ++i) {
         lv_color_t ink;
-        wedge_color(i, &ink);
+        const lv_color_t wc = wedge_color(i, &ink);
+        if (blur > 0) ink = lv_color_mix(ink, lv_color_mix(wc, avg, uint8_t(255 * (1 - blur))), uint8_t(255 * (1 - blur * 2.5f)));
         const float mid = (rot + step * i + step / 2) * 3.14159265f / 180.0f;
         const int lx = cx + int(cosf(mid) * R * 0.74f), ly = cy + int(sinf(mid) * R * 0.74f);
         char s[8];
