@@ -40,6 +40,7 @@
 #include "../../src/games/acquisitions/acquisitions_core.h"
 #include "../../src/games/strategygo/strategygo_core.h"
 #include "../../src/games/dealcyd/dealcyd_core.h"
+#include "../../src/games/presscyd/presscyd_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -2703,6 +2704,101 @@ static void test_dealcyd()
     }
 }
 
+static void test_presscyd()
+{
+    using namespace presscyd;
+    {   // the board: gremlins at most one a square, the spins
+        Game g; g.start(17);
+        int grem = 0, spin = 0;
+        for (int q = 0; q < kSquares; ++q) {
+            int per = 0;
+            for (int k = 0; k < kSlots; ++k) {
+                per += g.board[q][k].kind == kGremlin;
+                spin += g.board[q][k].kind == kMoneySpin;
+                if (g.board[q][k].kind != kGremlin) CHECK(g.board[q][k].dollars >= 250);
+            }
+            CHECK(per <= 1);
+            grem += per;
+        }
+        CHECK(grem == 9 && spin == 7);
+        CHECK(g.phase == Phase::Ready && g.turn == 0 && g.p[0].earned == 3);
+    }
+    auto find = [](const Game& g, int kind, int* sq, int* sl) {
+        for (int q = 0; q < kSquares; ++q) for (int k = 0; k < kSlots; ++k)
+            if (g.board[q][k].kind == kind) { *sq = q; *sl = k; return true; }
+        return false;
+    };
+    {   // money, an extra spin, a gremlin
+        Game g; g.start(5);
+        int q, k;
+        CHECK(!g.stop(0, 0));                                   // not spinning
+        CHECK(find(g, kMoney, &q, &k) && g.spin() && g.stop(q, k));
+        CHECK(g.p[0].money == g.board[q][k].dollars && g.p[0].earned == 2 && g.turn == 0);
+        CHECK(find(g, kMoneySpin, &q, &k) && g.spin() && g.stop(q, k));
+        CHECK(g.p[0].earned == 2);                              // used one, won one
+        CHECK(find(g, kGremlin, &q, &k) && g.spin() && g.stop(q, k));
+        CHECK(g.p[0].money == 0 && g.p[0].gremlins == 1 && g.p[0].earned == 1);
+    }
+    {   // passing: only to someone ahead; they must take them
+        Game g; g.start(8);
+        g.p[0].money = 1000; g.p[1].money = 3000; g.p[2].money = 500;
+        g.turn = 0;
+        CHECK(g.can_pass() && g.pass_target() == 1);
+        CHECK(g.pass() && g.turn == 1 && g.p[1].passed == 3 && g.p[0].earned == 0);
+        CHECK(!g.can_pass());                                   // passed spins come first
+        int q, k;
+        CHECK(find(g, kGremlin, &q, &k) && g.spin() && g.stop(q, k));
+        CHECK(g.p[1].passed == 0 && g.p[1].earned == 3 + 2);    // the rest became theirs
+        g.p[1].money = 10000;
+        g.turn = 1;
+        CHECK(!g.can_pass());                                   // the leader can't pass
+    }
+    {   // four gremlins: out
+        Game g; g.start(9);
+        int q, k;
+        find(g, kGremlin, &q, &k);
+        g.p[2].earned = 10;
+        g.turn = 2;
+        for (int i = 0; i < 4; ++i) { CHECK(g.spin() || g.turn != 2); if (g.turn == 2) g.stop(q, k); }
+        CHECK(g.p[2].out() && g.p[2].spins() == 0);
+    }
+    {   // whole games end; Hard does at least as well as Easy
+        int hard_wins = 0;
+        for (uint32_t seed = 1; seed <= 300; ++seed) {
+            Game g; g.start(seed);
+            for (int step = 0; step < 2000 && g.phase != Phase::Over; ++step) {
+                if (g.phase == Phase::RoundOver) { g.next_round(); continue; }
+                const int lvl = g.turn == 0 ? 2 : 0;
+                if (g.ai_pass(lvl)) { g.pass(); continue; }
+                g.spin();
+                g.stop(int(g.rand_next() % kSquares), int(g.rand_next() % kSlots));
+            }
+            CHECK(g.phase == Phase::Over);
+            uint8_t o[kPlayers]; g.ranking(o);
+            hard_wins += o[0] == 0;
+        }
+        printf("presscyd: Hard (seat 1) won %d of 300 against two Easy\n", hard_wins);
+        CHECK(hard_wins >= 90);
+    }
+    {   // history
+        Record r; r.place = 1; r.money = 12750; r.seconds = 402;
+        char line[64], full[80];
+        CHECK(format_body(line, sizeof line, r) && strcmp(line, "1,12750,402,6:42\n") == 0);
+        snprintf(full, sizeof full, "4,%s", line);
+        Record q;
+        CHECK(parse_line(full, q) && q.place == 1 && q.money == 12750);
+    }
+    {   // saves
+        Game g; g.start(3); g.spin();
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf, sizeof buf) && h.phase == Phase::Ready && h.board[4][1].dollars == g.board[4][1].dollars);
+        buf[4] = 3;                                              // a fourth kind
+        CHECK(!h.deserialize(buf, sizeof buf));
+    }
+}
+
 int main()
 {
     test_fourconnect();
@@ -2741,6 +2837,7 @@ int main()
     test_acquisitions();
     test_strategygo();
     test_dealcyd();
+    test_presscyd();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

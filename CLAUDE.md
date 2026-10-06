@@ -453,7 +453,20 @@ never typed (SPEC section 5).
   in the middle (yours gold), an opened case shows its amount 1.3 s,
   then the Banker calls (Sound::Call) - Deal | No Deal keys; big amount
   gone "aww", tiny gone Trill, end Win if you got at least your case's
-  amount; stats "#,Won,Deal Round,Case Held,Seconds,Time").
+  amount; stats "#,Won,Deal Round,Case Held,Seconds,Time"), Press Your
+  CYD (id `presscyd`, Game Shows, kVsComputer; you vs Max, Zoe; 18
+  squares round a 5 x 6 ring, 3 slots each (money / money + 1 spin /
+  Gremlin - our own green imp, never a Whammy), Gremlins at most one a
+  square, 9 then 12 of 54 slots, 7 / 6 spin slots, round 2 pays more;
+  3 then 4 spins; least money goes first and spins till out; Pass =
+  your own spins left to the leader (only when someone's ahead), who
+  takes them at once; passed spins can't be passed on and turn into
+  your own on a Gremlin; 4 Gremlins = out; light jumps every 140 ms,
+  squares change one at a time (700 ms round), only changed squares
+  redrawn; result banner 1.4 s; computers stop after 1.2-3 s and pass
+  by a risk rule - the game is luck (that rule won no more than never
+  passing), so no levels; Place / Hint / "aww" / Turn / Win / Lose;
+  stats "#,Place,Money,Seconds,Time").
   The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random

@@ -89,6 +89,8 @@ namespace acq_preview { acq::Game* game(); void redraw(); void hold(bool on); vo
 namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool on); void ready(); void cover_ready(); void pass(); void pieces(); }
 #include "games/dealcyd/dealcyd_core.h"
 namespace dealcyd_preview { dealcyd::Game* game(); void reveal(bool on); void redraw(); }
+#include "games/presscyd/presscyd_core.h"
+namespace presscyd_preview { presscyd::Game* game(); void set_light(int q); void result(bool on); void news_line(const char* t); void hold(); }
 namespace piperace_preview { piperace::Game* game(); void unhold(); void redraw(); }
 #include "games/mastercyd/mastercyd_core.h"
 #include "games/pegs/pegs_core.h"
@@ -1613,6 +1615,48 @@ int main(int argc, char** argv)
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
         ui::app_go_home_now();
+    }
+
+    {   // Press Your CYD: your turn, a spin with the light on, a Gremlin
+        using namespace presscyd;
+        auto stage = [&](const Game& g) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+            g.serialize(buf.data(), buf.size());
+            save_game("presscyd", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("presscyd"));
+            presscyd_preview::hold();
+        };
+        Game g; g.start(77);
+        g.p[0].money = 2750; g.p[1].money = 4100; g.p[2].money = 0; g.p[2].gremlins = 1;
+        g.p[0].earned = 2; g.p[1].earned = 3; g.p[2].earned = 3; g.p[1].passed = 0;
+        g.turn = 0;
+        stage(g);
+        presscyd_preview::news_line("Zoe hit a Gremlin!");
+        shot(out + "_light_41_presscyd.ppm");
+        g.spin();
+        stage(g);
+        g.spin();
+        presscyd_preview::game()->spin();
+        presscyd_preview::set_light(6);
+        presscyd_preview::hold();
+        shot(out + "_light_41_presscyd_spin.ppm");
+        ui::app_go_home_now();
+        Game h = g;
+        h.phase = Phase::Ready;
+        int q = 0, k = 0;
+        for (int a = 0; a < kSquares; ++a) { const int b = a % kSlots; if (h.board[a][b].kind == kGremlin) { q = a; k = b; } }
+        h.spin(); h.stop(q, k);
+        stage(h);
+        presscyd_preview::set_light(q);
+        presscyd_preview::result(true);
+        presscyd_preview::hold();
+        shot(out + "_light_41_presscyd_gremlin.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        stage(g);
+        shot(out + "_dark_41_presscyd.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
     }
 
     {   // Deal or No CYD: picking, a case opened, the Banker's offer, the end

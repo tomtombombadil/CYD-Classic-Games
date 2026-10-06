@@ -248,6 +248,13 @@ write("dealcyd", [
  ("The End", "With one other case left, you may keep yours or swap it for that one, and you win what's inside.\nIf you took a deal, you see what your own case held. Stats keep what you won, the round you dealt in and what your case held."),
 ])
 
+write("presscyd", [
+ ("The Idea", "18 squares ring the board. Each keeps changing between money, money plus one more spin, and a Gremlin.\nTap Spin and a light jumps round the squares. Tap STOP! and you win whatever the lit square shows. The most money after two rounds wins."),
+ ("Gremlins", "A Gremlin takes all the money you have. A fourth Gremlin puts you out of the game.\nThe board in round 2 pays more - and has more Gremlins."),
+ ("Spins And Passing", "Everyone has 3 spins in round 1 and 4 in round 2; money with +1 Spin gives you one more. The player with the least money goes first.\nPass gives the spins you have left to the leader, who then has to take them - a way to keep your money safe. Spins passed to you can't be passed on."),
+ ("Max And Zoe", "The computer players spin, stop after a moment and pass when it suits them.\nStats keep your place and money for every game."),
+])
+
 write("wheel", [
  ("The Idea", "Solve the hidden phrase before the others. You play Max and Zoe (or a friend: Pass and Play). Three rounds, a new puzzle each; the category shows under the board.\nMost money banked after three rounds wins."),
  ("A Turn", "• Spin: the wheel stops on a money wedge - pick a consonant; each one in the puzzle pays that much and you go again. Not there: the next player's turn.\n• Vowel: buy a vowel for $250.\n• Solve: fill in the blanks."),
