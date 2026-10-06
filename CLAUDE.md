@@ -371,7 +371,14 @@ never typed (SPEC section 5).
   7 deg (a third of a wedge) between frames: a short push (10 %), a
   steady turn (25 %), an even slow-down like friction (65 %); distance =
   whole turns as far as that allows in ~4.5 s at the measured frame time
-  (`frame_ms`, kept between spins), 3.5-7 s; v0.27.4: the core passes
+  (`frame_ms`, kept between spins), 3.5-7 s. v0.27.6, Tom: that looked
+  like a rolling shutter - the panel gets each frame top to bottom over
+  ~25 ms, so a round wheel's top showed a newer angle than its bottom; no
+  TE pin to sync to. So the wheel lies flat like on TV: an ellipse (height
+  42 % of width) with a front edge in darkened wedge colours, a gold hub,
+  the pointer at the front, the value under it in big type above (redrawn
+  only when it changes) - under half the rows, so under half the slant;
+  never draw it as a round face-on wheel again; v0.27.4: the core passes
   the turn on BUST / SKIP the moment the spin is decided, so while the
   wheel turns the header and the gold player box show the spinner
   (`shown_turn()`), not `g.turn` - Tom saw Max named during his spin), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,

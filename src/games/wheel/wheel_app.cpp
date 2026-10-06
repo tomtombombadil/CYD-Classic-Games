@@ -157,24 +157,62 @@ void after_change()
 // The wedge under the pointer for wheel angle `r`
 int wedge_at(float r)
 {
-    // Wedge i's middle sits at r + 22.5 i + 11.25 degrees; the pointer at 270
-    float a = 270.0f - r;
+    // Wedge i's middle sits at r + 22.5 i + 11.25 degrees; the pointer at the front (90)
+    float a = 90.0f - r;
     a = fmodf(a, 360.0f);
     if (a < 0) a += 360.0f;
     return int(a / (360.0f / kWedges)) % kWedges;
 }
 
+// The wheel lies flat, seen from the front and above like on TV: an
+// ellipse, the pointer at its front edge, the value under it in big type
+// above. (Tom, v0.27.5: a round wheel turning in the middle of the screen
+// looked like a rolling shutter - the panel is sent top to bottom over
+// ~25 ms, so its top half showed a newer angle than its bottom half. A
+// flat wheel spans less than half the rows, so the slant is under half.)
+struct WheelGeom { int cx, cy, a, b, thick, val_y, val_h, ptr_h; };
+
+WheelGeom wheel_geom(const lv_area_t& o)
+{
+    const bool large = metrics().large;
+    const int w = lv_area_get_width(&o), h = lv_area_get_height(&o);
+    WheelGeom g;
+    g.a = w / 2 - (large ? 10 : 6);
+    g.b = g.a * 42 / 100;
+    g.thick = g.a * 7 / 100 > 3 ? g.a * 7 / 100 : 3;
+    g.val_h = lv_font_get_line_height(&lv_font_montserrat_28) + 4;
+    g.ptr_h = large ? 26 : 18;
+    const int gap = large ? 14 : 8;
+    const int total = g.val_h + gap + 2 * g.b + g.thick + g.ptr_h;
+    const int top = o.y1 + (h - total) / 2 - (large ? 12 : 8);
+    g.val_y = top;
+    g.cx = o.x1 + w / 2;
+    g.cy = top + g.val_h + gap + g.b;
+    return g;
+}
+
+float spin_pos(float t);
+float wheel_now()
+{
+    float t = float(now_ms - anim_start) / float(spin_ms);
+    if (t > 1) t = 1;
+    return rot_from + (rot_to - rot_from) * spin_pos(t);
+}
+int shown_under = -1;   // the value drawn above the wheel
+
 void anim_cb(lv_timer_t*)
 {
     if (wheel_obj && ui_mode == Ui::Spinning) {
-        // only the wheel itself (the text line under it changes once, at the end)
-        lv_area_t a;
-        lv_obj_get_coords(wheel_obj, &a);
-        const int w = lv_area_get_width(&a), h = lv_area_get_height(&a);
-        const int R = (w < h ? w : h) / 2 + 4;
-        const int cx = a.x1 + w / 2, cy = a.y1 + h / 2 + (metrics().large ? 8 : 5);
-        lv_area_t r{cx - R, cy - R - 12, cx + R, cy + R};
+        // Only the wheel itself, and the value above it when it changes
+        lv_area_t o;
+        lv_obj_get_coords(wheel_obj, &o);
+        const WheelGeom g = wheel_geom(o);
+        lv_area_t r{g.cx - g.a - 3, g.cy - g.b - 3, g.cx + g.a + 3, g.cy + g.b + g.thick + 3};
         lv_obj_invalidate_area(wheel_obj, &r);
+        if (wedge_at(wheel_now()) != shown_under) {
+            lv_area_t v{o.x1, g.val_y, o.x2, g.val_y + g.val_h};
+            lv_obj_invalidate_area(wheel_obj, &v);
+        }
         if (final_drawn && !final_full) { final_full = true; lv_obj_invalidate(wheel_obj); }
     }
     if (board_obj && ui_mode == Ui::Revealing) lv_obj_invalidate(board_obj);
@@ -221,7 +259,7 @@ void do_spin()
     if (w < 0) return;
     const float step = 360.0f / kWedges;
     rot_from = fmodf(rot, 360.0f);
-    float target = 270.0f - step * w - step / 2;
+    float target = 90.0f - step * w - step / 2;
     // Not dead centre: somewhere inside the wedge
     target += (float(int((fresh_seed() >> 8) % 61)) - 30.0f) / 100.0f * step;
     while (target < rot_from + step) target += 360.0f;          // at least a wedge on
@@ -602,28 +640,46 @@ void wheel_draw_cb(lv_event_t* e)
     float t = float(now_ms - anim_start) / float(spin_ms);
     if (t > 1) t = 1;
     if (t >= 1 && ui_mode == Ui::Spinning && !final_drawn) { final_drawn = true; final_at = now_ms; }
-    rot = rot_from + (rot_to - rot_from) * spin_pos(t);
-    const int w = lv_area_get_width(&a), h = lv_area_get_height(&a);
-    const int R = (w < h ? w : h) / 2 - (M.large ? 10 : 6);
-    const int cx = a.x1 + w / 2, cy = a.y1 + h / 2 + (M.large ? 8 : 5);
-    const float step = 360.0f / kWedges;
-    kit::fill_circle(layer, cx, cy, R + 3, P.stone_dark);
-    // Each wedge is a fan of triangles from the hub: far cheaper to draw than
-    // thick arcs (v0.26.1's arcs were too slow for the 3.5" - Tom saw no wheel)
-    constexpr int kSeg = 4;
+    rot = wheel_now();
+    const int w = lv_area_get_width(&a);
+    const WheelGeom G = wheel_geom(a);
+    const float step = 360.0f / kWedges, d2r = 3.14159265f / 180.0f;
+    auto px = [&](float ang, float r) { return G.cx + int(lroundf(cosf(ang) * G.a * r)); };
+    auto py = [&](float ang, float r) { return G.cy + int(lroundf(sinf(ang) * G.b * r)); };
     lv_draw_triangle_dsc_t wd;
     lv_draw_triangle_dsc_init(&wd);
     wd.opa = LV_OPA_COVER;
+    auto tri = [&](int x0, int y0, int x1, int y1, int x2, int y2, lv_color_t c) {
+        wd.color = c;
+        wd.p[0].x = x0; wd.p[0].y = y0; wd.p[1].x = x1; wd.p[1].y = y1; wd.p[2].x = x2; wd.p[2].y = y2;
+        lv_draw_triangle(layer, &wd);
+    };
+    // Each wedge is a fan of triangles from the hub: far cheaper to draw than
+    // thick arcs (v0.26.1's arcs were too slow for the 3.5" - Tom saw no wheel)
+    constexpr int kSeg = 4;
+    // The dark outline, then the wheel's front edge (its thickness, each
+    // wedge's colour darkened), then the top face
+    {   // (one dark ellipse round the face and the edge; 32 triangles)
+        const int ox = G.a + 2, oy = G.b + G.thick / 2 + 2, ocy = G.cy + G.thick / 2;
+        for (int k = 0; k < 32; ++k) {
+            const float a0 = k * 11.25f * d2r, a1 = a0 + 11.25f * d2r + 0.1f;
+            tri(G.cx, ocy, G.cx + int(cosf(a0) * ox), ocy + int(sinf(a0) * oy),
+                G.cx + int(cosf(a1) * ox), ocy + int(sinf(a1) * oy), P.stone_dark);
+        }
+    }
     for (int i = 0; i < kWedges; ++i) {
         lv_color_t ink;
-        wd.color = wedge_color(i, &ink);
-        const float s0 = (rot + step * i) * 3.14159265f / 180.0f, ds = step / kSeg * 3.14159265f / 180.0f;
+        const lv_color_t c = wedge_color(i, &ink);
+        const lv_color_t side = lv_color_darken(c, 90);
+        const float s0 = (rot + step * i) * d2r, ds = step / kSeg * d2r;
         for (int k2 = 0; k2 < kSeg; ++k2) {
             const float a0 = s0 + ds * k2, a1 = a0 + ds + 0.02f;          // a hair of overlap: no seams
-            wd.p[0].x = cx; wd.p[0].y = cy;
-            wd.p[1].x = cx + int(lroundf(cosf(a0) * R)); wd.p[1].y = cy + int(lroundf(sinf(a0) * R));
-            wd.p[2].x = cx + int(lroundf(cosf(a1) * R)); wd.p[2].y = cy + int(lroundf(sinf(a1) * R));
-            lv_draw_triangle(layer, &wd);
+            if (sinf(a0) > -0.05f || sinf(a1) > -0.05f) {                  // the front half's edge
+                const int x0 = px(a0, 1), y0 = py(a0, 1), x1 = px(a1, 1), y1 = py(a1, 1);
+                tri(x0, y0, x1, y1, x1, y1 + G.thick, side);
+                tri(x0, y0, x1, y1 + G.thick, x0, y0 + G.thick, side);
+            }
+            tri(G.cx, G.cy, px(a0, 1), py(a0, 1), px(a1, 1), py(a1, 1), c);
         }
     }
     // Labels: upright, near the rim
@@ -632,33 +688,39 @@ void wheel_draw_cb(lv_event_t* e)
     for (int i = 0; i < kWedges; ++i) {
         lv_color_t ink;
         wedge_color(i, &ink);
-        const float mid = (rot + step * i + step / 2) * 3.14159265f / 180.0f;
-        const int lx = cx + int(cosf(mid) * R * 0.74f), ly = cy + int(sinf(mid) * R * 0.74f);
+        const float mid = (rot + step * i + step / 2) * d2r;
+        const int lx = px(mid, 0.70f), ly = py(mid, 0.70f);
         char s[8];
         wedge_label(i, s, sizeof s);
         kit::text(layer, s, lf, ink, lx - lw / 2, ly - lh / 2, lw, lh);
     }
-    // Hub: the wedge under the pointer
-    const int hub = R * 34 / 100;
-    kit::fill_circle(layer, cx, cy, hub + 2, P.stone_dark);
-    kit::fill_circle(layer, cx, cy, hub, P.cell);
+    // The hub: a small gold cap
+    {
+        const int ha = G.a * 13 / 100, hb = G.b * 13 / 100 > 3 ? G.b * 13 / 100 : 3;
+        for (int k = 0; k < 16; ++k) {
+            const float a0 = k * 22.5f * d2r, a1 = a0 + 22.5f * d2r + 0.2f;   // (overlap: no seams)
+            tri(G.cx, G.cy, G.cx + int(cosf(a0) * (ha + 2)), G.cy + int(sinf(a0) * (hb + 2)),
+                G.cx + int(cosf(a1) * (ha + 2)), G.cy + int(sinf(a1) * (hb + 2)), P.stone_dark);
+        }
+        for (int k = 0; k < 16; ++k) {
+            const float a0 = k * 22.5f * d2r, a1 = a0 + 22.5f * d2r + 0.2f;   // (overlap: no seams)
+            tri(G.cx, G.cy - 1, G.cx + int(cosf(a0) * ha), G.cy - 1 + int(sinf(a0) * hb),
+                G.cx + int(cosf(a1) * ha), G.cy - 1 + int(sinf(a1) * hb), P.piece_b);
+        }
+    }
+    // The pointer at the front edge, pointing in
+    const int pw = M.large ? 13 : 9;
+    const int tip = G.cy + G.b - (M.large ? 6 : 4);
+    tri(G.cx, tip, G.cx - pw, tip + G.ptr_h, G.cx + pw, tip + G.ptr_h, P.stone_dark);
+    tri(G.cx, tip + 4, G.cx - pw + 3, tip + G.ptr_h - 2, G.cx + pw - 3, tip + G.ptr_h - 2, P.ink);
+    // The value under the pointer, big, above the wheel
     const int under = wedge_at(rot);
+    shown_under = under;
     char s[16];
     if (kWheel[under] == kBust) snprintf(s, sizeof s, "BUST");
     else if (kWheel[under] == kSkip) snprintf(s, sizeof s, "SKIP");
     else money_text(s, sizeof s, kWheel[under]);
-    const lv_font_t* hf = M.large ? &lv_font_montserrat_28 : &lv_font_montserrat_20;
-    kit::text(layer, s, hf, P.ink, cx - hub, cy - hub, 2 * hub, 2 * hub);
-    // The pointer, at the top
-    const int pw = M.large ? 14 : 10, ph = M.large ? 24 : 16;
-    lv_draw_triangle_dsc_t td;
-    lv_draw_triangle_dsc_init(&td);
-    td.color = P.ink;
-    td.opa = LV_OPA_COVER;
-    td.p[0].x = cx - pw; td.p[0].y = cy - R - 8;
-    td.p[1].x = cx + pw; td.p[1].y = cy - R - 8;
-    td.p[2].x = cx;      td.p[2].y = cy - R - 8 + ph;
-    lv_draw_triangle(layer, &td);
+    kit::text(layer, s, &lv_font_montserrat_28, P.ink, a.x1, G.val_y, w, G.val_h);
     const lv_font_t* nf = M.large ? &lv_font_montserrat_14 : &lv_font_montserrat_12;
     if (t >= 1) {
         const char* res = kWheel[S->g.wedge] == kBust ? "BUST! The round's money is gone"
