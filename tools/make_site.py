@@ -42,7 +42,7 @@ def boards_from_ini():
 
 
 CATEGORY_TITLES = {"Puzzles": "Puzzle Games", "Strategy": "Strategy Games", "Cards": "Card Games", "Word": "Word Games",
-                   "Dice": "Dice Games"}
+                   "Dice": "Dice Games", "Shows": "Game Shows"}
 GAME_RE = re.compile(r'^GAME\(\s*(\w+)\s*,\s*"([^"]*)"\s*,\s*(\w+)\s*,\s*([^,]+?)\s*,\s*"([^"]*)"\s*\)')
 
 

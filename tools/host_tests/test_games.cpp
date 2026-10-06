@@ -39,6 +39,7 @@
 #include "../../src/games/piperace/piperace_core.h"
 #include "../../src/games/acquisitions/acquisitions_core.h"
 #include "../../src/games/strategygo/strategygo_core.h"
+#include "../../src/games/dealcyd/dealcyd_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -2627,6 +2628,81 @@ static void test_strategygo()
     }
 }
 
+static void test_dealcyd()
+{
+    using namespace dealcyd;
+    char m[24];
+    money(m, sizeof m, 1); CHECK(strcmp(m, "$0.01") == 0);
+    money(m, sizeof m, 100000000); CHECK(strcmp(m, "$1,000,000") == 0);
+    money(m, sizeof m, 75000000, true); CHECK(strcmp(m, "$750K") == 0);
+    money(m, sizeof m, 100000000, true); CHECK(strcmp(m, "$1M") == 0);
+    int opens = 0; for (int r = 0; r < kRounds; ++r) opens += kOpenPerRound[r];
+    CHECK(opens == kCases - 2);
+    {   // a whole game, No Deal to the end, then a swap
+        Game g; g.start(99);
+        bool seen[kCases] = {};
+        for (int i = 0; i < kCases; ++i) seen[g.value_of[i]] = true;
+        bool all = true; for (bool b : seen) all &= b;
+        CHECK(all);
+        CHECK(!g.open(3) && g.pick(7) && g.phase == Phase::Open && g.to_open == 6);
+        CHECK(!g.open(7));                                     // not your own case
+        int rounds = 0;
+        for (int c = 0; c < kCases && g.phase != Phase::Swap; ++c) {
+            if (c == 7 || g.opened[c]) continue;
+            CHECK(g.open(c));
+            if (g.phase == Phase::Offer) {
+                ++rounds;
+                CHECK(g.offer > 0 && g.offer <= 100000000);
+                CHECK(g.no_deal());
+            }
+        }
+        CHECK(rounds == kRounds && g.phase == Phase::Swap && g.left() == 2);
+        const int other = g.last_case();
+        CHECK(other >= 0 && other != 7);
+        CHECK(g.keep_or_swap(true) && g.phase == Phase::Done && g.won == kValues[g.value_of[other]] && g.dealt == -1);
+    }
+    {   // a deal; offers grow as a share of the average
+        uint64_t share_first = 0, share_last = 0;
+        for (uint32_t seed = 1; seed <= 200; ++seed) {
+            Game g; g.start(seed);
+            g.pick(0);
+            int c = 1;
+            while (g.phase != Phase::Swap && g.phase != Phase::Done) {
+                if (g.phase == Phase::Offer) {
+                    const uint64_t pct = uint64_t(g.offer) * 100 / (g.average() ? g.average() : 1);
+                    if (g.round == 0) share_first += pct;
+                    if (g.round == kRounds - 1) share_last += pct;
+                    if (g.round == 4 && seed % 2) { CHECK(g.deal() && g.won == g.offer && g.dealt == 4); break; }
+                    g.no_deal();
+                    continue;
+                }
+                g.open(c++);
+            }
+        }
+        share_first /= 200; share_last /= 100;
+        CHECK(share_first >= 8 && share_first <= 16);
+        CHECK(share_last >= 85 && share_last <= 99);
+    }
+    {   // saves
+        Game g; g.start(5); g.pick(12); g.open(3); g.open(4);
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf, sizeof buf) && h.mine == 12 && h.opened[3] && h.to_open == 4 && memcmp(h.value_of, g.value_of, kCases) == 0);
+        buf[5] = buf[4];                                      // a value twice
+        CHECK(!h.deserialize(buf, sizeof buf));
+    }
+    {   // history
+        Record r; r.won = 4300000; r.dealt = 5; r.held = 75000000; r.seconds = 312;
+        char line[80], full[96];
+        CHECK(format_body(line, sizeof line, r));
+        CHECK(strcmp(line, "43000.00,6,750000.00,312,5:12\n") == 0);
+        snprintf(full, sizeof full, "3,%s", line);
+        Record q;
+        CHECK(parse_line(full, q) && q.won == 4300000 && q.dealt == 5 && q.held == 75000000);
+    }
+}
+
 int main()
 {
     test_fourconnect();
@@ -2664,6 +2740,7 @@ int main()
     test_piperace();
     test_acquisitions();
     test_strategygo();
+    test_dealcyd();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

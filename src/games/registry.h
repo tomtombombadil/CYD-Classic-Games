@@ -14,8 +14,8 @@
 namespace games {
 
 // The picker's first screen lists these, in this order (Tom's list).
-enum class Category : uint8_t { Puzzles = 0, Strategy, Cards, Word, Dice };
-constexpr int kCategories = 5;
+enum class Category : uint8_t { Puzzles = 0, Strategy, Cards, Word, Dice, Shows };
+constexpr int kCategories = 6;
 const char* category_title(Category c);        // "Puzzle Games", ...
 const char* category_short(Category c);        // "Puzzles", ... (page titles)
 

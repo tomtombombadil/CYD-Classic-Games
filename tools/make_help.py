@@ -242,6 +242,12 @@ write("sank", [
  WL,
 ], two_player=True)
 
+write("dealcyd", [
+ ("The Idea", "26 cases hide 26 amounts, from 1 cent to $1,000,000. Pick one to be yours - it stays shut until the end.\nThen open the other cases a few at a time. Every amount you open is one your case can't hold: it turns grey on the boards at the sides."),
+ ("The Banker", "After each round the Banker calls with an offer for your case. Deal takes the money and ends the game. No Deal plays on.\nRounds open 6, 5, 4, 3 and 2 cases, then one at a time. The offers grow as the game goes on - but so does the risk."),
+ ("The End", "With one other case left, you may keep yours or swap it for that one, and you win what's inside.\nIf you took a deal, you see what your own case held. Stats keep what you won, the round you dealt in and what your case held."),
+])
+
 write("wheel", [
  ("The Idea", "Solve the hidden phrase before the others. You play Max and Zoe (or a friend: Pass and Play). Three rounds, a new puzzle each; the category shows under the board.\nMost money banked after three rounds wins."),
  ("A Turn", "• Spin: the wheel stops on a money wedge - pick a consonant; each one in the puzzle pays that much and you go again. Not there: the next player's turn.\n• Vowel: buy a vowel for $250.\n• Solve: fill in the blanks."),

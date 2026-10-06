@@ -35,6 +35,7 @@ const char* category_title(Category c)
         case Category::Cards:    return "Card Games";
         case Category::Word:     return "Word Games";
         case Category::Dice:     return "Dice Games";
+        case Category::Shows:    return "Game Shows";
     }
     return "";
 }
@@ -47,6 +48,7 @@ const char* category_short(Category c)
         case Category::Cards:    return "Cards";
         case Category::Word:     return "Word";
         case Category::Dice:     return "Dice";
+        case Category::Shows:    return "Game Shows";
     }
     return "";
 }

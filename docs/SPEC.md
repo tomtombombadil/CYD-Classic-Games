@@ -116,12 +116,12 @@ Candidates, grouped. Order of building is in section 6.
 | ~~Hangman~~ | Dropped (Tom, 2026-10-03): needs a keyboard, not much fun vs a computer |
 | Wheel of CYD (Wheel of Fortune) | phrase guess with spinning reward/fail aspect (*built 2026-10-05*: id `wheel`; you vs Max and Zoe or 2-player pass-and-play; 502 original puzzles) |
 
-**Game shows** (*planned, Tom 2026-10-06*; own names)
+**Game Shows** (a picker category of their own - Tom, 2026-10-06; Wheel of CYD moved here)
 | Game | Notes |
 |---|---|
-| Deal or No Deal style | 26 cases, a banker offer formula; no content needed |
-| Press Your Luck style | 18-square board with jumping lights; spins earned without trivia |
-| Card Sharks style | Higher or lower on the shared cards |
+| Deal or No CYD (Deal or No Deal) | *Built 2026-10-06*: id `dealcyd`; 26 cases $0.01-$1M, rounds 6-5-4-3-2-1-1-1-1, offers 12 % -> 92 % of the average +-5 %, keep or swap at the end |
+| Press Your CYD (Press Your Luck) | 18-square board with jumping lights; spins earned without trivia |
+| Card Sharks CYD (Card Sharks) | Higher or lower on the shared cards |
 
 **Dice**
 | Game | Notes |

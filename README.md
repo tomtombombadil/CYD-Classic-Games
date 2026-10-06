@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Thirty-four games and an RPG dice roller so far: **Sudoku** (from
+> under way. Thirty-five games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **Pipe Race**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **Strategy Go!**, **Acquisitions**, **CYD-dle**, **Wheel of CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **Strategy Go!**, **Acquisitions**, **CYD-dle**, **Wheel of CYD**, **Deal or No CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, Strategy Go!, Acquisitions, CYD-dle, Wheel of CYD (and its wheel), Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, Strategy Go!, Acquisitions, CYD-dle, Wheel of CYD (and its wheel), Deal or No CYD, Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Pipe Race, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -44,6 +44,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_mastercyd.png" width="240" alt="MasterCYD, guess 5 of 10">
 <img src="docs/screenshots/small_2048.png" width="240" alt="2048 in progress">
 <img src="docs/screenshots/small_piperace.png" width="240" alt="Pipe Race: water running through the pipes">
+<img src="docs/screenshots/small_dealcyd.png" width="240" alt="Deal or No CYD: the Banker's offer">
 <img src="docs/screenshots/small_strategygo.png" width="240" alt="Strategy Go!: your army at the bottom, theirs hidden">
 <img src="docs/screenshots/small_acquisitions.png" width="240" alt="Acquisitions: hotel chains on the board, your tiles at the bottom">
 <img src="docs/screenshots/small_pegs.png" width="240" alt="Peg Solitaire, English board">
@@ -122,7 +123,8 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Video Poker | Card Games | Jacks or Better, full-pay table, bet 1 to 5 credits, Hint |
 | Texas Hold'em | Card Games | No-limit, you against three computer players: Easy / Medium / Hard |
 | CYD-dle | Word Games | Solo, guess the five-letter word: Easy / Normal / Hard |
-| Wheel of CYD | Word Games | Spin, call letters, solve the phrase; you against two computer players (Easy / Medium / Hard) or pass-and-play |
+| Wheel of CYD | Game Shows | Spin, call letters, solve the phrase; you against two computer players (Easy / Medium / Hard) or pass-and-play |
+| Deal or No CYD | Game Shows | Solo, 26 cases: open them and take the Banker's offer, or play on |
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 | Farkle | Dice Games | Push-your-luck dice to 10,000, vs computer (Easy / Medium / Hard) or pass-and-play |
 | RPG Dice | Dice Games | Every role-playing die, each shown as rolled; presets and history |
@@ -141,7 +143,7 @@ starts). Tap anywhere to go on to the game picker.
 - **Continue** (the yellow card) reopens the last game you played, where you
   left off, in one tap. It shows how far along that game is.
 - Below it, the categories: **Puzzle Games, Strategy Games, Card Games,
-  Word Games, Dice Games**, each with how many games it has. Tap one to see its
+  Word Games, Dice Games, Game Shows**, each with how many games it has. Tap one to see its
   games as icons, and tap a game to play. Categories without games yet say
   "soon".
 
@@ -495,6 +497,17 @@ placing a stone on any empty point. Five or more in a line - across, down
 or diagonal - wins. The last stone has a gold ring. The computer: Easy
 plays its own lines and blocks only a five, Medium and Hard look 4 and 6
 moves ahead among the most promising points.
+
+## Deal or No CYD
+
+26 cases hide amounts from 1 cent to $1,000,000; the amounts line both
+sides of the screen (small ones left, big ones right) and turn grey as their
+cases are opened. **Tap a case to make it yours**, then tap cases to open
+them - 6, 5, 4, 3, 2, then one a round. After each round the Banker calls
+with an offer: **Deal** takes it, **No Deal** plays on. With one case left
+besides yours, keep yours or swap. The Banker's offers start at about a
+tenth of the average amount still in play and rise to nearly all of it.
+Stats keep what you won, the round you dealt in and what your case held.
 
 ## Wheel of CYD
 

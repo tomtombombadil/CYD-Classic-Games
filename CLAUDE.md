@@ -444,7 +444,16 @@ never typed (SPEC section 5).
   all levels one move ahead by outcome chances: Easy material, Medium +
   threats from seen pieces, Hard + from unseen ones by chance (Hard beat
   Easy 18/20; 2-ply and hunting/flag-guard terms tested - no stronger,
-  dropped); sounds: battle won Trill / lost "aww" / both Draw / bomb Boom).
+  dropped); sounds: battle won Trill / lost "aww" / both Draw / bomb Boom),
+  Deal or No CYD (id `dealcyd`, Game Shows, solo; 26 cases $0.01 -
+  $1,000,000 in cents; pick yours, open 6-5-4-3-2-1-1-1-1, the Banker's
+  offer after each round = 12 / 22 ... 92 % of the average in play +-5 %,
+  rounded to $10 / $100 / $1,000; last: keep or swap; screen like the
+  show: amounts down both sides (grey once opened), 26 briefcases 4 wide
+  in the middle (yours gold), an opened case shows its amount 1.3 s,
+  then the Banker calls (Sound::Call) - Deal | No Deal keys; big amount
+  gone "aww", tiny gone Trill, end Win if you got at least your case's
+  amount; stats "#,Won,Deal Round,Case Held,Seconds,Time").
   The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random
@@ -498,7 +507,8 @@ never typed (SPEC section 5).
 - Game picker (after the splash): a "Continue <last game>" card (icon, title, the game's
   summary line), then the categories as a text list (Tom, 2026-10-02):
   Puzzle Games, Strategy Games, Card Games (added 2026-10-03 for the card
-  games), Word Games, Dice Games (Other Games dropped - Tom, 2026-10-03), each
+  games), Word Games, Dice Games (Other Games dropped - Tom, 2026-10-03),
+  Game Shows (added 2026-10-06), each
   with its game count. A category opens its own page of icon tiles, 2 per
   row (the header's < goes back). Extra tiles go on pages switched
   with big < > keys (no scrolling). `preview_paging` renders a long fake
@@ -886,7 +896,12 @@ Backgammon, most chess engines) are reference only. Update
   (KenKen), **You Sank My CYD!** (Battleship - "Sank", not "Sunk"), **Wheel of CYD** (Wheel of
   Fortune), **Reversi** (Othello), **Pipe Race** (Pipe Mania - Tom: it
   is a race against the water), **Acquisitions** (Acquire), **Strategy
-  Go!** (Stratego) (Tom, 2026-10-06). Classic public-domain games (chess,
+  Go!** (Stratego) (Tom, 2026-10-06), **Deal or No CYD** (Deal or No
+  Deal), **Press Your CYD** (Press Your Luck - the bad square is a
+  "Gremlin", never a Whammy), **Card Sharks CYD** (Card Sharks) (Tom,
+  2026-10-06). Game shows live in their own picker category, **Game
+  Shows** (`Category::Shows`; Wheel of CYD moved there - Tom,
+  2026-10-06). Classic public-domain games (chess,
   checkers, mancala, ...) are fine by name.
 
 ## Versions (Tom, 2026-10-03)

@@ -87,6 +87,8 @@ void keyboard(int slot);
 namespace acq_preview { acq::Game* game(); void redraw(); void hold(bool on); void log(const char* t); void stocks(); }
 #include "games/strategygo/strategygo_core.h"
 namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool on); void ready(); void cover_ready(); void pass(); void pieces(); }
+#include "games/dealcyd/dealcyd_core.h"
+namespace dealcyd_preview { dealcyd::Game* game(); void reveal(bool on); void redraw(); }
 namespace piperace_preview { piperace::Game* game(); void unhold(); void redraw(); }
 #include "games/mastercyd/mastercyd_core.h"
 #include "games/pegs/pegs_core.h"
@@ -1610,6 +1612,43 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Deal or No CYD: picking, a case opened, the Banker's offer, the end
+        using namespace dealcyd;
+        auto stage = [&](const Game& g) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+            g.serialize(buf.data(), buf.size());
+            save_game("dealcyd", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("dealcyd"));
+        };
+        Game g; g.start(2024);
+        stage(g);
+        shot(out + "_light_39_dealcyd_pick.ppm");
+        ui::app_go_home_now();
+        g.pick(11);
+        const int order[] = {3, 17, 22, 0, 8, 25, 14, 5, 19, 2, 9};
+        for (int c : order) if (g.phase == Phase::Open) g.open(c); else if (g.phase == Phase::Offer) { g.no_deal(); g.open(c); }
+        stage(g);
+        shot(out + "_light_39_dealcyd.ppm");
+        dealcyd_preview::reveal(true);
+        shot(out + "_light_39_dealcyd_open.ppm");
+        dealcyd_preview::reveal(false);
+        ui::app_go_home_now();
+        Game o = g;
+        for (int c = 0; c < kCases && o.phase != Phase::Offer; ++c) if (o.phase == Phase::Open) o.open(c);
+        stage(o);
+        shot(out + "_light_39_dealcyd_offer.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        stage(o);
+        shot(out + "_dark_39_dealcyd_offer.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        o.deal();
+        stage(o);
+        shot(out + "_light_39_dealcyd_done.ppm");
         ui::app_go_home_now();
     }
 
