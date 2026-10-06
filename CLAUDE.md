@@ -822,6 +822,13 @@ Backgammon, most chess engines) are reference only. Update
 - Game data counts too: word lists, trivia questions and puzzle levels need
   a license that sits with MIT (public domain, CC0, or permissive with
   attribution). Share-alike data (e.g. CC BY-SA) needs Tom's OK first.
+  Tom OK'd Open Trivia DB (opentdb.com, CC BY-SA 4.0, ~5,300 verified
+  questions) for the trivia games (2026-10-06). Keep it a separate data
+  file (e.g. `assets/trivia/`) marked CC BY-SA 4.0 with attribution and
+  "changed: screened / edited" in THIRD_PARTY_NOTICES.md, the README and
+  the trivia games' About / How To Play; our edits of it stay CC BY-SA;
+  the code stays MIT (the data is part of a collection, not an adaptation
+  of the code). Screen every question for kid safety before it goes in.
 - No trademarked game names. Tom's names: **FourConnect** (Connect Four),
   **CYD-dle** (Wordle), **Yaht-CYD** (Yahtzee), **Light Switch** (Lights
   Out), **MasterCYD** (Mastermind), **SokoCYD** (Sokoban), **KenCYD**
