@@ -828,12 +828,17 @@ Backgammon, most chess engines) are reference only. Update
   "changed: screened / edited" in THIRD_PARTY_NOTICES.md, the README and
   the trivia games' About / How To Play; our edits of it stay CC BY-SA;
   the code stays MIT (the data is part of a collection, not an adaptation
-  of the code). Screen every question for kid safety before it goes in.
+  of the code). Screening (Tom, 2026-10-06): drop only subjects that
+  are inappropriate for minors (and answers that have gone stale); keep
+  hard, specialised or "grown-up knowledge" questions on kid-safe
+  subjects - it is trivia.
 - No trademarked game names. Tom's names: **FourConnect** (Connect Four),
   **CYD-dle** (Wordle), **Yaht-CYD** (Yahtzee), **Light Switch** (Lights
   Out), **MasterCYD** (Mastermind), **SokoCYD** (Sokoban), **KenCYD**
   (KenKen), **You Sank My CYD!** (Battleship - "Sank", not "Sunk"), **Wheel of CYD** (Wheel of
-  Fortune), **Reversi** (Othello). Classic public-domain games (chess,
+  Fortune), **Reversi** (Othello), **Pipe Race** (Pipe Mania - Tom: it
+  is a race against the water), **Acquisitions** (Acquire), **Strategy
+  Go!** (Stratego) (Tom, 2026-10-06). Classic public-domain games (chess,
   checkers, mancala, ...) are fine by name.
 
 ## Versions (Tom, 2026-10-03)

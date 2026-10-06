@@ -88,6 +88,7 @@ Candidates, grouped. Order of building is in section 6.
 | 2048 | Tap the board edge to slide (no swipes) |
 | SokoCYD (Sokoban) | Needs freely licensed or generated levels |
 | Kakuro / KenCYD (KenKen) | Reuse Sudoku's grid UI |
+| Pipe Race (Pipe Mania / Pipe Dream) | *Next (Tom, 2026-10-06)*: lay pipe pieces before the water arrives; tap to place, flow animates in small squares |
 
 
 **Strategy (vs computer, pass-and-play, CYD vs CYD)**
@@ -101,15 +102,26 @@ Candidates, grouped. Order of building is in section 6.
 | Tic-Tac-Toe / Ultimate Tic-Tac-Toe | Ultimate is the interesting one (*built 2026-10-05*: id `ultimate`, wireless key 9) |
 | Nine Men's Morris | Big targets (*built 2026-10-03*) |
 | Gomoku | 15x15, 16 px cells on 240-wide boards (*built 2026-10-05*: freestyle five, wireless key 10) |
+| Strategy Go! (Stratego) | *Next (Tom, 2026-10-06)*: 10x10, hidden pieces - wireless like You Sank My CYD!, pass-and-play with a cover screen |
+| Acquisitions (Acquire) | *Next (Tom, 2026-10-06)*: 12x9 hotel tiles, chains, stock, mergers; computer players |
+| Sorry! / Trouble style race game | *Planned (Tom, 2026-10-06)*: 2-4 players, pass-and-play + computer; own name |
+| Escape from Atlantis style | *Planned (Tom, 2026-10-06)*: sinking hex island, sharks and whales; own name |
 | You Sank My CYD! (Battleship) | Two grids, flip between them (*built 2026-10-05*: id `sank`; classic rules - ships may touch; manual placement by default, Random in Options; wireless key 8, version 2) |
 
 **Word**
 | Game | Notes |
 |---|---|
 | CYD-dle (Wordle-style) | Public-domain word list; on-screen keyboard |
-| Trivia | Question bank license to check (Open Trivia DB is CC BY-SA) |
+| Trivia | Open Trivia DB, CC BY-SA 4.0 - OK'd by Tom 2026-10-06 (data file stays CC BY-SA, code MIT). One shared question bank for planned trivia shows (Millionaire, Hollywood Squares, multiple-choice Jeopardy, a Trivial Pursuit style board) |
 | ~~Hangman~~ | Dropped (Tom, 2026-10-03): needs a keyboard, not much fun vs a computer |
 | Wheel of CYD (Wheel of Fortune) | phrase guess with spinning reward/fail aspect (*built 2026-10-05*: id `wheel`; you vs Max and Zoe or 2-player pass-and-play; 502 original puzzles) |
+
+**Game shows** (*planned, Tom 2026-10-06*; own names)
+| Game | Notes |
+|---|---|
+| Deal or No Deal style | 26 cases, a banker offer formula; no content needed |
+| Press Your Luck style | 18-square board with jumping lights; spins earned without trivia |
+| Card Sharks style | Higher or lower on the shared cards |
 
 **Dice**
 | Game | Notes |
@@ -309,6 +321,13 @@ Chinese checkers, Dots and Boxes (thin tap targets).
 6. **Word and dice games:** (CYD-dle, Yaht-CYD done in stage 3) Farkle (*built 2026-10-03*), RPG Dice roller (*built 2026-10-03*); Trivia if a
    suitable question bank is found.
 7. Remaining candidates as Tom picks them.
+8. **Tom's list (2026-10-06):** first Pipe Race, Acquisitions, Strategy
+   Go!; then (tentative) Deal or No Deal, Sorry!/Trouble, Press Your
+   Luck, Card Sharks and Escape from Atlantis style games (own names);
+   then the trivia family on Open Trivia DB. Assessed as poor fits:
+   Family Feud (needs real survey data), Feudal (24x24 board too small).
+   Big projects for later: Catan, Carcassonne, a Gold Box style dungeon
+   crawl (SRD 5.1, CC BY 4.0), a B-17 style solo mission game of our own.
 
 ## 7. Decisions
 
