@@ -32,7 +32,7 @@ constexpr Entry kGames[] = {
     {"chess",       5, 1},   // move = chess::move_key (from, to, promotion)
     {"mancala",     6, 1},   // move = pit 0-5 of the side to move
     {"morris",      7, 1},   // move = morris::Move::code() (from, to, man taken)
-    {"sunk",        8, 2},   // plies 0-9 = the ships (sunk::ship_key: cell | down << 7), then cell 0-99
+    {"sank",        8, 2},   // plies 0-9 = the ships (sank::ship_key: cell | down << 7), then cell 0-99
                              // (v1: a fleet seed a side, ships apart)
     {"ultimate",    9, 1},   // move = cell 0-80 (small board * 9 + square)
     {"gomoku",     10, 1},   // move = point 0-224 (row * 15 + column)

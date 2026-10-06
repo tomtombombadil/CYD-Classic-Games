@@ -1,5 +1,5 @@
 // You Sank My CYD!: screen and registry entry. The rules live in
-// sunk_core.*; turns, the computer, menus, stats and wireless play come
+// sank_core.*; turns, the computer, menus, stats and wireless play come
 // from the shared two-player controller (games/common/match.*).
 //
 // One sea on screen at a time, as large as fits: Their Waters (where you
@@ -18,7 +18,7 @@
 #include "games/common/game_kit.h"
 #include "games/common/match.h"
 #include "games/registry.h"
-#include "sunk_core.h"
+#include "sank_core.h"
 #include "ui/shell.h"
 #include "ui/sound.h"
 #include "ui/theme.h"
@@ -26,10 +26,10 @@
 
 namespace {
 
-using namespace sunk;
+using namespace sank;
 using namespace ui;
 
-constexpr const char* kId = "sunk";
+constexpr const char* kId = "sank";
 const twoplayer::Sides kSides = {"Blue", "Gold"};
 
 Board*    B = nullptr;
@@ -51,7 +51,7 @@ struct View {
     int      n = 0;                 // Manual: ships placed so far
     int      anchor = -1;           // Manual: the square picked for the next ship's end
 } V;
-bool manual = true;                 // Options -> Ship Placement (saved in /games/sunk_opt.bin)
+bool manual = true;                 // Options -> Ship Placement (saved in /games/sank_opt.bin)
 
 int cell = 20, lab = 12;            // cell size, label strip (px)
 
@@ -167,14 +167,14 @@ void load_options()
     uint8_t b[5];
     const Shell& H = shell();
     manual = true;
-    if (H.load_game && H.load_game("sunk_opt", b, sizeof b) == sizeof b && memcmp(b, "SKO1", 4) == 0)
+    if (H.load_game && H.load_game("sank_opt", b, sizeof b) == sizeof b && memcmp(b, "SKO1", 4) == 0)
         manual = !(b[4] & 1);
 }
 
 void save_options()
 {
     uint8_t b[5] = {'S', 'K', 'O', '1', uint8_t(manual ? 0 : 1)};
-    if (shell().save_game) shell().save_game("sunk_opt", b, sizeof b);
+    if (shell().save_game) shell().save_game("sank_opt", b, sizeof b);
 }
 
 void coord(int c, char* buf, size_t cap) { snprintf(buf, cap, "%c%u", 'A' + c % kN, unsigned(c) / kN % kN + 1); }
@@ -187,7 +187,22 @@ int result() { return B->result(); }
 int turn()   { return B->turn(); }
 int moves()  { return B->moves; }
 
-void anim_tick_cb(lv_timer_t*) { redraw(); }
+// Each animation frame redraws only the squares round the shot (the whole sea
+// with its ships was a heavy frame on the device), and nothing once the
+// splash / explosion has grown - the banner is drawn with the impact frame.
+void anim_tick_cb(lv_timer_t*)
+{
+    if (!sea_obj || !SA.on) return;
+    const uint32_t t = now_ms - SA.start;
+    if (SA.impact && t > kFallMs + 340) return;          // grown: it stays as it is
+    lv_area_t a;
+    lv_obj_get_coords(sea_obj, &a);
+    const int x0 = a.x1 + (numbers_left ? lab : 0), y0 = a.y1 + lab;
+    const int X = x0 + (SA.cell % kN) * cell + cell / 2, Y = y0 + (SA.cell / kN) * cell + cell / 2;
+    const int r = cell + cell / 2 + 2;
+    lv_area_t z{int32_t(X - r), int32_t(Y - r), int32_t(X + r), int32_t(Y + r)};
+    lv_obj_invalidate_area(sea_obj, &z);
+}
 
 void anim_timer_on(bool on)
 {
@@ -1151,13 +1166,13 @@ void icon(lv_obj_t* parent, int size)
 } // namespace
 
 namespace games {
-extern const GameOps sunk_ops;
-const GameOps sunk_ops = {open, close, save_now, tick, restyle, summary, icon};
+extern const GameOps sank_ops;
+const GameOps sank_ops = {open, close, save_now, tick, restyle, summary, icon};
 } // namespace games
 
 #ifdef CYD_PREVIEW
-namespace sunk_preview {
-sunk::Board* board() { return B; }
+namespace sank_preview {
+sank::Board* board() { return B; }
 void ready() { do_key(kReady); }
 void undo() { do_key(kUndo); }
 void tap(int c)                          // a tap on sea cell c
@@ -1175,5 +1190,5 @@ bool shooting() { return SA.on; }
 void cover_ready() { if (V.cover) { V.cover = false; V.viewer = B->turn(); V.page = 0; changed(); } }
 void pass() { if (V.result) { V.result = false; V.cover = true; changed(); } }
 void page(int p) { V.page = p; changed(); }
-} // namespace sunk_preview
+} // namespace sank_preview
 #endif

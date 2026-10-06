@@ -285,13 +285,14 @@ never typed (SPEC section 5).
   2 men or blocked = loss; 100 quiet plies after placing = draw; computer
   Easy 1 ply, Medium 3, Hard deepening within 150k nodes, removals
   searched first, move lists on the stack - ai_stack 24 KB). You Sunk My
-  CYD! (id `sunk`, Strategy; Battleship - Tom's name is "Sank" (2026-10-05: the classic ad line "You
-  sank my battleship!"); the id stays `sunk` (save files, wireless); 10x10, Carrier
+  CYD! (id `sank`, Strategy; Battleship - Tom's name is "Sank" (2026-10-05: the classic ad line "You
+  sank my battleship!"); the id was `sunk` until v0.27.2 (renamed
+  everywhere before any public release - Tom; wireless key 8 unchanged); 10x10, Carrier
   5, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2; classic rules (Tom,
   2026-10-05): ships may touch, only not overlap, and nothing is "known"
   round a sunk ship (v1's spacing rule made it too easy - never bring it
   back); a hit doesn't fire again; placement (Tom, 2026-10-05) Options ->
-  "Ship Placement" Random (o) Manual, default Manual (`/games/sunk_opt.bin`
+  "Ship Placement" Random (o) Manual, default Manual (`/games/sank_opt.bin`
   "SKO1"; changing it restarts the fleet being placed): Manual = biggest
   ship first, tap one end (gold), the squares it can point to light up,
   tap one = placed (Tom, 2026-10-05: aimed at a nearby edge the ship
@@ -784,7 +785,10 @@ never typed (SPEC section 5).
 - Speaker: `BOARD_PIN_SPEAKER` 26 on both board families (2.8": straight
   to its amp; ESP32-32E: DAC pin into the amp, enabled by
   `BOARD_PIN_AUDIO_EN` 4, low = on; the driver turns the amp on only while
-  a sound plays). LEDC square wave, 50 % duty. Not yet heard on hardware.
+  a sound plays). LEDC square wave. Each note is timed by an esp_timer,
+  never by loop() (v0.27.2, Tom: the computer's shells whistled slower
+  than his - a heavy redraw stretched loop-timed notes). Animations
+  invalidate only the area that changes, so frames stay cheap.
 - `BOARD_PORTRAIT_W` (240/320) in board_select.h picks which splash images
   are built in.
 - Check WiFi against the board pins when it's added: ADC2 pins can't be

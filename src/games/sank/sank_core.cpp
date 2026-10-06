@@ -1,9 +1,9 @@
-// You Sank My CYD! rules and computer player. See sunk_core.h.
-#include "sunk_core.h"
+// You Sank My CYD! rules and computer player. See sank_core.h.
+#include "sank_core.h"
 
 #include <cstring>
 
-namespace sunk {
+namespace sank {
 
 namespace {
 
@@ -371,4 +371,4 @@ uint32_t best_move(const Board& b, int level, uint32_t seed)
     return uint32_t(p.best < 0 ? 0 : p.best);
 }
 
-} // namespace sunk
+} // namespace sank

@@ -58,8 +58,8 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_farkle.png" width="240" alt="Farkle: three dice set aside, Bank 1000">
 <img src="docs/screenshots/small_mancala.png" width="240" alt="Mancala: seeds being sown round the board">
 <img src="docs/screenshots/small_morris.png" width="240" alt="Nine Men's Morris: a mill made, pick a man to take">
-<img src="docs/screenshots/small_sunk_place.png" width="240" alt="You Sank My CYD!: placing the Carrier - its end picked, the lit squares show the ways it can point">
-<img src="docs/screenshots/small_sunk.png" width="240" alt="You Sank My CYD!: firing at their waters">
+<img src="docs/screenshots/small_sank_place.png" width="240" alt="You Sank My CYD!: placing the Carrier - its end picked, the lit squares show the ways it can point">
+<img src="docs/screenshots/small_sank.png" width="240" alt="You Sank My CYD!: firing at their waters">
 <img src="docs/screenshots/small_ultimate.png" width="240" alt="Ultimate Tic-Tac-Toe: two boards won, the board to play in lit">
 <img src="docs/screenshots/small_gomoku.png" width="240" alt="Gomoku: stones on a 15x15 board">
 <img src="docs/screenshots/small_wheel.png" width="240" alt="Wheel of CYD: a called letter showing on the puzzle board">

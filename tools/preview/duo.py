@@ -682,7 +682,7 @@ def in_step(a, b, gid):
 
 GAMES = [("fourconnect", "FourConnect"), ("tictactoe", "Tic-Tac-Toe"), ("reversi", "Reversi"),
          ("checkers", "Checkers"), ("chess", "Chess"), ("mancala", "Mancala"), ("morris", "Nine Men's Morris"),
-         ("sunk", "You Sank My CYD!"), ("ultimate", "Ultimate Tic-Tac-Toe"), ("gomoku", "Gomoku")]
+         ("sank", "You Sank My CYD!"), ("ultimate", "Ultimate Tic-Tac-Toe"), ("gomoku", "Gomoku")]
 
 
 def scenario_every_game(A, B):
@@ -693,14 +693,14 @@ def scenario_every_game(A, B):
             continue
         plies = 0
         idle = 0
-        while plies < (260 if gid == "sunk" else 120) and idle < 60:
+        while plies < (260 if gid == "sank" else 120) and idle < 60:
             moved = False
             for b in (first, second):
                 r = b.cmd("anymove")
                 if r and r[0] != "A -1":
                     plies += 1
                     moved = True
-            run({"mancala": 1500, "sunk": 3500}.get(gid, 200))   # Mancala shows each seed, a shot falls and lands
+            run({"mancala": 1500, "sank": 3500}.get(gid, 200))   # Mancala shows each seed, a shot falls and lands
             idle = 0 if moved else idle + 1
             if plies and plies % 10 == 0 and not in_step(first, second, gid):
                 break

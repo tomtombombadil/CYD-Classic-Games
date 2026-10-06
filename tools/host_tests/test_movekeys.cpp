@@ -22,7 +22,7 @@
 #include "games/mancala/mancala_core.h"
 #include "games/morris/morris_core.h"
 #include "games/reversi/reversi_core.h"
-#include "games/sunk/sunk_core.h"
+#include "games/sank/sank_core.h"
 #include "games/ultimate/ultimate_core.h"
 #include "games/gomoku/gomoku_core.h"
 #include "games/tictactoe/tictactoe_core.h"
@@ -175,14 +175,14 @@ uint32_t morris_hash()
     });
 }
 
-uint32_t sunk_hash()
+uint32_t sank_hash()
 {
     return play_games([](Rng& r, Hash& h) {
-        auto* b = new sunk::Board();
+        auto* b = new sank::Board();
         // The fleets, a ship a move (any place it fits)
         while (b->setup()) {
-            uint32_t places[2 * sunk::kCells];
-            const int n = sunk::ship_places(b->fleet[b->turn()], b->placed(b->turn()), places);
+            uint32_t places[2 * sank::kCells];
+            const int n = sank::ship_places(b->fleet[b->turn()], b->placed(b->turn()), places);
             std::vector<uint32_t> keys(places, places + n);
             const uint32_t key = pick(keys, r);
             h.add(key);
@@ -190,7 +190,7 @@ uint32_t sunk_hash()
         }
         while (b->result() == -1) {
             std::vector<uint32_t> keys;
-            for (uint32_t c = 0; c < uint32_t(sunk::kCells); ++c) if (b->can_play(c)) keys.push_back(c);
+            for (uint32_t c = 0; c < uint32_t(sank::kCells); ++c) if (b->can_play(c)) keys.push_back(c);
             const uint32_t key = pick(keys, r);
             h.add(key);
             b->play(key);
@@ -245,7 +245,7 @@ uint32_t hash_for(const char* id)
     if (!strcmp(id, "chess"))       return chess_hash();
     if (!strcmp(id, "mancala"))     return mancala_hash();
     if (!strcmp(id, "morris"))      return morris_hash();
-    if (!strcmp(id, "sunk"))        return sunk_hash();
+    if (!strcmp(id, "sank"))        return sank_hash();
     if (!strcmp(id, "ultimate"))    return ultimate_hash();
     if (!strcmp(id, "gomoku"))      return gomoku_hash();
     return 0;
@@ -289,7 +289,7 @@ int main()
     // wplay puts a one-player game aside in a 1 KB stack buffer (kStashMax)
     const size_t biggest[] = {fourconnect::Board::kSaveBytes, tictactoe::Board::kSaveBytes, reversi::Board::kSaveBytes,
                               checkers::Game::kSaveBytes, chess::Game::kSaveBytes, mancala::Board::kSaveBytes,
-                              morris::Game::kSaveBytes, sunk::Board::kSaveBytes,
+                              morris::Game::kSaveBytes, sank::Board::kSaveBytes,
                               ultimate::Board::kSaveBytes, gomoku::Board::kSaveBytes};
     for (size_t b : biggest) check(b + 8 < 1024, "a wireless game's save fits wplay's 1 KB stash buffer");
     // net_moves.txt: "<id> <key> <version> <hash>" per line, '#' comments

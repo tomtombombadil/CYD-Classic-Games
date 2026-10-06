@@ -31,7 +31,7 @@
 #include "games/holdem/holdem_core.h"
 #include "games/farkle/farkle_core.h"
 #include "games/mancala/mancala_core.h"
-#include "games/sunk/sunk_core.h"
+#include "games/sank/sank_core.h"
 #include "games/wheel/wheel_core.h"
 #include "games/morris/morris_core.h"
 namespace wheel_preview {
@@ -39,8 +39,8 @@ wheel::Game* game();
 void key(char c);
 void action(int k);
 } // namespace wheel_preview
-namespace sunk_preview {
-sunk::Board* board();
+namespace sank_preview {
+sank::Board* board();
 void ready();
 void page(int p);
 void cover_ready();
@@ -50,7 +50,7 @@ void tap(int c);
 void options();
 bool idle();
 bool shooting();
-} // namespace sunk_preview
+} // namespace sank_preview
 namespace morris_preview {
 morris::Game* game();
 void tap_point(int p);
@@ -1296,92 +1296,92 @@ int main(int argc, char** argv)
     }
 
     {   // You Sank My CYD!: shuffling a fleet, their waters part-way, my fleet, dark, pass-and-play's cover
-        ui::app_open_game_now(games::find("sunk"));
+        ui::app_open_game_now(games::find("sank"));
         run(30);
-        shot(out + "_light_63_sunk_new.ppm");                       // Manual: the Carrier first
-        sunk::Board* b = sunk_preview::board();
+        shot(out + "_light_63_sank_new.ppm");                       // Manual: the Carrier first
+        sank::Board* b = sank_preview::board();
         if (b) {
             // Manual placement: the Carrier's end at H3, two from the edge; aimed right
             // it slides in to F3-J3
-            sunk_preview::tap(27);
-            shot(out + "_light_63_sunk_aim.ppm");
-            sunk_preview::tap(28);
+            sank_preview::tap(27);
+            shot(out + "_light_63_sank_aim.ppm");
+            sank_preview::tap(28);
             // Battleship B5 down to B8, Cruiser A6 down, Submarine D8 across, Destroyer touching it
             const int ends[3][2] = {{41, 71}, {50, 70}, {73, 75}};
-            for (auto& e : ends) { sunk_preview::tap(e[0]); sunk_preview::tap(e[1]); }
-            sunk_preview::tap(86);
-            shot(out + "_light_63_sunk_place.ppm");
-            sunk_preview::tap(87);
-            shot(out + "_light_63_sunk_placed.ppm");
+            for (auto& e : ends) { sank_preview::tap(e[0]); sank_preview::tap(e[1]); }
+            sank_preview::tap(86);
+            shot(out + "_light_63_sank_place.ppm");
+            sank_preview::tap(87);
+            shot(out + "_light_63_sank_placed.ppm");
             match::open_menu();
-            shot(out + "_light_63_sunk_menu.ppm");
-            sunk_preview::options();
-            shot(out + "_light_63_sunk_options.ppm");
+            shot(out + "_light_63_sank_menu.ppm");
+            sank_preview::options();
+            shot(out + "_light_63_sank_options.ppm");
             ui::close_overlays();
-            sunk_preview::ready();
+            sank_preview::ready();
             run(3000);                                    // the computer places its ships
             // A few misses, the Destroyer sunk, a hit on the Carrier
-            const sunk::Fleet& f = b->fleet[1];
+            const sank::Fleet& f = b->fleet[1];
             std::vector<int> aim;
-            for (int c = 0; c < sunk::kCells && aim.size() < 3; c += 7)
+            for (int c = 0; c < sank::kCells && aim.size() < 3; c += 7)
                 if (!f.at[c] && b->can_play(uint32_t(c))) aim.push_back(c);
-            const sunk::Ship& d = f.ship[4];
+            const sank::Ship& d = f.ship[4];
             aim.push_back(d.cell_at(0, 2));
             aim.push_back(d.cell_at(1, 2));
             aim.push_back(f.ship[0].cell_at(2, 5));
             // Each shot: the shell falling, then the splash or the explosion with its banner
             for (size_t k = 0; k < aim.size(); ++k) {
                 const int c = aim[k];
-                for (int w = 0; w < 30 && !(match::human_may_move() && sunk_preview::idle()); ++w) run(300);
+                for (int w = 0; w < 30 && !(match::human_may_move() && sank_preview::idle()); ++w) run(300);
                 if (!b->can_play(uint32_t(c))) continue;
                 match::human_move(c);
-                if (k == 0) { run(450); shot(out + "_light_63_sunk_fall.ppm"); }
-                if (k == 0 || k == 4) { run(k == 0 ? 750 : 1200); shot(out + (k == 0 ? "_light_63_sunk_miss.ppm" : "_light_63_sunk_hit.ppm")); }
-                if (k == 4) { sunk_preview::page(1); }
+                if (k == 0) { run(450); shot(out + "_light_63_sank_fall.ppm"); }
+                if (k == 0 || k == 4) { run(k == 0 ? 750 : 1200); shot(out + (k == 0 ? "_light_63_sank_miss.ppm" : "_light_63_sank_hit.ppm")); }
+                if (k == 4) { sank_preview::page(1); }
                 run(4500);                                   // the turn goes to the computer, then back
                 if (k == 3) {                                // the computer's shot on your fleet
-                    for (int w = 0; w < 10 && !sunk_preview::shooting(); ++w) run(200);
+                    for (int w = 0; w < 10 && !sank_preview::shooting(); ++w) run(200);
                     run(1300);
-                    shot(out + "_light_63_sunk_incoming.ppm");
+                    shot(out + "_light_63_sank_incoming.ppm");
                 }
             }
-            for (int w = 0; w < 30 && !(match::human_may_move() && sunk_preview::idle()); ++w) run(300);
-            sunk_preview::page(0);
-            shot(out + "_light_63_sunk.ppm");
-            sunk_preview::page(1);
-            shot(out + "_light_63_sunk_fleet.ppm");
-            sunk_preview::page(0);
+            for (int w = 0; w < 30 && !(match::human_may_move() && sank_preview::idle()); ++w) run(300);
+            sank_preview::page(0);
+            shot(out + "_light_63_sank.ppm");
+            sank_preview::page(1);
+            shot(out + "_light_63_sank_fleet.ppm");
+            sank_preview::page(0);
             ui::app_save_current();
-            mid_saves["sunk"] = files["sunk"];
+            mid_saves["sank"] = files["sank"];
         }
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Dark);
-        ui::app_open_game_now(games::find("sunk"));
-        shot(out + "_dark_63_sunk.ppm");
+        ui::app_open_game_now(games::find("sank"));
+        shot(out + "_dark_63_sank.ppm");
         match::state().mode = twoplayer::Mode::PassAndPlay;
         ui::app_go_home_now();
         ui::app_set_theme(ui::Theme::Light);
-        ui::app_open_game_now(games::find("sunk"));
-        shot(out + "_light_63_sunk_pass.ppm");
-        if (sunk::Board* p = sunk_preview::board()) {     // Blue fires: the result, then Pass to Gold
-            sunk_preview::cover_ready();
-            for (int c = 0; c < sunk::kCells; ++c)
+        ui::app_open_game_now(games::find("sank"));
+        shot(out + "_light_63_sank_pass.ppm");
+        if (sank::Board* p = sank_preview::board()) {     // Blue fires: the result, then Pass to Gold
+            sank_preview::cover_ready();
+            for (int c = 0; c < sank::kCells; ++c)
                 if (p->can_play(uint32_t(c)) && p->fleet[1].at[c]) { match::human_move(c); break; }
-            shot(out + "_light_63_sunk_passed.ppm");
+            shot(out + "_light_63_sank_passed.ppm");
             // ... and on to the end: Blue sinks the rest
             for (int guard = 0; guard < 400 && p->result() == -1; ++guard) {
                 int c = 0;
-                if (p->turn() == 0) { while (c < sunk::kCells && !(p->can_play(uint32_t(c)) && p->fleet[1].at[c])) ++c; }
-                else { while (c < sunk::kCells && !p->can_play(uint32_t(c))) ++c; }
-                sunk_preview::cover_ready();
+                if (p->turn() == 0) { while (c < sank::kCells && !(p->can_play(uint32_t(c)) && p->fleet[1].at[c])) ++c; }
+                else { while (c < sank::kCells && !p->can_play(uint32_t(c))) ++c; }
+                sank_preview::cover_ready();
                 match::human_move(c);
-                sunk_preview::pass();
+                sank_preview::pass();
             }
             run(100);
-            shot(out + "_light_63_sunk_won.ppm");
+            shot(out + "_light_63_sank_won.ppm");
         }
         ui::app_go_home_now();
-        files["sunk"] = mid_saves["sunk"];
+        files["sank"] = mid_saves["sank"];
     }
 
     {   // Wheel of CYD: the start, the wheel turning, picking a consonant, letters showing, solving, a round won
@@ -2129,7 +2129,7 @@ int main(int argc, char** argv)
 
     {   // Left-handed: the games whose layout follows the stylus hand
         ui::settings().left_handed = true;
-        for (const char* id : {"solitaire", "golf", "pyramid", "spider", "freecell", "mancala", "nonogram", "yahtcyd", "sunk"}) {
+        for (const char* id : {"solitaire", "golf", "pyramid", "spider", "freecell", "mancala", "nonogram", "yahtcyd", "sank"}) {
             if (mid_saves.count(id)) files[id] = mid_saves[id];
             ui::app_open_game_now(games::find(id));
             run(30);

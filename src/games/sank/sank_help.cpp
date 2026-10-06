@@ -29,4 +29,4 @@ const HelpPage kPages[] = {
 
 } // namespace
 
-CYD_HELP(sunk, kPages)
+CYD_HELP(sank, kPages)

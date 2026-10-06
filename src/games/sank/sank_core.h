@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace sunk {
+namespace sank {
 
 constexpr int kN = 10;                          // the sea is kN x kN
 constexpr int kCells = kN * kN;
@@ -89,4 +89,4 @@ struct Board {
 // still afloat could lie and fires where most of them cross. Ties go by `seed`.
 uint32_t best_move(const Board& b, int level, uint32_t seed);
 
-} // namespace sunk
+} // namespace sank

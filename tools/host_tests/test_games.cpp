@@ -20,7 +20,7 @@
 #include "../../src/games/reversi/reversi_core.h"
 #include "../../src/games/sliding/sliding_core.h"
 #include "../../src/games/spider/spider_core.h"
-#include "../../src/games/sunk/sunk_core.h"
+#include "../../src/games/sank/sank_core.h"
 #include "../../src/games/wheel/wheel_core.h"
 #include "../../src/games/ultimate/ultimate_core.h"
 #include "../../src/games/gomoku/gomoku_core.h"
@@ -1760,9 +1760,9 @@ static void test_farkle()
 }
 
 // ---- Mancala ---------------------------------------------------------------------------------
-static void test_sunk()
+static void test_sank()
 {
-    using namespace sunk;
+    using namespace sank;
     // Fleets: in the sea, the right lengths, never touching, deterministic
     uint32_t h = 2166136261u;
     for (uint32_t s = 0; s < 3000; ++s) {
@@ -1789,7 +1789,7 @@ static void test_sunk()
             }
         if (s < 50) for (int c = 0; c < kCells; ++c) h = (h ^ f.at[c]) * 16777619u;
     }
-    printf("sunk: fleet hash %08x\n", h);
+    printf("sank: fleet hash %08x\n", h);
     CHECK(h == 0x7bbd7ef9u);       // make_fleet() is part of the wireless version: never change it
     // Rules: ships first (a ship a move, side 0's five then side 1's), then shots
     Board b;
@@ -1859,7 +1859,7 @@ static void test_sunk()
                 CHECK(!y.deserialize(buf, sizeof buf));
             }
         }
-    printf("sunk: average shots to sink a fleet - Easy %.1f, Medium %.1f, Hard %.1f\n",
+    printf("sank: average shots to sink a fleet - Easy %.1f, Medium %.1f, Hard %.1f\n",
            total[0] / 40.0, total[1] / 40.0, total[2] / 40.0);
     CHECK(total[2] < total[1] && total[1] < total[0]);
     // Random fleets: ships anywhere they fit, all five every time
@@ -2286,7 +2286,7 @@ int main()
     test_holdem();
     test_farkle();
     test_mancala();
-    test_sunk();
+    test_sank();
     test_wheel();
     test_ultimate();
     test_gomoku();
