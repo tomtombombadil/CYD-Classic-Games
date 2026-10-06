@@ -368,7 +368,10 @@ never typed (SPEC section 5).
   several wedges a frame (wagon-wheel effect), so it is drawn with
   motion blur: from 5 deg a frame (speed x measured frame time) the
   wedges fade toward their average colour, up to 80 % at 18 deg, labels
-  hidden above 35 %; sharp again as it slows), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,
+  hidden above 35 %; sharp again as it slows; v0.27.4: the core passes
+  the turn on BUST / SKIP the moment the spin is decided, so while the
+  wheel turns the header and the gold player box show the spinner
+  (`shown_turn()`), not `g.turn` - Tom saw Max named during his spin), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,
   X first anywhere; the square played sends the other player to that
   board, a won or full board = play anywhere; a full board counts for
   nobody, all boards done without three = draw; move = cell 0-80 (board *

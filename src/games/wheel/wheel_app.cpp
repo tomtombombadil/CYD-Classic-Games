@@ -81,6 +81,10 @@ void update();
 bool vs_computer() { return S->mode == Mode::Computer; }
 bool computer(int p) { return vs_computer() && p != 0; }
 bool human_turn() { return !computer(S->g.turn) && !S->g.over(); }
+// Whose turn the screen shows. The core settles a spin at once - a BUST or
+// SKIP passes the turn before the wheel has even started - so while it turns
+// the spinner is still shown (Tom: the header named Max during his own spin)
+int shown_turn() { return ui_mode == Ui::Spinning && spin_by >= 0 ? spin_by : S->g.turn; }
 const char* name_of(int p) { return vs_computer() ? (p == 0 ? "You" : kComputers[p - 1]) : (p == 0 ? kSides.side1 : kSides.side2); }
 
 void money_text(char* buf, size_t cap, long v)
@@ -416,7 +420,7 @@ void board_draw_cb(lv_event_t* e)
     const int lead = g.over() ? g.leader() : -1;
     for (int p = 0; p < n; ++p) {
         const int x = a.x1 + p * (boxw + gap);
-        const bool on = (!g.over() && g.turn == p && g.phase != Phase::RoundOver) || lead == p
+        const bool on = (!g.over() && shown_turn() == p && g.phase != Phase::RoundOver) || lead == p
                         || (g.phase == Phase::RoundOver && g.round_winner == p);
         kit::fill_rect(layer, x, y, x + boxw - 1, y + sh - 1, on ? P.lit : P.key_border, 5);
         kit::fill_rect(layer, x + 2, y + 2, x + boxw - 3, y + sh - 3, P.key, 4);
@@ -713,13 +717,13 @@ void update()
     } else if (g.phase == Phase::RoundOver) {
         snprintf(st, sizeof st, "Round %d of %d done", g.round + 1, kRounds);
         snprintf(sh, sizeof sh, "Round %d done", g.round + 1);
-    } else if (human_turn()) {
+    } else if (!computer(shown_turn())) {
         if (vs_computer()) snprintf(st, sizeof st, "Round %d: your turn", g.round + 1);
-        else snprintf(st, sizeof st, "Round %d: %s", g.round + 1, name_of(g.turn));
-        snprintf(sh, sizeof sh, vs_computer() ? "Your turn" : "%s", name_of(g.turn));
+        else snprintf(st, sizeof st, "Round %d: %s", g.round + 1, name_of(shown_turn()));
+        snprintf(sh, sizeof sh, vs_computer() ? "Your turn" : "%s", name_of(shown_turn()));
     } else {
-        snprintf(st, sizeof st, "Round %d: %s's turn", g.round + 1, name_of(g.turn));
-        snprintf(sh, sizeof sh, "%s's turn", name_of(g.turn));
+        snprintf(st, sizeof st, "Round %d: %s's turn", g.round + 1, name_of(shown_turn()));
+        snprintf(sh, sizeof sh, "%s's turn", name_of(shown_turn()));
     }
     kit::top_bar_status(bar, st, sh[0] ? sh : nullptr);
     // Action keys
