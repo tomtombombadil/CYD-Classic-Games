@@ -378,7 +378,8 @@ never typed (SPEC section 5).
   42 % of width) with a front edge in darkened wedge colours, a gold hub,
   the pointer at the front, the value under it in big type above (redrawn
   only when it changes) - under half the rows, so under half the slant;
-  never draw it as a round face-on wheel again; v0.27.4: the core passes
+  never draw it as a round face-on wheel again (Tom, 2026-10-06: the
+  slant is less but still there - paused, come back to it later); v0.27.4: the core passes
   the turn on BUST / SKIP the moment the spin is decided, so while the
   wheel turns the header and the gold player box show the spinner
   (`shown_turn()`), not `g.turn` - Tom saw Max named during his spin), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,
