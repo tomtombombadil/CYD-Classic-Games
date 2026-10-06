@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Forty-one games and an RPG dice roller so far: **Sudoku** (from
+> under way. Forty-two games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **Pipe Race**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **Strategy Go!**, **Acquisitions**, **Sorry-CYD!**, **Escape from CYD**, **CYD-dle**, **Wheel of CYD**, **Deal or No CYD**, **Who Wants To Be A CYD?**, **Jeopar-CYD!**, **Press Your CYD**, **Card Sharks CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **Strategy Go!**, **Acquisitions**, **Sorry-CYD!**, **Escape from CYD**, **CYD-dle**, **Wheel of CYD**, **Deal or No CYD**, **Who Wants To Be A CYD?**, **Jeopar-CYD!**, **Hollywood CYDs**, **Press Your CYD**, **Card Sharks CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, Strategy Go!, Acquisitions, Sorry-CYD!, Escape from CYD, CYD-dle, Wheel of CYD (and its wheel), Deal or No CYD, Who Wants To Be A CYD?, Jeopar-CYD!, Press Your CYD, Card Sharks CYD, Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, Strategy Go!, Acquisitions, Sorry-CYD!, Escape from CYD, CYD-dle, Wheel of CYD (and its wheel), Deal or No CYD, Who Wants To Be A CYD?, Jeopar-CYD!, Hollywood CYDs, Press Your CYD, Card Sharks CYD, Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Pipe Race, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -48,6 +48,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_cardsharks.png" width="240" alt="Card Sharks CYD: two rows of five cards, higher or lower">
 <img src="docs/screenshots/small_whowants.png" width="240" alt="Who Wants To Be A CYD?: a question with 50:50 and the audience's vote">
 <img src="docs/screenshots/small_jeoparcyd.png" width="240" alt="Jeopar-CYD!: six categories of values, the three scores">
+<img src="docs/screenshots/small_hollywood.png" width="240" alt="Hollywood CYDs: nine stars in a tic-tac-toe grid">
 <img src="docs/screenshots/small_dealcyd.png" width="240" alt="Deal or No CYD: the Banker's offer">
 <img src="docs/screenshots/small_strategygo.png" width="240" alt="Strategy Go!: your army at the bottom, theirs hidden">
 <img src="docs/screenshots/small_acquisitions.png" width="240" alt="Acquisitions: hotel chains on the board, your tiles at the bottom">
@@ -136,6 +137,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Card Sharks CYD | Game Shows | Higher or lower across five cards; vs computer (Easy / Medium / Hard) or pass-and-play |
 | Who Wants To Be A CYD? | Game Shows | Fifteen trivia questions up a money ladder to $1,000,000, with three lifelines |
 | Jeopar-CYD! | Game Shows | Six categories, two rounds and a Final; buzz in by answering first - you against Max and Zoe (Easy / Medium / Hard) |
+| Hollywood CYDs | Game Shows | Tic-tac-toe with nine stars: agree or disagree with their answers; vs computer (Easy / Medium / Hard) or pass-and-play |
 | Deal or No CYD | Game Shows | Solo, 26 cases: open them and take the Banker's offer, or play on |
 | Yaht-CYD | Dice Games | Solo, five dice, 13 boxes, beat your best score |
 | Farkle | Dice Games | Push-your-luck dice to 10,000, vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -554,6 +556,15 @@ loses it and lets the others try. Daily Doubles (1, then 2) are for the
 picker alone, for a wager. Final: everyone with money bets, then answers
 one hard question. Computers: Easy knows less and buzzes slower, Hard
 knows more and is quick.
+
+## Hollywood CYDs
+
+Tic-tac-toe with nine made-up stars. On your turn tap a star: they're asked
+a trivia question and answer it - right, or a bluff. **Agree** or
+**Disagree**: judge right and the square is yours, judge wrong and it goes
+to the other player (unless that would win them the game - a winning square
+must be earned). Three in a row or any five squares wins. X starts. Against
+the computer (Easy / Medium / Hard) or a friend (pass and play).
 
 ## Deal or No CYD
 

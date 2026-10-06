@@ -91,6 +91,8 @@ namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool 
 namespace dealcyd_preview { dealcyd::Game* game(); void reveal(bool on); void redraw(); }
 #include "games/presscyd/presscyd_core.h"
 #include "games/cardsharks/cardsharks_core.h"
+#include "games/hollywood/hollywood_core.h"
+namespace hollywood_preview { hcyd::Board* board(); void sync(); void reveal(bool on); }
 #include "games/jeoparcyd/jeoparcyd_core.h"
 namespace jeoparcyd_preview { jcyd::Game* game(); void hold(bool on); void refresh(); void status_line(const char* t); void final_clue(); }
 #include "games/whowants/whowants_core.h"
@@ -1625,6 +1627,46 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Hollywood CYDs: the board part-way, a star's answer to judge, a bluff revealed, dark
+        using namespace hcyd;
+        remove_game("hollywood");
+        ui::app_open_game_now(games::find("hollywood"));
+        run(30);
+        Board* b = hollywood_preview::board();
+        if (b) {
+            for (int k = 0; k < 40 && b->result() < 0 && !(b->count(0) + b->count(1) >= 4 && match::human_may_move() && b->phase == Phase::Pick); ++k) {
+                for (int w = 0; w < 40 && !match::human_may_move(); ++w) run(250);
+                run(3000);
+                if (!match::human_may_move() || b->result() >= 0) break;
+                if (b->phase == Phase::Pick && b->count(0) + b->count(1) >= 4) break;
+                match::human_move(best_move(*b, 1, 99 + k));
+            }
+            run(6000);
+            hollywood_preview::sync();
+            shot(out + "_light_47_hollywood.ppm");
+            for (int s = 0; s < kSquares; ++s) if (b->owner[s] < 0 && b->phase == Phase::Pick && match::human_may_move()) { match::human_move(s); break; }
+            run(300);
+            hollywood_preview::sync();
+            shot(out + "_light_47_hollywood_ask.ppm");
+            ui::app_set_theme(ui::Theme::Dark);
+            ui::app_go_home_now();
+            ui::app_open_game_now(games::find("hollywood"));
+            run(50);
+            b = hollywood_preview::board();
+            hollywood_preview::sync();
+            shot(out + "_dark_47_hollywood.ppm");
+            ui::app_set_theme(ui::Theme::Light);
+            if (b && b->phase == Phase::Judge) {
+                b->star_says = 1;
+                match::human_move(kAgree);
+                hollywood_preview::reveal(true);
+                shot(out + "_light_47_hollywood_bluff.ppm");
+                hollywood_preview::reveal(false);
+            }
+        }
         ui::app_go_home_now();
     }
 

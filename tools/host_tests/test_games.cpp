@@ -48,6 +48,7 @@
 #include "../../src/games/common/trivia_bank.h"
 #include "../../src/games/whowants/whowants_core.h"
 #include "../../src/games/jeoparcyd/jeoparcyd_core.h"
+#include "../../src/games/hollywood/hollywood_core.h"
 #include <chrono>
 #include <string>
 #include <set>
@@ -3341,6 +3342,61 @@ static void test_jeoparcyd()
     trivia::release();
 }
 
+static void test_hollywood()
+{
+    using namespace hcyd;
+    {   // pick, judge right = yours; judge wrong = theirs; the turn passes
+        Board b; b.reset(3);
+        CHECK(b.can_play(4) && !b.can_play(kAgree));
+        CHECK(b.play(4) && b.phase == Phase::Judge && b.turn == 0 && b.q >= 0);
+        CHECK(b.play(b.star_right() ? kAgree : kDisagree) && b.owner[4] == 0 && b.turn == 1 && b.last_right);
+        CHECK(b.play(0));
+        CHECK(b.play(b.star_right() ? kDisagree : kAgree) && b.owner[0] == 0 && !b.last_right && b.last_got == 0);
+    }
+    {   // a winning square must be earned: X has 0 and 1; O misjudges square 2 -> it stays open
+        Board b; b.reset(4);
+        b.owner[0] = 0; b.owner[1] = 0; b.owner[4] = 1; b.turn = 1;
+        CHECK(b.play(2));
+        CHECK(b.play(b.star_right() ? kDisagree : kAgree) && b.owner[2] == -1 && b.last_got == -1 && b.winner < 0);
+        // X earns it
+        CHECK(b.play(2) && b.play(b.star_right() ? kAgree : kDisagree) && b.winner == 0 && b.phase == Phase::Over);
+    }
+    {   // five squares win without a line
+        Board b; b.reset(5);
+        const int x[4] = {0, 2, 5, 7};
+        for (int s : x) b.owner[s] = 0;
+        b.owner[1] = 1; b.owner[3] = 1; b.owner[4] = 1;
+        CHECK(b.play(6) && b.play(b.star_right() ? kAgree : kDisagree) && b.winner == 0);
+    }
+    {   // whole games end; Hard beats Easy more often than not
+        int hard = 0;
+        const int N = 200;
+        for (int s = 0; s < N; ++s) {
+            Board b; b.reset(100 + s);
+            int k = 0;
+            for (; k < 400 && b.result() < 0; ++k) {
+                const int side = b.turn;
+                const int lv = (side == (s & 1)) ? 2 : 0;
+                CHECK(b.play(best_move(b, lv, 7 + k * 31 + s)));
+            }
+            CHECK(b.result() >= 0);
+            hard += b.result() == (s & 1);
+        }
+        printf("hollywood: Hard won %d of %d against Easy\n", hard, N);
+        CHECK(hard > N * 55 / 100);
+    }
+    {   // save round trip; bad saves
+        Board b; b.reset(9); b.play(4);
+        std::vector<uint8_t> buf(Board::kSaveBytes);
+        CHECK(b.serialize(buf.data(), buf.size()) == Board::kSaveBytes);
+        Board h;
+        CHECK(h.deserialize(buf.data(), buf.size()) && h.q == b.q && h.phase == Phase::Judge && h.square == 4);
+        std::vector<uint8_t> bad = buf; bad[5] = 3;
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+    }
+    trivia::release();
+}
+
 int main()
 {
     test_fourconnect();
@@ -3386,6 +3442,7 @@ int main()
     test_trivia();
     test_whowants();
     test_jeoparcyd();
+    test_hollywood();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

@@ -296,8 +296,8 @@ void close()
 
 void tick(uint32_t now)
 {
+    const bool was = busy();                      // with the last tick's time
     now_ms = now;
-    const bool was = busy();
     match::tick(now);
     if (!B) return;
     if (was && !busy()) { update_keys(); redraw(); }

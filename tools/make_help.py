@@ -272,6 +272,13 @@ write("jeoparcyd", [
  ("Final", "Everyone with money bets (nothing, a quarter, half or all), then answers one hard question. Right adds the bet, wrong takes it off.\nComputer: Easy knows less and buzzes slower; Hard knows more and is quick. Questions: Open Trivia DB (CC BY-SA 4.0)."),
 ])
 
+write("hollywood", [
+ ("The Idea", "Tic-tac-toe with nine stars. On your turn tap a star: they're asked a question and give an answer - but stars sometimes bluff!\nAgree or Disagree. Judge right and the square is yours. Judge wrong and it goes to the other player."),
+ ("Winning", "Three in a row wins - or any five squares.\nBut a winning square must be earned: if judging wrong would hand the other player the win, the square stays open instead.\nX goes first."),
+ ("The Stars", "Stars give the right answer a bit more than half the time. When the question is hard, think twice before agreeing!\nComputer: Easy picks any star and knows less; Medium and Hard play tic-tac-toe well and know more. Questions: Open Trivia DB (CC BY-SA 4.0)."),
+ TP,
+], two_player=True)
+
 write("dealcyd", [
  ("The Idea", "26 cases hide 26 amounts, from 1 cent to $1,000,000. Pick one to be yours - it stays shut until the end.\nThen open the other cases a few at a time. Every amount you open is one your case can't hold: it turns grey on the boards at the sides."),
  ("The Banker", "After each round the Banker calls with an offer for your case. Deal takes the money and ends the game. No Deal plays on.\nRounds open 6, 5, 4, 3 and 2 cases, then one at a time. The offers grow as the game goes on - but so does the risk."),
