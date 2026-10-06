@@ -29,10 +29,10 @@ constexpr Tone kTrill[]   = {{1047, 60}, {1319, 60}, {1568, 70}, {2093, 45}, {15
 // "Ding-dong, ding-dong": someone nearby asks to play
 constexpr Tone kCall[]    = {{1319, 120}, {988, 160}, {0, 90}, {1319, 120}, {988, 200}};
 
-// A shell falling: a whistle sliding from high to low over ~0.9 s
-constexpr Tone kWhistle[] = {{2400, 60}, {2250, 60}, {2100, 60}, {1960, 60}, {1830, 60}, {1700, 60},
-                             {1580, 60}, {1470, 60}, {1360, 60}, {1260, 60}, {1170, 60}, {1080, 60},
-                             {1000, 60}, {920, 60}, {850, 60}};
+// A shell falling: a whistle sliding from high to low over ~0.6 s
+constexpr Tone kWhistle[] = {{2400, 40}, {2250, 40}, {2100, 40}, {1960, 40}, {1830, 40}, {1700, 40},
+                             {1580, 40}, {1470, 40}, {1360, 40}, {1260, 40}, {1170, 40}, {1080, 40},
+                             {1000, 40}, {920, 40}, {850, 40}};
 // Water: quick jumbled high notes falling away
 constexpr Tone kSplash[]  = {{1700, 18}, {1200, 18}, {2100, 18}, {900, 22}, {1500, 18}, {700, 30},
                              {1100, 22}, {500, 45}, {800, 30}, {400, 60}};

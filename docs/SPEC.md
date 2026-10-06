@@ -101,7 +101,7 @@ Candidates, grouped. Order of building is in section 6.
 | Tic-Tac-Toe / Ultimate Tic-Tac-Toe | Ultimate is the interesting one (*built 2026-10-05*: id `ultimate`, wireless key 9) |
 | Nine Men's Morris | Big targets (*built 2026-10-03*) |
 | Gomoku | 15x15, 16 px cells on 240-wide boards (*built 2026-10-05*: freestyle five, wireless key 10) |
-| You Sunk My CYD! (Battleship) | Two grids, flip between them (*built 2026-10-05*: id `sunk`; classic rules - ships may touch; manual placement by default, Random in Options; wireless key 8, version 2) |
+| You Sank My CYD! (Battleship) | Two grids, flip between them (*built 2026-10-05*: id `sunk`; classic rules - ships may touch; manual placement by default, Random in Options; wireless key 8, version 2) |
 
 **Word**
 | Game | Notes |
@@ -277,7 +277,7 @@ Chinese checkers, Dots and Boxes (thin tap targets).
   restart, crossed offers, a third board, random games of every wireless
   game) clean and with 30-50 % of packets lost. Both run in CI.
 - Games: FourConnect, Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala,
-  Nine Men's Morris, You Sunk My CYD! (kNetwork in games.def +
+  Nine Men's Morris, You Sank My CYD! (kNetwork in games.def +
   `match::Game::legal`). Farkle
   not yet (its dice would have to be rolled by one board and sent).
 - Every two-player game also has vs computer and pass-and-play (one CYD
@@ -305,7 +305,7 @@ Chinese checkers, Dots and Boxes (thin tap targets).
    Better, *built 2026-10-03*) and Texas Hold'em vs computer players (*built 2026-10-03*); Blackjack; FreeCell. (Tom, 2026-10-02: more games before wireless.)
 5. **Multiplayer** (ESP-NOW) for FourConnect, Tic-Tac-Toe, Reversi,
    Checkers, Chess, Mancala, Nine Men's Morris. *Built 2026-10-04.* You
-   Sunk My CYD! joined 2026-10-05.
+   Sank My CYD! joined 2026-10-05.
 6. **Word and dice games:** (CYD-dle, Yaht-CYD done in stage 3) Farkle (*built 2026-10-03*), RPG Dice roller (*built 2026-10-03*); Trivia if a
    suitable question bank is found.
 7. Remaining candidates as Tom picks them.
@@ -327,7 +327,7 @@ Decided (Tom, 2026-10-02):
 
 - Long-press: yes for Minesweeper (flag) and Chess/Checkers (show a
   piece's moves); no for Sudoku.
-- Names: Light Switch, MasterCYD, SokoCYD, KenCYD, You Sunk My CYD!,
+- Names: Light Switch, MasterCYD, SokoCYD, KenCYD, You Sank My CYD!,
   Wheel of CYD, Reversi.
 - Every game menu ends with Exit Menu (bottom left) | Exit Game (bottom
   right). Title Case menu text. Default palettes follow the splash art.

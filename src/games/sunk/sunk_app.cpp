@@ -1,4 +1,4 @@
-// You Sunk My CYD!: screen and registry entry. The rules live in
+// You Sank My CYD!: screen and registry entry. The rules live in
 // sunk_core.*; turns, the computer, menus, stats and wireless play come
 // from the shared two-player controller (games/common/match.*).
 //
@@ -60,8 +60,9 @@ int cell = 20, lab = 12;            // cell size, label strip (px)
 // explosion and a big "B5 MISS!" / "C6 HIT!" that stays a while. Then the
 // view turns to the sea the next shot will land in. The board already holds
 // the result; this is only how it is shown.
-constexpr uint32_t kFallMs = 900, kMissHoldMs = 1500, kHitHoldMs = 1900, kSunkHoldMs = 2600;
-constexpr uint32_t kAimMs = 900;      // the other side "aims" with your fleet on screen
+// (Tom, 2026-10-05: a third faster than the first 900 / 1500 / 1900 / 2600 / 900)
+constexpr uint32_t kFallMs = 600, kMissHoldMs = 1000, kHitHoldMs = 1250, kSunkHoldMs = 1750;
+constexpr uint32_t kAimMs = 600;      // the other side "aims" with your fleet on screen
 struct ShotAnim {
     bool     on = false, impact = false, final = false, hit = false, sunk = false;
     int      cell = -1, shooter = -1, ship = -1;
@@ -363,7 +364,7 @@ void options_open();
 
 match::Game make_game()
 {
-    match::Game g{kId, "You Sunk My CYD!", kSides, result, turn, moves, play, reset, think, redraw};
+    match::Game g{kId, "You Sank My CYD!", kSides, result, turn, moves, play, reset, think, redraw};
     g.note = note;
     g.score = score;
     g.move_sound = move_sound;
@@ -550,75 +551,165 @@ void lline(const Frame& f, int u1, int v1, int u2, int v2, int w, lv_color_t c)
     kit::line(f.layer, x1, y1, x2, y2, w, c);
 }
 
-struct ShipPaint { lv_color_t hull, deck, dark; };
+struct ShipPaint { lv_color_t edge, hull, deck, top, dark, light; };
 
-ShipPaint ship_paint(int how)     // 0 afloat, 1 sunk, 2 shown at the end (faded)
+// how: 0 afloat, 1 sunk (a dark red wreck), 2 shown at the end of the game (faded)
+ShipPaint ship_paint(int how)
 {
     const Palette& P = pal();
+    auto g = [&](int k) { return lv_color_mix(P.stone_light, P.stone_dark, uint8_t(k)); };   // grey ramp
+    ShipPaint s{g(30), g(100), g(145), g(185), g(20), g(225)};
     if (how == 1) {
-        const lv_color_t wreck = lv_color_mix(P.piece_a, P.stone_dark, 110);
-        return {wreck, lv_color_mix(P.piece_a, P.stone_dark, 70), P.stone_dark};
-    }
-    ShipPaint s{lv_color_mix(P.stone_light, P.stone_dark, 125), lv_color_mix(P.stone_light, P.stone_dark, 175),
-                lv_color_mix(P.stone_light, P.stone_dark, 55)};
-    if (how == 2) {
-        s.hull = lv_color_mix(s.hull, P.frame, 150);
-        s.deck = lv_color_mix(s.deck, P.frame, 150);
-        s.dark = lv_color_mix(s.dark, P.frame, 150);
+        s.edge = P.stone_dark;
+        s.hull = lv_color_mix(P.piece_a, P.stone_dark, 95);
+        s.deck = lv_color_mix(P.piece_a, P.stone_dark, 135);
+        s.top  = lv_color_mix(P.piece_a, P.stone_light, 150);
+        s.dark = P.stone_dark;
+        s.light = lv_color_mix(P.piece_a, P.stone_light, 90);
+    } else if (how == 2) {
+        lv_color_t* c[6] = {&s.edge, &s.hull, &s.deck, &s.top, &s.dark, &s.light};
+        for (lv_color_t* x : c) *x = lv_color_mix(*x, P.frame, 140);
     }
     return s;
 }
 
-// A gun turret at u (barrel toward the bow when `fore`)
+// The hull's half-width along it, 0..1 (t: 0 stern .. 1 bow)
+// kind 0 carrier, 1 warship, 2 submarine
+float hull_half(int kind, float t)
+{
+    if (kind == 2) {                                   // rounded nose, long tapered tail
+        if (t > 0.78f) { const float x = (t - 0.78f) / 0.22f; return sqrtf(1 - x * x > 0 ? 1 - x * x : 0); }
+        if (t < 0.32f) return 0.3f + 0.7f * powf(t / 0.32f, 0.7f);
+        return 1.0f;
+    }
+    const float stern = kind == 0 ? 0.03f : 0.06f, bow = kind == 0 ? 0.80f : 0.58f;
+    if (t < stern) return 0.78f + 0.22f * t / stern;   // a rounded-off stern
+    if (t <= bow) return 1.0f;
+    return powf((1 - t) / (1 - bow), 0.55f);           // a curved, pointed bow
+}
+
+void hull(const Frame& f, int u0, int u1, int mid, float half, int kind, lv_color_t c)
+{
+    // First a solid core of rectangles (no anti-aliasing), then the smooth
+    // outline as triangle strips over it: the strips' shared edges blend
+    // into the same colour underneath, so no seams show and the edges stay smooth.
+    constexpr int kSeg = 14;
+    lv_draw_triangle_dsc_t d;
+    lv_draw_triangle_dsc_init(&d);
+    d.color = c;
+    d.opa = LV_OPA_COVER;
+    for (int pass = 0; pass < 2; ++pass) {
+        int pu = u0;
+        float ph = half * hull_half(kind, 0);
+        for (int i = 1; i <= kSeg; ++i) {
+            const float t = float(i) / kSeg;
+            const int u = u0 + int(lroundf((u1 - u0) * t));
+            const float h = half * hull_half(kind, t);
+            if (pass == 0) {
+                const int lo = int(ph < h ? ph : h) - 1;
+                if (lo > 0) lrect(f, pu, mid - lo, u, mid + lo, c);
+            } else {
+                int32_t x, y;
+                map_pt(f, pu, mid - int(lroundf(ph)), &x, &y); d.p[0].x = x; d.p[0].y = y;
+                map_pt(f, pu, mid + int(lroundf(ph)), &x, &y); d.p[1].x = x; d.p[1].y = y;
+                map_pt(f, u, mid - int(lroundf(h)), &x, &y);   d.p[2].x = x; d.p[2].y = y;
+                lv_draw_triangle(f.layer, &d);
+                map_pt(f, pu, mid + int(lroundf(ph)), &x, &y); d.p[0].x = x; d.p[0].y = y;
+                map_pt(f, u, mid + int(lroundf(h)), &x, &y);   d.p[1].x = x; d.p[1].y = y;
+                map_pt(f, u, mid - int(lroundf(h)), &x, &y);   d.p[2].x = x; d.p[2].y = y;
+                lv_draw_triangle(f.layer, &d);
+            }
+            pu = u;
+            ph = h;
+        }
+    }
+}
+
+// A gun turret at u with twin barrels toward the bow (`fore`) or the stern
 void turret(const Frame& f, int u, int mid, int r, bool fore, const ShipPaint& c)
 {
-    lline(f, u, mid, fore ? u + r * 2 : u - r * 2, mid, r > 3 ? 2 : 1, c.dark);
+    const int len = r * 2 + r / 2, off = r * 2 / 5 > 0 ? r * 2 / 5 : 1, w = r >= 5 ? 2 : 1;
+    const int tip = fore ? u + len : u - len;
+    lline(f, u, mid - off, tip, mid - off, w, c.dark);
+    lline(f, u, mid + off, tip, mid + off, w, c.dark);
     lcircle(f, u, mid, r, c.dark);
-    lcircle(f, u, mid, r - 1 > 1 ? r - 1 : 1, c.deck);
+    lcircle(f, u, mid, r - 1 > 1 ? r - 1 : 1, c.top);
+    lcircle(f, u + (fore ? -r / 3 : r / 3), mid, r / 3 > 1 ? r / 3 : 1, c.deck);    // the hatch, aft side
+}
+
+// The bridge: a block with a lighter top deck and a dark window line toward the bow; a funnel aft
+void bridge(const Frame& f, int ua, int ub, int mid, int half, const ShipPaint& c)
+{
+    lrect(f, ua - 1, mid - half - 1, ub + 1, mid + half + 1, c.dark, 3);
+    lrect(f, ua, mid - half, ub, mid + half, c.top, 2);
+    const int inner = half * 6 / 10;
+    lrect(f, ua + (ub - ua) / 4, mid - inner, ub - (ub - ua) / 5, mid + inner, c.light, 2);
+    lrect(f, ub - (ub - ua) / 5 - 1, mid - inner, ub - (ub - ua) / 5 + 1, mid + inner, c.dark);
+}
+
+void funnel(const Frame& f, int u, int mid, int r, const ShipPaint& c)
+{
+    lcircle(f, u, mid, r + 1, c.dark);
+    lcircle(f, u, mid, r, c.deck);
+    lcircle(f, u, mid, r * 6 / 10 > 1 ? r * 6 / 10 : 1, c.dark);
 }
 
 void draw_ship(lv_layer_t* layer, int x0, int y0, int i, const Ship& sh, const ShipPaint& c)
 {
     const int len = kLen[i];
     const Frame f{layer, x0 + (sh.cell % kN) * cell, y0 + (sh.cell / kN) * cell, sh.down};
-    const int L = len * cell, p = cell / 8 > 1 ? cell / 8 : 1, mid = cell / 2, w = cell - 2 * p;
-    const int bow = cell * 7 / 10;
-    if (i == 3) {                                       // Submarine: a slim rounded hull, the sail amidships
-        const int t = w * 15 / 100;
-        lrect(f, p, p + t, L - p, cell - p - t, c.hull, (w - 2 * t) / 2);
-        lrect(f, p + 3, p + t + 2, L - p - 3, cell - p - t - 2, c.deck, (w - 2 * t) / 2 - 2);
-        lrect(f, L * 40 / 100, mid - w / 5, L * 58 / 100, mid + w / 5, c.dark, 3);
-        lline(f, L * 46 / 100, mid, L * 52 / 100, mid, 1, c.deck);
+    const int L = len * cell, mid = cell / 2;
+    const int u0 = cell / 10 + 1, u1 = L - cell / 10 - 1;          // stern, bow
+    const float half = cell * 0.40f;
+    const int W = int(half * 2);
+    auto at = [&](int pct) { return u0 + (u1 - u0) * pct / 100; };
+    if (i == 3) {                                                  // Submarine: dark, slim, the sail amidships
+        const float sh_half = half * 0.72f;
+        const lv_color_t body = lv_color_mix(c.dark, c.hull, 150), tone = lv_color_mix(c.hull, c.dark, 150);
+        // the stern planes and rudder
+        ltri(f, at(4), mid - int(sh_half * 1.25f), at(14), mid, at(4), mid + int(sh_half * 1.25f), c.edge);
+        hull(f, u0 - 1, u1 + 1, mid, sh_half + 1, 2, c.edge);
+        hull(f, u0, u1, mid, sh_half, 2, body);
+        lline(f, at(18), mid - int(sh_half * 0.35f), at(86), mid - int(sh_half * 0.35f), 1, tone);   // a sheen
+        lrect(f, at(40) - 1, mid - int(sh_half * 0.55f) - 1, at(56) + 1, mid + int(sh_half * 0.55f) + 1, c.edge, 4);
+        lrect(f, at(40), mid - int(sh_half * 0.55f), at(56), mid + int(sh_half * 0.55f), tone, 3);
+        lline(f, at(44), mid - 1, at(52), mid - 1, 1, c.light);                                   // periscope
         return;
     }
-    if (i == 0) {                                       // Carrier: a long flat deck, the island to one side
-        lrect(f, p, p, L - p - bow / 2, cell - p, c.hull, 3);
-        ltri(f, L - p - bow / 2 - 1, p, L - p, p + w / 4, L - p - bow / 2 - 1, cell - p, c.hull);
-        ltri(f, L - p - bow / 2 - 1, cell - p, L - p, p + w / 4, L - p, cell - p - w / 4, c.hull);
-        lrect(f, p + 2, p + 2, L - p - bow / 2, cell - p - 2, c.deck, 2);
-        for (int u = p + cell / 2; u < L - bow; u += cell / 2 + 2)          // the runway's centre line
-            lline(f, u, mid, u + cell / 4, mid, 1, c.dark);
-        lrect(f, L * 58 / 100, p + 1, L * 74 / 100, p + w * 35 / 100, c.dark, 2);
+    if (i == 0) {                                                  // Carrier: a broad flight deck, the island to one side
+        hull(f, u0 - 1, u1 + 1, mid, half + 1, 0, c.edge);
+        hull(f, u0, u1, mid, half, 0, c.hull);
+        const lv_color_t tarmac = lv_color_mix(c.dark, c.hull, 120);
+        hull(f, u0 + 2, u1 - 3, mid, half - 2, 0, tarmac);
+        for (int u = at(6); u < at(80); u += cell / 2 + 1)                 // the centre line
+            lline(f, u, mid, u + cell / 4, mid, 1, c.light);
+        lline(f, at(4), mid + W / 4, at(46), mid - W / 3, 1, c.deck);     // the angled landing line
+        lrect(f, at(55) - 1, mid - int(half) - 1, at(72) + 1, mid - int(half) + W * 30 / 100 + 1, c.dark, 2);
+        lrect(f, at(55), mid - int(half), at(72), mid - int(half) + W * 30 / 100, c.top, 2);
+        lrect(f, at(66), mid - int(half) + 1, at(68), mid - int(half) + W * 30 / 100 - 1, c.dark);
         return;
     }
-    // Battleship, Cruiser, Destroyer: a pointed bow, a bridge, gun turrets
-    lrect(f, p, p, L - bow, cell - p, c.hull, cell / 5);
-    ltri(f, L - bow - 1, p, L - p, mid, L - bow - 1, cell - p, c.hull);
-    lrect(f, p + 2, p + 2, L - bow, cell - p - 2, c.deck, cell / 5 - 1);
-    ltri(f, L - bow - 1, p + 2, L - p - 3, mid, L - bow - 1, cell - p - 2, c.deck);
-    const int r = w * 26 / 100 > 2 ? w * 26 / 100 : 2;
-    if (i == 1) {                                       // Battleship: three big guns
-        lrect(f, L * 34 / 100, mid - w / 4, L * 50 / 100, mid + w / 4, c.dark, 2);
-        turret(f, L * 18 / 100, mid, r, false, c);
-        turret(f, L * 60 / 100, mid, r, true, c);
-        turret(f, L * 74 / 100, mid, r, true, c);
-    } else if (i == 2) {                                // Cruiser: two
-        lrect(f, L * 38 / 100, mid - w / 4, L * 56 / 100, mid + w / 4, c.dark, 2);
-        turret(f, L * 22 / 100, mid, r * 9 / 10, false, c);
-        turret(f, L * 68 / 100, mid, r * 9 / 10, true, c);
-    } else {                                            // Destroyer: a bridge and one gun
-        lrect(f, L * 26 / 100, mid - w / 5, L * 44 / 100, mid + w / 5, c.dark, 2);
-        turret(f, L * 62 / 100, mid, r * 8 / 10, true, c);
+    // Battleship, Cruiser, Destroyer: grey hull, lighter deck, bridge, funnel, guns
+    hull(f, u0 - 1, u1 + 1, mid, half + 1, 1, c.edge);
+    hull(f, u0, u1, mid, half, 1, c.hull);
+    hull(f, u0 + 2, u1 - 4, mid, half - 2, 1, c.deck);
+    const int r = int(half * 0.55f) > 2 ? int(half * 0.55f) : 2;
+    const int bh = int(half * 0.62f);
+    if (i == 1) {                                                  // Battleship: three big turrets
+        funnel(f, at(32), mid, r * 7 / 10, c);
+        bridge(f, at(38), at(54), mid, bh, c);
+        turret(f, at(16), mid, r, false, c);
+        turret(f, at(64), mid, r, true, c);
+        turret(f, at(78), mid, r, true, c);
+    } else if (i == 2) {                                           // Cruiser: two
+        funnel(f, at(30), mid, r * 6 / 10, c);
+        bridge(f, at(37), at(55), mid, bh, c);
+        turret(f, at(16), mid, r * 9 / 10, false, c);
+        turret(f, at(68), mid, r * 9 / 10, true, c);
+    } else {                                                       // Destroyer: a bridge and one gun
+        funnel(f, at(22), mid, r * 5 / 10, c);
+        bridge(f, at(30), at(52), mid, bh * 9 / 10, c);
+        turret(f, at(70), mid, r * 8 / 10, true, c);
     }
 }
 

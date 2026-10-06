@@ -1295,7 +1295,7 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
     }
 
-    {   // You Sunk My CYD!: shuffling a fleet, their waters part-way, my fleet, dark, pass-and-play's cover
+    {   // You Sank My CYD!: shuffling a fleet, their waters part-way, my fleet, dark, pass-and-play's cover
         ui::app_open_game_now(games::find("sunk"));
         run(30);
         shot(out + "_light_63_sunk_new.ppm");                       // Manual: the Carrier first

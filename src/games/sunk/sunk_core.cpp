@@ -1,4 +1,4 @@
-// You Sunk My CYD! rules and computer player. See sunk_core.h.
+// You Sank My CYD! rules and computer player. See sunk_core.h.
 #include "sunk_core.h"
 
 #include <cstring>

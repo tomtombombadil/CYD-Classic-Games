@@ -1,4 +1,4 @@
-// You Sunk My CYD! (the classic ships-and-shots game) rules and computer
+// You Sank My CYD! (the classic ships-and-shots game) rules and computer
 // player, written for this project (MIT). Plain C++, host-tested.
 //
 // Each side has a 10x10 sea with five ships: Carrier 5, Battleship 4,

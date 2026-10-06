@@ -13,7 +13,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 > under way. Thirty-one games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sunk My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **CYD-dle**, **Wheel of CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **CYD-dle**, **Wheel of CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sunk My CYD!, Ultimate Tic-Tac-Toe, Gomoku, CYD-dle, Wheel of CYD (and its wheel), Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, CYD-dle, Wheel of CYD (and its wheel), Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -58,8 +58,8 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_farkle.png" width="240" alt="Farkle: three dice set aside, Bank 1000">
 <img src="docs/screenshots/small_mancala.png" width="240" alt="Mancala: seeds being sown round the board">
 <img src="docs/screenshots/small_morris.png" width="240" alt="Nine Men's Morris: a mill made, pick a man to take">
-<img src="docs/screenshots/small_sunk_place.png" width="240" alt="You Sunk My CYD!: placing the Carrier - its end picked, the lit squares show the ways it can point">
-<img src="docs/screenshots/small_sunk.png" width="240" alt="You Sunk My CYD!: firing at their waters">
+<img src="docs/screenshots/small_sunk_place.png" width="240" alt="You Sank My CYD!: placing the Carrier - its end picked, the lit squares show the ways it can point">
+<img src="docs/screenshots/small_sunk.png" width="240" alt="You Sank My CYD!: firing at their waters">
 <img src="docs/screenshots/small_ultimate.png" width="240" alt="Ultimate Tic-Tac-Toe: two boards won, the board to play in lit">
 <img src="docs/screenshots/small_gomoku.png" width="240" alt="Gomoku: stones on a 15x15 board">
 <img src="docs/screenshots/small_wheel.png" width="240" alt="Wheel of CYD: a called letter showing on the puzzle board">
@@ -102,7 +102,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Nine Men's Morris | Strategy Games | Place, move and fly; mills take men; vs computer or pass-and-play |
 | Ultimate Tic-Tac-Toe | Strategy Games | Nine boards in one; vs computer (Easy / Medium / Hard) or pass-and-play |
 | Gomoku | Strategy Games | Five in a row on 15x15; vs computer (Easy / Medium / Hard) or pass-and-play |
-| You Sunk My CYD! | Strategy Games | Hide a fleet, fire at theirs; vs computer (Easy / Medium / Hard) or pass-and-play |
+| You Sank My CYD! | Strategy Games | Hide a fleet, fire at theirs; vs computer (Easy / Medium / Hard) or pass-and-play |
 | Checkers | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Reversi | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | FourConnect | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -122,7 +122,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | RPG Dice | Dice Games | Every role-playing die, each shown as rolled; presets and history |
 
 The board games (Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe,
-Mancala, Nine Men's Morris, You Sunk My CYD!, Ultimate Tic-Tac-Toe, Gomoku) also play **wireless, CYD to CYD**: two boards
+Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku) also play **wireless, CYD to CYD**: two boards
 in the same room or house, no router or setup (see
 [Wireless play](#wireless-play-cyd-to-cyd)). The plan is in
 [docs/SPEC.md](docs/SPEC.md).
@@ -201,7 +201,7 @@ The **gear** (on the picker, or Settings in a game's menu) opens Settings:
 ## Two-player games
 
 Chess, Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine
-Men's Morris, You Sunk My CYD!, Ultimate Tic-Tac-Toe and Gomoku share one menu: **New Game vs Computer** (Easy, Medium, Hard),
+Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe and Gomoku share one menu: **New Game vs Computer** (Easy, Medium, Hard),
 **Pass and Play** (two people share one board and take turns), and
 **Wireless** (two boards: Wireless play, below). Farkle has the first two. Against the computer
 you and the computer take turns going first, game by game. The computer
@@ -455,7 +455,7 @@ empty point, then move them along the lines to a neighbouring empty point
 line is a mill: the men you may take get a red ring, tap one. A side down
 to three men may fly to any empty point. Two men left, or no move, loses.
 
-## You Sunk My CYD!
+## You Sank My CYD!
 
 The classic ships-and-shots game. Each side hides a fleet in a 10 x 10
 sea: Carrier (5), Battleship (4), Cruiser (3), Submarine (3) and Destroyer
@@ -677,15 +677,11 @@ file as CYD Classic Games.
 
 | Firmware file | Printed on the back | Tested |
 |---|---|---|
-| `TTB-CYD-CG_2.8in_ILI9341_Resistive.bin` | ESP32-2432S028 (often with R) — usually single micro-USB | **Untested** |
+| `TTB-CYD-CG_2.8in_ILI9341_Resistive.bin` | ESP32-2432S028 (often with R) — usually single micro-USB | Yes |
 | `TTB-CYD-CG_2.8in_ST7789_Resistive.bin` | ESP32-2432S028 (often with R) — usually micro-USB + USB-C | Yes |
 | `TTB-CYD-CG_3.2in_ST7789_Resistive.bin` | 3.2" LCD Display, ESP32-32E, 240x320, Resistive Touch | Yes |
-| `TTB-CYD-CG_3.5in_ST7796_Resistive.bin` | 3.5" LCD Display, ESP32-32E, 320x480, Resistive Touch | **Untested** |
+| `TTB-CYD-CG_3.5in_ST7796_Resistive.bin` | 3.5" LCD Display, ESP32-32E, 320x480, Resistive Touch | Yes |
 | `TTB-CYD-CG_4.0in_ST7796_Resistive.bin` | 4.0" LCD Display, ESP32-32E, 320x480, Resistive Touch | Yes |
-
-**Untested:** the 2.8" ILI9341 and 3.5" ST7796 builds use the same code and
-pin maps as their tested siblings but haven't been run on that hardware.
-They should work; please [open an issue](../../issues) either way.
 
 Not sure which 2.8" you have? Try ILI9341 first. Wrong colors: see below.
 Garbled or blank screen: install the other 2.8" version.

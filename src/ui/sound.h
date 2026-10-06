@@ -27,7 +27,7 @@ enum class Sound : uint8_t {
     Fanfare,    // a playful tune: a solitaire-type card game won
     Trill,      // a happy little victory trill: a Blackjack hand won
     Call,       // ding-dong: a board nearby asks to play
-    Whistle,    // a shell falling: a high note sliding down (You Sunk My CYD!)
+    Whistle,    // a shell falling: a high note sliding down (You Sank My CYD!)
     Splash,     // the shell hits water
     Boom,       // the shell hits a ship
 };

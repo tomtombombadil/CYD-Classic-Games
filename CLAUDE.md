@@ -285,7 +285,8 @@ never typed (SPEC section 5).
   2 men or blocked = loss; 100 quiet plies after placing = draw; computer
   Easy 1 ply, Medium 3, Hard deepening within 150k nodes, removals
   searched first, move lists on the stack - ai_stack 24 KB). You Sunk My
-  CYD! (id `sunk`, Strategy; Battleship - Tom's name, "Sunk"; 10x10, Carrier
+  CYD! (id `sunk`, Strategy; Battleship - Tom's name is "Sank" (2026-10-05: the classic ad line "You
+  sank my battleship!"); the id stays `sunk` (save files, wireless); 10x10, Carrier
   5, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2; classic rules (Tom,
   2026-10-05): ships may touch, only not overlap, and nothing is "known"
   round a sunk ship (v1's spacing rule made it too easy - never bring it
@@ -309,18 +310,26 @@ never typed (SPEC section 5).
   round a hit, Medium parity + lines, Hard placement counting (~59 / 44 /
   39 shots a fleet); the computer reads only what its side knows (hits,
   misses, sunk); the show (Tom, 2026-10-05: "the anticipation of the hit
-  or miss" - it was boring): ships drawn from above (Carrier flat deck +
-  island, Battleship 3 turrets, Cruiser 2, Submarine slim hull + sail,
-  Destroyer 1; bow at the far end; sunk = dark red wreck; at the end the
-  unfound ones faded); a shot = 0.9 s fall (sights + a shrinking shell,
-  `Sound::Whistle`, info line "Firing at A1..." - no spoiler), then a
+  or miss" - it was boring): ships drawn from above (v0.27.1, Tom: the
+  first ones "look pretty bad"): a hull outline (dark edge, curved pointed
+  bow, rounded-off stern - `hull_half()`), drawn as a solid core of
+  rectangles then smooth triangle strips on top (strips alone showed
+  seams, rectangles alone jagged bows); grey hull, lighter deck, bridge
+  block with a window line, funnel, twin-barrel turrets (Battleship 3,
+  Cruiser 2, Destroyer 1); Carrier = dark flight deck, dashed centre line,
+  angled landing line, island to one side; Submarine = dark slim hull,
+  rounded nose, tapered tail with stern planes, a sail amidships; bow at
+  the far end; sunk = the same ship as a dark red wreck; at the end the
+  unfound ones faded; a shot = 0.6 s fall (sights + a shrinking shell,
+  `Sound::Whistle` 0.6 s, info line "Firing at A1..." - no spoiler), then a
   splash (`Sound::Splash`) or an explosion (`Sound::Boom`) with a big
   banner "B5 MISS!" / "C6 HIT!" (+ "You sank their Cruiser!" / "Computer
-  fired") held 1.5 / 1.9 / 2.6 s (sunk), clear of the shot; hits are red
+  fired") held 1.0 / 1.25 / 1.75 s (sunk), clear of the shot (Tom: a
+  third faster than the first 0.9 s fall + 1.5 / 1.9 / 2.6 s); hits are red
   bursts, misses white pegs; the board already holds the result
   (`match::Game::busy` holds the computer and wireless moves meanwhile);
   then the view turns by itself: Their Waters for your shot, My Fleet
-  while they "aim" 0.9 s ("Computer is aiming...") and fire; the last
+  while they "aim" 0.6 s ("Computer is aiming...") and fire; the last
   shot lands at once (the win / lose sounds); pass-and-play shows the
   shot on the shooter's view, then Pass. The keys still switch views. A wireless board knows
   the other fleet's seed - the screen never shows it before the end). Wheel
@@ -703,7 +712,7 @@ never typed (SPEC section 5).
   away, crossed requests, New Game, every game random) clean and 30 % loss.
   Run it after any wireless change.
 - Games: FourConnect, Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala,
-  Morris, You Sunk My CYD! (key 8), Ultimate Tic-Tac-Toe (9), Gomoku (10).
+  Morris, You Sank My CYD! (key 8), Ultimate Tic-Tac-Toe (9), Gomoku (10).
   Farkle not yet. Internet play out of scope.
 - Battery (Tom, 2026-10-04, v0.22.0): the radio is never stopped and
   started to save power (esp_wifi init + start takes tens to hundreds of ms
@@ -752,8 +761,9 @@ never typed (SPEC section 5).
   (`src/boards/esp32_2432s028.hpp`), and "ESP32-32E" display boards 3.2"
   ST7789, 3.5" ST7796, 4.0" ST7796, all resistive
   (`src/boards/esp32_32e_display.hpp`).
-- Tom owns the 2.8" ST7789, 3.2" and 4.0" only. The 2.8" ILI9341 and 3.5"
-  ST7796 carry `custom_board_tested = no` until someone reports them working.
+- Tom owns and has tested every supported board (the 2.8" ILI9341 and the
+  3.5" ST7796 since 2026-10-05). A new board's env gets
+  `custom_board_tested = no` until it has been run on the hardware.
 - The ESP32-32E boards have no model number on the PCB - only text like
   "3.2" LCD Display, ESP32-32E, 240x320, Resistive Touch". They are NOT
   ESP32-3248S0xx boards; never use that pinout. Datasheets on lcdwiki.com.
@@ -791,7 +801,7 @@ Backgammon, most chess engines) are reference only. Update
 - No trademarked game names. Tom's names: **FourConnect** (Connect Four),
   **CYD-dle** (Wordle), **Yaht-CYD** (Yahtzee), **Light Switch** (Lights
   Out), **MasterCYD** (Mastermind), **SokoCYD** (Sokoban), **KenCYD**
-  (KenKen), **You Sunk My CYD!** (Battleship), **Wheel of CYD** (Wheel of
+  (KenKen), **You Sank My CYD!** (Battleship - "Sank", not "Sunk"), **Wheel of CYD** (Wheel of
   Fortune), **Reversi** (Othello). Classic public-domain games (chess,
   checkers, mancala, ...) are fine by name.
 
