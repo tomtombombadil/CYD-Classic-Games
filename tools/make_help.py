@@ -116,6 +116,13 @@ write("yahtcyd", [
  ("Extra Yaht-CYDs", "Each extra Yaht-CYD after a scored 50 earns 100 more. It must go in its number's upper box if that's empty; else in an open lower box, where Full House and the runs score in full; only with those all used, in an upper box for 0.\nStats keep every game's score, your best and average."),
 ])
 
+write("piperace", [
+ ("The Idea", "Water is about to pour out of the tank. Lay pipe for it to run through - and stay ahead of it!\nEach level has a goal: the water must pass through that many pipes before it runs out of pipe. Reach the goal and the next level is faster and longer."),
+ ("Laying Pipe", "The next five pieces show above the board; the one edged in gold comes first. Tap an empty square to lay it there.\nTap a pipe the water hasn't reached to swap it for the next piece (it costs 50 points).\nThe water can't go through rocks, off the board, or into a pipe that doesn't fit."),
+ ("The Water", "The header counts down until the water starts; Water Now starts it at once.\nWhen the water runs out of pipe, the level ends. Fast Flow makes it rush on when you're done laying - every pipe it fills while fast scores double."),
+ ("Score", "100 points a pipe filled, 200 while flowing fast. Water crossing a cross piece both ways: 400 more. A swapped pipe, or one laid but never reached when the level ends: minus 50.\nStats keep every finished game: score, level and pipes."),
+])
+
 write("twenty48", [
  ("The Idea", "Slide the tiles to merge them. Two equal tiles that meet join into one worth their sum: 2 + 2 = 4, 4 + 4 = 8, and on up.\nAfter every slide a new 2 (sometimes a 4) appears. Make a 2048 tile to win, then keep going for a higher score."),
  ("Sliding", "Tap toward the side you want the tiles to go: above the board slides up, below it down, left or right of it sideways.\nThe board's two diagonals split the whole screen into these four zones, so a tap anywhere works. A tap that moves nothing does nothing."),

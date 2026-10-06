@@ -398,7 +398,19 @@ never typed (SPEC section 5).
   (a window one short of five); Easy greedy, mostly its own lines (blocks
   a five), Medium depth 4 on the 5 best points, Hard depth 6 on the 7
   best (within 200k nodes); all take a five and block one; odd depths
-  played worse (horizon) - keep them even). The match
+  played worse (horizon) - keep them even), Pipe Race (id `piperace`,
+  Puzzles; Tom's name for Pipe Mania, 2026-10-06; 8x8, a tank inside the
+  edges, queue of 5 (2 of each straight / bend, 1 cross in 13), tap empty =
+  lay, tap an unreached pipe = swap -50; countdown 25 s - 1.5 s a level
+  (min 10), 3.2 s a square x 0.88 a level (min 0.7), half for the tank;
+  goal 10 + 2 a level (max 26); rocks from level 3 (level - 2, max 8);
+  100 a pipe, 200 fast, +400 a cross crossed both ways, -50 a laid pipe
+  never reached; one key: Water Now / Fast Flow / Next Level / Play
+  Again; water only runs with the game on screen and no overlay, a game
+  reopened (or restyled mid-flow) starts paused - Continue; each frame
+  invalidates only the water's square; Place / Move / Turn (water starts)
+  / Trill (level) / Lose; stats "#,Score,Level,Pipes,Seconds,Time", a game
+  left after level 1 is recorded). The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8

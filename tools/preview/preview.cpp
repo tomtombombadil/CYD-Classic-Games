@@ -82,6 +82,8 @@ void line_editor(int slot, int line);
 void keyboard(int slot);
 }
 #include "games/twenty48/twenty48_core.h"
+#include "games/piperace/piperace_core.h"
+namespace piperace_preview { piperace::Game* game(); void unhold(); void redraw(); }
 #include "games/mastercyd/mastercyd_core.h"
 #include "games/pegs/pegs_core.h"
 #include "games/memory/memory_core.h"
@@ -1604,6 +1606,54 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Pipe Race: the countdown, the water on its way, a level cleared, the game over
+        using namespace piperace;
+        auto stage = [&](const Game& g) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 5, 0);
+            g.serialize(buf.data(), buf.size());
+            save_game("piperace", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("piperace"));
+            piperace_preview::unhold();
+        };
+        Game g; g.start(42);
+        memset(g.cell, 0, sizeof g.cell); memset(g.fill, 0, sizeof g.fill);
+        const int s0 = 2 * kCols + 2;
+        g.cell[s0] = kStartE; g.head = int8_t(s0);
+        const uint8_t path[][2] = {{19, kAcross}, {20, kAcross}, {21, kSW}, {29, kUpDown}, {37, kCross}, {45, kWN},
+                                   {44, kAcross}, {43, kNE}, {35, kES}, {36, kCross}, {38, kSW}, {46, kUpDown}};
+        for (auto& pc : path) g.cell[pc[0]] = pc[1];
+        g.cell[9] = kRock; g.cell[54] = kRock; g.cell[60] = kES;
+        const uint8_t q[kQueue] = {kNE, kAcross, kCross, kSW, kUpDown};
+        memcpy(g.queue, q, sizeof q);
+        g.level = 2; g.score = 0;
+        g.phase = Phase::Waiting; g.wait_ms = g.wait_total() * 2 / 5;
+        stage(g);
+        shot(out + "_light_36_piperace_wait.ppm");
+        ui::app_go_home_now();
+        // the water on its way: through the first pipes, in the cross
+        g.go(); g.advance(1);
+        for (int i = 0; i < 400 && !(g.head == 37 && g.progress() > 0.6f); ++i) g.advance(50);
+        stage(g);
+        shot(out + "_light_36_piperace.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        stage(g);
+        shot(out + "_dark_36_piperace.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        Game p2 = g;
+        for (int i = 0; i < 2000 && p2.phase == Phase::Flowing; ++i) p2.advance(100);
+        stage(p2);
+        if (p2.phase != Phase::Passed) fprintf(stderr, "PIPERACE STAGE: level not passed\n");
+        shot(out + "_light_36_piperace_passed.ppm");
+        ui::app_go_home_now();
+        Game o = g; o.cell[38] = kEmpty;
+        for (int i = 0; i < 2000 && o.phase == Phase::Flowing; ++i) o.advance(100);
+        stage(o);
+        shot(out + "_light_36_piperace_over.ppm");
         ui::app_go_home_now();
     }
 

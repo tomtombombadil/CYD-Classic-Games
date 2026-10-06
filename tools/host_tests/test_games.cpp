@@ -36,6 +36,7 @@
 #include "../../src/games/farkle/farkle_core.h"
 #include "../../src/games/mancala/mancala_core.h"
 #include "../../src/games/morris/morris_core.h"
+#include "../../src/games/piperace/piperace_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -2257,6 +2258,129 @@ static void test_stats()
     CHECK(ps.lost[2] == 1 && ps.gave_up[2] == 0);
 }
 
+static void test_piperace()
+{
+    using namespace piperace;
+    auto blank = [](Game& g) {
+        g.start(7);
+        memset(g.cell, 0, sizeof g.cell);
+        memset(g.fill, 0, sizeof g.fill);
+    };
+    CHECK(opposite(kN) == kS && opposite(kS) == kN && opposite(kE) == kW && opposite(kW) == kE);
+    {   // a fresh game: one tank, inside the edges, the queue full of pipes, waiting
+        Game g; g.start(123);
+        CHECK(g.level == 1 && g.phase == Phase::Waiting && g.wait_ms == g.wait_total());
+        const int s = g.start_cell();
+        CHECK(s >= 0 && s / kCols > 0 && s / kCols < kRows - 1 && s % kCols > 0 && s % kCols < kCols - 1);
+        for (int i = 0; i < kQueue; ++i) CHECK(is_pipe(g.queue[i]));
+        CHECK(g.goal() == 10 && g.cell_ms() == 3200);
+    }
+    {   // laying and swapping
+        Game g; g.start(5);
+        const int s = g.start_cell();
+        const int c = s == 0 ? 1 : 0;
+        const uint8_t q0 = g.queue[0], q1 = g.queue[1];
+        CHECK(g.tap(c) == 1 && g.cell[c] == q0 && g.queue[0] == q1);
+        CHECK(g.tap(s) == 0);                                // the tank stays
+        g.score = 120;
+        CHECK(g.tap(c) == 2 && g.score == 70);               // a swap costs 50
+        g.fill[c] = 1;
+        CHECK(!g.can_tap(c));                                // water has been through
+    }
+    {   // the water's path: a cross crossed both ways, then a spill short of the goal
+        Game g; blank(g);
+        const int s = 3 * kCols + 3;
+        g.cell[s] = kStartE; g.head = int8_t(s); g.in = 0;
+        g.cell[28] = kAcross; g.cell[29] = kCross; g.cell[30] = kSW;
+        g.cell[38] = kWN; g.cell[37] = kNE;
+        g.phase = Phase::Waiting; g.wait_ms = 1000; g.score = 0;
+        CHECK(g.advance(999) == 0 && g.phase == Phase::Waiting);
+        CHECK(g.advance(1) & kEvFlow);
+        CHECK(g.head == s && g.head_total() == 1600);        // half a square in the tank
+        uint32_t ev = g.advance(1600);
+        CHECK(g.head == 28 && g.in == kW && !(ev & kEvFilled));
+        CHECK(!g.can_tap(28));                               // water is in it
+        ev = 0;
+        for (int i = 0; i < 40 && g.phase == Phase::Flowing; ++i) ev |= g.advance(800);
+        CHECK(ev & kEvCrossBonus);
+        CHECK(g.phase == Phase::Over && g.pipes == 6 && g.score == 1000);
+        CHECK(g.fill[29] == 3);
+    }
+    {   // a long enough run passes; a pipe never reached costs 50; fast pays double
+        Game g; blank(g);
+        g.cell[8] = kStartE; g.head = 8;
+        for (int c = 9; c <= 14; ++c) g.cell[c] = kAcross;
+        g.cell[15] = kSW; g.cell[23] = kWN;
+        for (int c = 22; c >= 20; --c) g.cell[c] = kAcross;
+        g.cell[63] = kUpDown;                                // never reached
+        g.phase = Phase::Waiting; g.wait_ms = 5000; g.score = 0;
+        g.go();
+        CHECK(g.wait_ms == 0);
+        g.advance(1);
+        CHECK(g.phase == Phase::Flowing);
+        g.go();
+        CHECK(g.fast && g.head_total() == 200);
+        for (int i = 0; i < 100 && g.phase == Phase::Flowing; ++i) g.advance(100);
+        CHECK(g.phase == Phase::Passed && g.pipes == 11 && g.score == 11 * 200 - 50);
+        g.next_level();
+        CHECK(g.level == 2 && g.phase == Phase::Waiting && g.pipes == 0 && g.goal() == 12);
+        CHECK(g.total == 11 && g.cell_ms() < 3200);
+        // rocks from level 3
+        g.next_level();
+        int rocks = 0; for (int i = 0; i < kCells; ++i) rocks += g.cell[i] == kRock;
+        CHECK(rocks == 1);
+    }
+    {   // a pipe that doesn't fit, and a wall, end the run
+        Game g; blank(g);
+        g.cell[9] = kStartE; g.head = 9; g.cell[10] = kUpDown;
+        g.phase = Phase::Flowing; g.head_ms = 0;
+        g.advance(5000);
+        CHECK(g.phase == Phase::Over && g.pipes == 0);
+        Game h; blank(h);
+        h.cell[9] = kStartW; h.head = 9; h.cell[8] = kAcross;
+        h.phase = Phase::Flowing; h.head_ms = 0;
+        h.advance(20000);
+        CHECK(h.phase == Phase::Over && h.pipes == 1);
+    }
+    {   // save round trip; damaged saves are refused
+        Game g; g.start(99);
+        g.tap(g.start_cell() == 0 ? 1 : 0);
+        g.advance(3000);
+        uint8_t buf[Game::kSaveBytes];
+        CHECK(g.serialize(buf, sizeof buf) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf, sizeof buf));
+        CHECK(memcmp(h.cell, g.cell, kCells) == 0 && h.wait_ms == g.wait_ms && h.rng == g.rng && h.head == g.head);
+        uint8_t bad[Game::kSaveBytes];
+        memcpy(bad, buf, sizeof bad); bad[4] = 99;
+        CHECK(!h.deserialize(bad, sizeof bad));
+        memcpy(bad, buf, sizeof bad); bad[4 + 2 * kCells] = kRock;   // a rock in the queue
+        CHECK(!h.deserialize(bad, sizeof bad));
+    }
+    {   // a whole game played by a simple greedy layer always ends, scores add up
+        for (uint32_t seed = 1; seed <= 30; ++seed) {
+            Game g; g.start(seed);
+            for (int step = 0; step < 20000 && g.phase != Phase::Over; ++step) {
+                if (g.phase == Phase::Passed) { g.next_level(); continue; }
+                g.tap(int((seed * 31 + step * 17) % kCells));
+                g.advance(500);
+            }
+            CHECK(g.phase == Phase::Over && g.score >= 0);
+        }
+    }
+    {   // history
+        Record r; r.score = 5150; r.level = 6; r.pipes = 58; r.seconds = 640;
+        char line[64], full[80];
+        CHECK(format_body(line, sizeof line, r));
+        CHECK(strcmp(line, "5150,6,58,640,10:40\n") == 0);
+        snprintf(full, sizeof full, "3,%s", line);
+        Record q;
+        CHECK(parse_line(full, q) && q.score == 5150 && q.level == 6 && q.pipes == 58);
+        Summary sum; sum.add(q);
+        CHECK(sum.best == 5150 && sum.best_level == 6 && sum.games == 1);
+    }
+}
+
 int main()
 {
     test_fourconnect();
@@ -2291,6 +2415,7 @@ int main()
     test_ultimate();
     test_gomoku();
     test_morris();
+    test_piperace();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

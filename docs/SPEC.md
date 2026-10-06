@@ -88,7 +88,7 @@ Candidates, grouped. Order of building is in section 6.
 | 2048 | Tap the board edge to slide (no swipes) |
 | SokoCYD (Sokoban) | Needs freely licensed or generated levels |
 | Kakuro / KenCYD (KenKen) | Reuse Sudoku's grid UI |
-| Pipe Race (Pipe Mania / Pipe Dream) | *Next (Tom, 2026-10-06)*: lay pipe pieces before the water arrives; tap to place, flow animates in small squares |
+| Pipe Race (Pipe Mania / Pipe Dream) | *Built 2026-10-06*: id `piperace`; 8x8, queue of 5, swap -50, goal 10 + 2 a level, faster each level, rocks from level 3, Water Now / Fast Flow (double points) |
 
 
 **Strategy (vs computer, pass-and-play, CYD vs CYD)**
