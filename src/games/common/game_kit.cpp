@@ -513,8 +513,9 @@ void line(lv_layer_t* layer, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int
     lv_draw_line(layer, &d);
 }
 
-void text(lv_layer_t* layer, const char* s, const lv_font_t* font, lv_color_t c,
-          int32_t x1, int32_t y1, int32_t w, int32_t h)
+namespace {
+void text_aligned(lv_layer_t* layer, const char* s, const lv_font_t* font, lv_color_t c,
+                  int32_t x1, int32_t y1, int32_t w, int32_t h, lv_text_align_t align)
 {
     lv_draw_label_dsc_t d;
     lv_draw_label_dsc_init(&d);
@@ -522,11 +523,24 @@ void text(lv_layer_t* layer, const char* s, const lv_font_t* font, lv_color_t c,
     d.text_local = 1;
     d.font = font;
     d.color = c;
-    d.align = LV_TEXT_ALIGN_CENTER;
+    d.align = align;
     const int32_t lh = lv_font_get_line_height(font);
     const int32_t top = y1 + (h - lh) / 2;
     lv_area_t a{x1, top, x1 + w - 1, top + lh - 1};
     lv_draw_label(layer, &d, &a);
+}
+} // namespace
+
+void text(lv_layer_t* layer, const char* s, const lv_font_t* font, lv_color_t c,
+          int32_t x1, int32_t y1, int32_t w, int32_t h)
+{
+    text_aligned(layer, s, font, c, x1, y1, w, h, LV_TEXT_ALIGN_CENTER);
+}
+
+void text_left(lv_layer_t* layer, const char* s, const lv_font_t* font, lv_color_t c,
+               int32_t x1, int32_t y1, int32_t w, int32_t h)
+{
+    text_aligned(layer, s, font, c, x1, y1, w, h, LV_TEXT_ALIGN_LEFT);
 }
 
 bool save_due(uint32_t now_ms, uint32_t last_save_ms, uint32_t seconds)

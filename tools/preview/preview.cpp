@@ -83,6 +83,8 @@ void keyboard(int slot);
 }
 #include "games/twenty48/twenty48_core.h"
 #include "games/piperace/piperace_core.h"
+#include "games/acquisitions/acquisitions_core.h"
+namespace acq_preview { acq::Game* game(); void redraw(); void hold(bool on); void log(const char* t); void stocks(); }
 namespace piperace_preview { piperace::Game* game(); void unhold(); void redraw(); }
 #include "games/mastercyd/mastercyd_core.h"
 #include "games/pegs/pegs_core.h"
@@ -1606,6 +1608,63 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Acquisitions: your turn to lay a tile, buying, a merger's shares, the Stocks page, the end
+        using namespace acq;
+        auto stage = [&](const Game& g, const char* msg) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 7, 0);
+            g.serialize(buf.data(), buf.size());
+            buf[Game::kSaveBytes] = 1;
+            save_game("acquisitions", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("acquisitions"));
+            acq_preview::hold(true);
+            if (msg) acq_preview::log(msg);
+            acq_preview::redraw();
+        };
+        Game g; g.start(77);
+        for (int k = 0; k < 4000 && !(g.turns >= 26 && g.phase == Phase::Play && g.turn == 0); ++k) g.ai_act(1);
+        stage(g, "Zoe buys a Harbor share");
+        shot(out + "_light_37_acquisitions.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        stage(g, "Zoe buys a Harbor share");
+        shot(out + "_dark_37_acquisitions.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        Game b = g;
+        b.ai_act(1);
+        for (int k = 0; k < 20 && b.phase != Phase::Buy; ++k) b.ai_act(1);
+        if (b.phase == Phase::Buy && b.turn == 0) {
+            if (b.ai_buy(2) >= 0) b.buy(b.ai_buy(2));
+            stage(b, "You lay a tile");
+            shot(out + "_light_37_acquisitions_buy.ppm");
+            ui::app_go_home_now();
+        }
+        stage(g, nullptr);
+        acq_preview::stocks();
+        shot(out + "_light_37_acquisitions_stocks.ppm");
+        ui::app_go_home_now();
+        // A merger where you hold shares of the smaller hotel
+        Game m;
+        bool found_dispose = false;
+        for (uint32_t seed = 1; seed < 200 && !found_dispose; ++seed) {
+            m.start(seed);
+            for (int k = 0; k < 4000 && m.phase != Phase::Over; ++k) {
+                if (m.phase == Phase::Dispose && m.disposer == 0) { found_dispose = true; break; }
+                m.ai_act(1);
+            }
+        }
+        if (found_dispose) {
+            stage(m, "Max lays 6D: a merger!");
+            shot(out + "_light_37_acquisitions_dispose.ppm");
+            ui::app_go_home_now();
+        }
+        Game o = g;
+        for (int k = 0; k < 6000 && o.phase != Phase::Over; ++k) o.ai_act(1);
+        stage(o, "Ada calls the end of the game");
+        shot(out + "_light_37_acquisitions_over.ppm");
         ui::app_go_home_now();
     }
 

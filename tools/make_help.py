@@ -152,6 +152,14 @@ write("nonogram", [
  ("Solving", "Every puzzle has one answer, and you can always find the next cell by looking at one row or column at a time; no guessing.\nStart with big runs: a run of 4 in 5 cells must cover the middle three.\nStats keep your best time for each size."),
 ])
 
+write("acquisitions", [
+ ("The Idea", "Build hotel chains and buy their shares. The richest player when the game ends wins.\nYou play Ada, Max and Zoe. Each turn: lay one of your six tiles on the board, buy up to three shares, then draw a new tile. Everyone starts with $6,000."),
+ ("Laying Tiles", "Your tiles are the keys at the bottom; their squares are edged in gold on the board.\nA tile next to a loose tile founds a hotel: pick one of the seven, and get a free share.\nA tile next to a hotel makes it bigger. A grey key's tile can't go down now."),
+ ("Mergers", "A tile that joins two hotels merges them: the bigger one takes over the smaller.\nThe two biggest shareholders of the smaller hotel get bonuses (10 and 5 times its share price). Then each holder sells those shares, trades two for one share of the bigger hotel, or keeps them.\nA hotel of 11 or more tiles is safe: it can't be taken over."),
+ ("Shares And Money", "After your tile, tap the hotel chips to buy shares (up to three); Undo gives one back. Done ends your turn.\nShare prices grow with a hotel's size. Sunrise and Oakwood are cheap, Royal and Crimson dear.\nTap a chip at other times to see the Stocks page: who holds what."),
+ ("The End", "Once a hotel has 41 tiles, or every hotel is safe, the player to move may end the game (End Game).\nThen every hotel pays its bonuses, all shares are sold, and the most money wins.\nEasy, Medium and Hard set how well Ada, Max and Zoe play. Stats keep your place and money."),
+])
+
 write("solitaire", [
  ("The Idea", "Move every card onto the four foundations, one pile per suit, from Ace up to King.\nOn the seven columns, cards go down in alternating colors: a red 6 on a black 7. Only a King goes into an empty column. A face-down card left on top turns up by itself."),
  ("Playing", "Tap a face-up card to pick it up (with the cards on it), then tap where it goes. Tap the picked card again to send it to a foundation, or else to a column that takes it.\nTap the stock (the face-down pile, in the top corner on your stylus hand's side) to turn 1 or 3 cards; when it's empty, tap it to turn the waste back over."),

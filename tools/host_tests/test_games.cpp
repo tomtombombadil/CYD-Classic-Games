@@ -37,6 +37,7 @@
 #include "../../src/games/mancala/mancala_core.h"
 #include "../../src/games/morris/morris_core.h"
 #include "../../src/games/piperace/piperace_core.h"
+#include "../../src/games/acquisitions/acquisitions_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -2381,6 +2382,131 @@ static void test_piperace()
     }
 }
 
+static void test_acquisitions()
+{
+    using namespace acq;
+    char nm[8];
+    tile_name(0, nm, sizeof nm); CHECK(strcmp(nm, "1A") == 0);
+    tile_name(kTiles - 1, nm, sizeof nm); CHECK(strcmp(nm, "12I") == 0);
+    CHECK(price_for(0, 2) == 200 && price_for(0, 5) == 500 && price_for(0, 6) == 600 && price_for(0, 10) == 600);
+    CHECK(price_for(2, 6) == 700 && price_for(6, 41) == 1200 && price_for(5, 11) == 900 && price_for(3, 1) == 0);
+    auto blank = [](Game& g) {
+        g.start(3);
+        memset(g.board, 0, sizeof g.board);
+        for (int i = 0; i < kPlayers; ++i) { g.p[i] = Player{}; }
+        g.turn = 0; g.phase = Phase::Play;
+    };
+    auto at = [](int col, char row) { return (row - 'A') * kCols + (col - 1); };
+    {   // founding, growing
+        Game g; blank(g);
+        g.board[at(3, 'C')] = 1;
+        g.p[0].hand[0] = uint8_t(at(4, 'C'));
+        CHECK(g.tile_state(at(4, 'C')) == TileState::Ok);
+        CHECK(g.play(0) && g.phase == Phase::Found);
+        CHECK(!g.found(9) && g.found(5));
+        CHECK(g.size(5) == 2 && g.p[0].shares[5] == 1 && g.phase == Phase::Buy && g.bank(5) == 24);
+        CHECK(g.buy(5) && g.p[0].cash == kStartCash - price_for(5, 2));
+        CHECK(g.buy(5) && g.buy(5) && !g.buy(5));                 // three a turn
+        g.board[at(6, 'C')] = 1;                                  // a loose tile beyond
+        g.phase = Phase::Play; g.bought = 0;
+        g.p[0].hand[1] = uint8_t(at(5, 'C'));
+        CHECK(g.play(1) && g.phase == Phase::Buy && g.size(5) == 4);   // grows and takes the loose one
+    }
+    {   // a merger: bonuses, then sell / trade / keep round the table
+        Game g; blank(g);
+        for (int c = 1; c <= 5; ++c) g.board[at(c, 'A')] = 2 + 0;        // Sunrise: 5 tiles, 1A-5A
+        for (int c = 7; c <= 9; ++c) g.board[at(c, 'A')] = 2 + 1;        // Oakwood: 3 tiles, 7A-9A
+        g.p[1].shares[1] = 4; g.p[2].shares[1] = 2;
+        g.p[0].hand[0] = uint8_t(at(6, 'A'));
+        CHECK(g.play(0) && g.phase == Phase::Dispose && g.survivor == 0);
+        CHECK(g.p[1].cash == kStartCash + 3000 && g.p[2].cash == kStartCash + 1500);   // 300 x 10, x 5
+        CHECK(g.disposer == 1);
+        CHECK(!g.dispose(1, 1));                                          // trades go two for one
+        CHECK(g.dispose(2, 2));
+        CHECK(g.p[1].cash == kStartCash + 3000 + 600 && g.p[1].shares[1] == 0 && g.p[1].shares[0] == 1);
+        CHECK(g.disposer == 2 && g.dispose(0, 0));                        // keeps them
+        CHECK(g.phase == Phase::Buy && g.size(0) == 9 && g.size(1) == 0 && g.p[2].shares[1] == 2);
+    }
+    {   // a tied merger: the player picks; shared bonuses round up to 100
+        Game g; blank(g);
+        g.board[at(1, 'B')] = 2 + 2; g.board[at(2, 'B')] = 2 + 2;
+        g.board[at(4, 'B')] = 2 + 3; g.board[at(5, 'B')] = 2 + 3;
+        g.p[0].shares[3] = 2; g.p[3].shares[3] = 2;
+        g.p[0].hand[0] = uint8_t(at(3, 'B'));
+        CHECK(g.play(0) && g.phase == Phase::Survivor);
+        CHECK(!g.choose_survivor(1) && g.choose_survivor(2));
+        // Meadow (tier 1, size 2, price 300): bonuses 3000 + 1500 shared by two = 2250 -> 2300
+        CHECK(g.p[0].cash == kStartCash + 2300 && g.p[3].cash == kStartCash + 2300);
+        CHECK(g.disposer == 0 && g.dispose(2, 0) && g.disposer == 3 && g.dispose(0, 2));
+        CHECK(g.phase == Phase::Buy && g.size(2) == 5 && g.p[3].shares[2] == 1);
+    }
+    {   // safe chains can't merge: a dead tile; an eighth chain has to wait
+        Game g; blank(g);
+        for (int c = 1; c <= 11; ++c) { g.board[at(c, 'A')] = 2 + 0; g.board[at(c, 'C')] = 2 + 1; }
+        CHECK(g.tile_state(at(1, 'B')) == TileState::Dead);
+        CHECK(g.can_end() && !g.call_end() == false);
+        Game h; blank(h);
+        for (int c = 0; c < kChains; ++c) { h.board[at(2 * c + 1, 'E')] = 2 + c; h.board[at(2 * c + 1, 'F')] = 2 + c; }
+        h.board[at(1, 'H')] = 1;
+        CHECK(h.tile_state(at(2, 'H')) == TileState::Wait);
+        CHECK(h.tile_state(at(4, 'H')) == TileState::Ok);                 // a lone tile is fine
+    }
+    {   // the end: bonuses for every chain, all shares sold
+        Game g; blank(g);
+        for (int c = 1; c <= 12; ++c) { g.board[at(c, 'A')] = 2 + 6; g.board[at(c, 'B')] = 2 + 6; }
+        for (int c = 1; c <= 12; ++c) { g.board[at(c, 'C')] = 2 + 6; g.board[at(c, 'D')] = 2 + 6; }
+        CHECK(g.size(6) == 48 && g.can_end());
+        g.p[0].shares[6] = 3; g.p[1].shares[6] = 1;
+        g.phase = Phase::Buy;
+        CHECK(g.call_end() && g.buy_done() && g.phase == Phase::Over);
+        CHECK(g.p[0].cash == kStartCash + 12000 + 3 * 1200 && g.p[1].cash == kStartCash + 6000 + 1200);
+        uint8_t order[kPlayers];
+        g.ranking(order);
+        CHECK(order[0] == 0 && order[1] == 1);
+    }
+    {   // whole games between computers end, keep the rules, and Hard does well against Easy
+        int hard_wins = 0, games = 0;
+        long long steps_total = 0;
+        for (uint32_t seed = 1; seed <= 40; ++seed) {
+            Game g; g.start(seed * 7919);
+            int steps = 0;
+            for (; steps < 20000 && g.phase != Phase::Over; ++steps) {
+                const int a = g.actor();
+                g.ai_act(a == 0 ? 2 : 0);
+                for (int c = 0; c < kChains; ++c) if (g.bank(c) < 0) { CHECK(false); break; }
+                for (int i = 0; i < kPlayers; ++i) if (g.p[i].cash < 0) { CHECK(false); break; }
+            }
+            CHECK(g.phase == Phase::Over);
+            steps_total += steps;
+            uint8_t order[kPlayers];
+            g.ranking(order);
+            hard_wins += order[0] == 0;
+            ++games;
+            if (seed == 5) {        // a save part-way through comes back the same
+                Game h; h.start(seed);
+                for (int k = 0; k < 150 && h.phase != Phase::Over; ++k) h.ai_act(1);
+                uint8_t buf[Game::kSaveBytes];
+                CHECK(h.serialize(buf, sizeof buf) == Game::kSaveBytes);
+                Game r;
+                CHECK(r.deserialize(buf, sizeof buf) && memcmp(r.board, h.board, kTiles) == 0 && r.p[2].cash == h.p[2].cash);
+                buf[4] = 99;
+                CHECK(!r.deserialize(buf, sizeof buf));
+            }
+        }
+        printf("acquisitions: Hard (1 seat) won %d of %d against three Easy; %lld steps a game\n", hard_wins, games, steps_total / games);
+        CHECK(hard_wins * 2 >= games);
+    }
+    {   // history
+        Record r; r.place = 1; r.money = 48200; r.level = 2; r.seconds = 2410;
+        char line[64], full[80];
+        CHECK(format_body(line, sizeof line, r));
+        CHECK(strcmp(line, "1,48200,Hard,2410,40:10\n") == 0);
+        snprintf(full, sizeof full, "5,%s", line);
+        Record q;
+        CHECK(parse_line(full, q) && q.place == 1 && q.money == 48200 && q.level == 2);
+    }
+}
+
 int main()
 {
     test_fourconnect();
@@ -2416,6 +2542,7 @@ int main()
     test_gomoku();
     test_morris();
     test_piperace();
+    test_acquisitions();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

@@ -410,7 +410,23 @@ never typed (SPEC section 5).
   reopened (or restyled mid-flow) starts paused - Continue; each frame
   invalidates only the water's square; Place / Move / Turn (water starts)
   / Trill (level) / Lose; stats "#,Score,Level,Pipes,Seconds,Time", a game
-  left after level 1 is recorded). The match
+  left after level 1 is recorded), Acquisitions (id `acquisitions`,
+  Strategy, kVsComputer; Tom's name for Acquire, 2026-10-06; you vs Ada,
+  Max, Zoe; full classic rules: 108 tiles 1A-12I, $6000, 6 in hand, found
+  (free share) / grow / merge (bonuses 10x / 5x price, ties share rounded
+  up to $100, sell / trade 2:1 / keep from the merging player round),
+  safe at 11, dead tiles swapped automatically, an eighth chain waits, end
+  callable at 41 or all safe (or no tile left); hotels Sunrise, Oakwood
+  (cheap), Harbor, Meadow, Lagoon (middle), Royal, Crimson (dear), colours
+  from palette roles + their letter on every tile; portrait: board on top
+  (your playable tiles edged gold, last tile ringed), 7 hotel chips (tap
+  to buy while buying, else the Stocks page), a line of what just
+  happened, hand tiles / Undo | End Game | Done at the bottom; Found /
+  Survivor / Dispose pages for your choices; computers one step every
+  0.3-0.9 s, deciding only from the table (Hard: net worth + majority
+  stakes - 0.3 x best rival, beat 3 Easy 36/40); Place / Turn / Trill
+  (your bonus) / Error / Win / Lose; stats "#,Place,Money,Level,Seconds,
+  Time", a game left after a round counts at your place then). The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8

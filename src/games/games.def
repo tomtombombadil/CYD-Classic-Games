@@ -32,6 +32,7 @@ GAME(morris, "Nine Men's Morris", Strategy, kVsComputer | kPassAndPlay | kNetwor
 GAME(sank, "You Sank My CYD!", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Hide your fleet, then take turns firing at theirs; sink every ship to win")
 GAME(ultimate, "Ultimate Tic-Tac-Toe", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Nine boards in one: where you play sends the other player to that board")
 GAME(gomoku, "Gomoku", Strategy, kVsComputer | kPassAndPlay | kNetwork, "Five in a row on a 15x15 board; Black starts, take turns placing stones")
+GAME(acquisitions, "Acquisitions", Strategy, kVsComputer, "Lay tiles to found and grow hotel chains, buy shares, merge chains for big bonuses")
 GAME(solitaire, "Solitaire", Cards, kSolo, "Klondike: build the four suits up from Ace to King; draw 1 or 3, Standard or Vegas scoring")
 GAME(spider, "Spider", Cards, kSolo, "Two decks, ten columns: build King-to-Ace runs in one suit; 1, 2 or 4 suits")
 GAME(freecell, "FreeCell", Cards, kSolo, "Every card face up, four free cells: nearly every deal can be won")

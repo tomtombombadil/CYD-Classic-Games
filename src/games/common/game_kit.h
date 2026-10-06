@@ -118,5 +118,8 @@ void ring(lv_layer_t* layer, int32_t cx, int32_t cy, int32_t r, int32_t width, l
 void line(lv_layer_t* layer, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t width, lv_color_t c);
 void text(lv_layer_t* layer, const char* s, const lv_font_t* font, lv_color_t c,
           int32_t x1, int32_t y1, int32_t w, int32_t h);
+// The same, left-aligned in the box
+void text_left(lv_layer_t* layer, const char* s, const lv_font_t* font, lv_color_t c,
+               int32_t x1, int32_t y1, int32_t w, int32_t h);
 
 } // namespace kit

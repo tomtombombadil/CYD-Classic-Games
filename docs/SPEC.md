@@ -103,7 +103,7 @@ Candidates, grouped. Order of building is in section 6.
 | Nine Men's Morris | Big targets (*built 2026-10-03*) |
 | Gomoku | 15x15, 16 px cells on 240-wide boards (*built 2026-10-05*: freestyle five, wireless key 10) |
 | Strategy Go! (Stratego) | *Next (Tom, 2026-10-06)*: 10x10, hidden pieces - wireless like You Sank My CYD!, pass-and-play with a cover screen |
-| Acquisitions (Acquire) | *Next (Tom, 2026-10-06)*: 12x9 hotel tiles, chains, stock, mergers; computer players |
+| Acquisitions (Acquire) | *Built 2026-10-06*: id `acquisitions`; you vs Ada, Max, Zoe (Easy / Medium / Hard); 7 hotels Sunrise, Oakwood (cheap), Harbor, Meadow, Lagoon, Royal, Crimson (dear); full rules incl. safe chains, dead tiles, ties |
 | Sorry! / Trouble style race game | *Planned (Tom, 2026-10-06)*: 2-4 players, pass-and-play + computer; own name |
 | Escape from Atlantis style | *Planned (Tom, 2026-10-06)*: sinking hex island, sharks and whales; own name |
 | You Sank My CYD! (Battleship) | Two grids, flip between them (*built 2026-10-05*: id `sank`; classic rules - ships may touch; manual placement by default, Random in Options; wireless key 8, version 2) |

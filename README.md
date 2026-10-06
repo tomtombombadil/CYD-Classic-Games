@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Thirty-two games and an RPG dice roller so far: **Sudoku** (from
+> under way. Thirty-three games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **Pipe Race**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **CYD-dle**, **Wheel of CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **Acquisitions**, **CYD-dle**, **Wheel of CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, CYD-dle, Wheel of CYD (and its wheel), Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, Acquisitions, CYD-dle, Wheel of CYD (and its wheel), Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Pipe Race, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -44,6 +44,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_mastercyd.png" width="240" alt="MasterCYD, guess 5 of 10">
 <img src="docs/screenshots/small_2048.png" width="240" alt="2048 in progress">
 <img src="docs/screenshots/small_piperace.png" width="240" alt="Pipe Race: water running through the pipes">
+<img src="docs/screenshots/small_acquisitions.png" width="240" alt="Acquisitions: hotel chains on the board, your tiles at the bottom">
 <img src="docs/screenshots/small_pegs.png" width="240" alt="Peg Solitaire, English board">
 <img src="docs/screenshots/small_memory.png" width="240" alt="Memory Match with a missed pair showing">
 <img src="docs/screenshots/small_nonogram.png" width="240" alt="Nonograms 10x10 part-way">
@@ -102,6 +103,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Mancala | Strategy Games | Kalah, six pits a side, sown seed by seed; vs computer or pass-and-play |
 | Nine Men's Morris | Strategy Games | Place, move and fly; mills take men; vs computer or pass-and-play |
+| Acquisitions | Strategy Games | Hotel chains and shares: you against Ada, Max and Zoe (Easy / Medium / Hard) |
 | Ultimate Tic-Tac-Toe | Strategy Games | Nine boards in one; vs computer (Easy / Medium / Hard) or pass-and-play |
 | Gomoku | Strategy Games | Five in a row on 15x15; vs computer (Easy / Medium / Hard) or pass-and-play |
 | You Sank My CYD! | Strategy Games | Hide a fleet, fire at theirs; vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -555,6 +557,23 @@ give the runs of filled cells in that line, in order. **Fill** fills a cell
 clue turns grey when its line matches, and the row and column you last
 tapped are tinted. Every puzzle has one answer and can be solved one line at
 a time, no guessing. 5x5, 8x8 or 10x10.
+
+## Acquisitions
+
+The hotel-chain game. A 12 x 9 board, you against Ada, Max and Zoe, $6,000
+each and six tiles in hand. A turn: **lay a tile** (tap it in the key row -
+its square is edged in gold on the board), **buy up to three shares** (tap
+the hotel chips under the board; Undo gives one back; Done ends the turn),
+then a new tile is drawn. A tile next to a loose tile founds one of the
+seven hotels (you pick, and get a free share); next to a hotel it grows it;
+between two hotels it merges them - the bigger takes over, the smaller's
+two biggest shareholders get bonuses, and every holder sells, trades two
+for one or keeps. Hotels of 11 or more are safe. Prices go up with size:
+Sunrise and Oakwood are cheap, Harbor, Meadow and Lagoon middle, Royal and
+Crimson dear. Once a hotel reaches 41 tiles or every hotel is safe, End
+Game finishes it: bonuses are paid, shares sold, most money wins. Tap a
+chip any other time for the Stocks page (who holds what). Stats keep your
+place and money for every game.
 
 ## Pipe Race
 
