@@ -1,0 +1,95 @@
+# Open Trivia DB questions left out of CYD Classic Games (Tom, 2026-10-06:
+# drop only subjects that are inappropriate for minors, and answers that have
+# gone stale; keep hard or specialised questions on kid-safe subjects).
+# One question per line, exactly as Open Trivia DB has it, under its reason.
+# tools/make_trivia.py leaves these out. Add a line to drop another one.
+
+# Sexual content or innuendo
+In the play Oedipus Rex, Oedipus kills his father due to jealousy in loving his mother.
+Which French duo had UK hits in 1998 with the songs 'Sexy Boy', 'Kelly Watch The Stars' & 'All I Need'?
+What is the name of Ryūko Matoi's theme song in the anime Kill la Kill?
+What is the name of Niccolò Machiavelli's work that argued effective leaders needed to crush their opponents at all costs?
+What color is Ryūko Matoi's half of the Scissor Blade in the anime Kill la KIll?
+Electronic music producer Kygo's popularity skyrocketed after a certain remix. Which song did he remix?
+The fraudelent doctor John R. Brinkley acummulated great fame and wealth in the early 1900s offering what service?
+Rannamaari was a sea demon that haunted the people of the Maldives and had to be appeased monthly with the sacrifice of a virgin girl.
+In "Rick And Morty", who shot "Mr. Poopybutthole" in the episode "Total Rickall"?
+On the show "Rick and Morty", in episode "Total Rickall", who was a parasite?
+What video game sparked controversy because of its hidden "Hot Coffee" minigame?
+Which Nirvana album had a naked baby on the cover?
+What was studio Trigger's first original long-form animated series for television?
+The Red Hot Chili Pepper song "Give It Away" is from what album?
+Norwegian producer Kygo released a remix of the song "Sexual Healing" by Marvin Gaye.
+In "Future Diary", what is the name of Yuno Gasai's Phone Diary?
+In "Mean Girls", who has breasts that tell when it's raining?
+Scotch whisky and Drambuie make up which cocktail?
+Which of these is the name of an American psychedelic rock band formed in 2002 by Benjamin Goldwasser and Andrew VanWyngarden?
+
+# Alcohol, tobacco or drugs as the subject
+In "Breaking Bad", Walter White is a high school teacher diagnosed with which form of cancer?
+In 1967, a magazine published a story about extracting hallucinogenic chemicals from bananas to raise moral questions about banning drugs.
+In order to cut costs, what were most of the extras of Mad Max (1979) paid with?
+The drug cartel run by Pablo Escobar originated in which South American city?
+On average, Americans consume 100 pounds of what per second?
+In the film "Requiem for a Dream", what drug does Jared Leto's character get addicted to?
+According to their 1974 hit, what were Brownsville Station doing "In The Boys' Room"?
+What is the name of the second studio album released by American rapper Post Malone in 2018?
+The Mexican Beer "Corona" is what type of beer?
+What is the name of the alcoholic beverage made from potatoes or grains that originates from Poland and Russia?
+In Breaking Bad, the initials W.W. refer to which of the following?
+What alcoholic drink is mainly made from juniper berries?
+Which portion of the Marijuana plant produces the psychoactive substance known as THC?
+What was the cause of Marilyn Monroes suicide?
+In "Breaking Bad," which main character was planned to be killed in Season 1 but wasn't because the show creator liked the actor?
+You can legally drink alcohol while driving in Mississippi.
+What year did Skoal, a smokeless Tobacco company, release their first line of Pouches, known as "Skoal Bandits"?
+The vapor produced by e-cigarettes is actually water.
+Which of these is NOT the name of an album released by American rapper Viper?
+In the television show Breaking Bad, what is the street name of Walter and Jesse's notorious product?
+Which actor portrays "Walter White" in the series "Breaking Bad"?
+The British organisation CAMRA stands for The Campaign for Real Ale.
+What alcoholic drink is made from molasses?
+On average, at least 1 person is killed by a drunk driver in the United States every hour.
+What is the English title of the vaporwave track "リサフランク420 / 現代のコンピュー" by Macintosh Plus (Vektroid)?
+In the "S.T.A.L.K.E.R." series, which of these items can't be used to lower the player's accumulated radiation?
+Who is the star of the AMC series Breaking Bad?
+Which American-owned brewery led the country in sales by volume in 2015?
+What was the subject of the 2014 song "CoCo" by American rapper O. T. Genasis?
+What did the first vending machines in the early 1880's dispense?
+Which country has the most Trappist breweries?
+What style of beer will typically have a higher than average hop content?
+Which of the following chemicals are found in eggplant seeds?
+In August 1964, who introduced the Beatles to cannabis?
+
+# Profanity
+Which of the following is NOT a quote from the 1942 film Casablanca? 
+"The Genius" is the original and secondary name of which Wu-Tang Clan member?
+Which one of these rappers is NOT a member of the rap group Wu-Tang Clan?
+What is the last line muttered in the anime film "The End of Evangelion"?
+
+# Graphic violence, horror or crime as the subject
+In the video game "Postal 2", what is the name of Postal Dude's dog?
+In the 1976 film 'Taxi Driver', how many guns did Travis buy from the salesman?
+In the alternate timeline in Mortal Kombat, which character was the one to slaughter the Shirai Ryu clan?
+The killer in the 1981 film 'My Bloody Valentine' wears what sort of outfit?
+What year was O.J. Simpson aquitted of his murder charges?
+In the Jackbox party game Monster Seeking Monster, which monster can steal two hearts from other monsters under certain conditions?
+Who played Stan's dog in the South Park episode "Big Gay Al's Big Gay Boat Ride"?
+How many zombies need to be killed to get the "Zombie Genocider" achievement in Dead Rising (2006)?
+Where does the book "The Silence of the Lambs" get its title from?
+In Dead by Daylight, which killer perk applies the mangled effect?
+In the game Dead by Daylight, the killer Michael Myers is refered to as "The Shape".
+Which of these plays was famously first performed posthumously after the playwright committed suicide?
+Which of the following snipers has the highest amount of confirmed kills?
+In 2014, this new top 100 rapper who featured in "Computers" and "Body Dance" was arrested in a NYPD sting for murder.
+What type of genre is the controversial 2015 game "Hatred"?
+Which of the following is NOT a summon in the game "South Park: The Stick of Truth"?
+In "A Certain Scientific Railgun", how many "sisters" did Accelerator have to kill to achieve the rumored level 6?
+According to Algonquian folklore, how does one transform into a Wendigo?
+In Hitman: Blood Money, what is the name of the target in the mission "Death of a Showman"?
+A scientific study on peanuts in bars found traces of over 100 unique specimens of urine.
+What special item did the creators of Cards Against Humanity ship for their Black Friday pack?
+What was the name of the actor who played Leatherface in the 1974 horror film, The Texas Chainsaw Massacre?
+What is the punishment for playing Postal 2 in New Zealand?
+Which is not a playable character in the 2005 video game Killer7?
+In the game Cry of Fear, which enemy can cause the player to kill themselves if they are wielding a loaded firearm?

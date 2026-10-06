@@ -91,6 +91,8 @@ namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool 
 namespace dealcyd_preview { dealcyd::Game* game(); void reveal(bool on); void redraw(); }
 #include "games/presscyd/presscyd_core.h"
 #include "games/cardsharks/cardsharks_core.h"
+#include "games/whowants/whowants_core.h"
+namespace whowants_preview { whowants::Game* game(); void refresh(); void hold(bool on); void advance(int n); void ladder(); }
 #include "games/escape/escape_core.h"
 namespace escape_preview { escape::Game* game(); void hold(bool on); void select(int kind, int idx, int hex); void news_line(const char* t); void show_banner(bool on); }
 #include "games/sorrycyd/sorrycyd_core.h"
@@ -188,6 +190,7 @@ static size_t load_game(const char* id, uint8_t* buf, size_t cap)
     return n;
 }
 static void save_game(const char* id, const uint8_t* buf, size_t len) { files[id].assign(buf, buf + len); }
+static void remove_game(const char* id) { files.erase(id); }
 
 // Made-up history for the stats screens of the newer games
 static bool other_stats(const char* id, void (*fn)(const char*, void*), void* ctx)
@@ -1620,6 +1623,45 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Who Wants To Be A CYD?: question 7, lifelines used, an answer locked, a wrong one, the ladder
+        using namespace whowants;
+        remove_game("whowants");
+        ui::app_open_game_now(games::find("whowants"));
+        whowants_preview::hold(true);
+        Game* g = whowants_preview::game();
+        if (g) {
+            whowants_preview::advance(6);
+            shot(out + "_light_45_whowants.ppm");
+            g->use(kFifty); g->use(kAudience);
+            whowants_preview::refresh();
+            shot(out + "_light_45_whowants_audience.ppm");
+            g->use(kPhone);
+            whowants_preview::refresh();
+            shot(out + "_light_45_whowants_phone.ppm");
+            int pick = 0;
+            while (pick == g->right_slot() || (g->hidden >> pick & 1)) ++pick;
+            g->lock(pick);
+            whowants_preview::refresh();
+            shot(out + "_light_45_whowants_locked.ppm");
+            g->reveal();
+            whowants_preview::refresh();
+            shot(out + "_light_45_whowants_wrong.ppm");
+            whowants_preview::ladder();
+            shot(out + "_light_45_whowants_ladder.ppm");
+            ui::close_overlays();
+            ui::app_go_home_now();
+            ui::app_set_theme(ui::Theme::Dark);
+            remove_game("whowants");
+            ui::app_open_game_now(games::find("whowants"));
+            whowants_preview::hold(true);
+            whowants_preview::advance(3);
+            shot(out + "_dark_45_whowants.ppm");
+            ui::app_set_theme(ui::Theme::Light);
+            whowants_preview::hold(false);
+        }
         ui::app_go_home_now();
     }
 

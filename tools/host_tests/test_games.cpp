@@ -44,8 +44,12 @@
 #include "../../src/games/cardsharks/cardsharks_core.h"
 #include "../../src/games/sorrycyd/sorrycyd_core.h"
 #include "../../src/games/escape/escape_core.h"
+#include "../../src/games/common/inflate.h"
+#include "../../src/games/common/trivia_bank.h"
+#include "../../src/games/whowants/whowants_core.h"
 #include <chrono>
 #include <string>
+#include <set>
 #include <vector>
 #include <utility>
 #include <unordered_set>
@@ -3123,6 +3127,124 @@ static void test_escape()
     }
 }
 
+static void test_trivia()
+{
+    {   // inflate: a fixed-code block and a stored block (made by Python's zlib), bad data
+        const uint8_t fixed[] = {243, 72, 205, 201, 201, 215, 81, 200, 64, 162, 20, 156, 35, 93, 20, 21, 60, 144, 68, 160, 242, 131, 64, 2, 0};
+        std::string want;
+        for (int k = 0; k < 7; ++k) want += "Hello, hello, hello CYD! ";
+        uint8_t out[400];
+        long n = inflate::raw(fixed, sizeof fixed, out, sizeof out);
+        CHECK(n == long(want.size()) && memcmp(out, want.data(), want.size()) == 0);
+        CHECK(inflate::raw(fixed, sizeof fixed, out, 50) == -1);              // no room
+        CHECK(inflate::raw(fixed, 10, out, sizeof out) == -1);                // cut short
+        uint8_t stored[5 + 175] = {1, 175, 0, 80, 255};
+        memcpy(stored + 5, want.data(), 175);
+        n = inflate::raw(stored, sizeof stored, out, sizeof out);
+        CHECK(n == 175 && memcmp(out, want.data(), 175) == 0);
+        stored[3] = 81;                                                       // LEN / NLEN don't match
+        CHECK(inflate::raw(stored, sizeof stored, out, sizeof out) == -1);
+    }
+    {   // the bank: every block unpacks to the generator's checksum; questions read back
+        CHECK(trivia::count() > 5000 && trivia::verify());
+        int per_diff[3] = {}, tf = 0, cats[trivia::kCategories] = {};
+        trivia::Question q;
+        bool all = true;
+        for (int i = 0; i < trivia::count(); ++i) {
+            if (!trivia::get(i, q)) { all = false; continue; }
+            ++per_diff[q.difficulty];
+            ++cats[q.category];
+            tf += q.answers == 2;
+            if (q.answers == 2 && !(strcmp(q.answer[0], "True") == 0 || strcmp(q.answer[0], "False") == 0)) all = false;
+            if (!q.text[0] || q.answers < 2) all = false;
+            for (int a = 0; a < q.answers; ++a) if (!q.answer[a][0]) all = false;
+            if (q.answers == 2) CHECK(trivia::true_false(i));
+        }
+        CHECK(all);
+        CHECK(per_diff[0] > 1000 && per_diff[1] > 1000 && per_diff[2] > 500 && tf > 500);
+        for (int c = 0; c < trivia::kCategories; ++c) CHECK(cats[c] >= 30);
+        CHECK(!trivia::get(trivia::count(), q) && !trivia::get(-1, q));
+        trivia::release();
+        printf("trivia: %d questions (easy %d, medium %d, hard %d; %d true / false)\n",
+               trivia::count(), per_diff[0], per_diff[1], per_diff[2], tf);
+    }
+}
+
+static void test_whowants()
+{
+    using namespace whowants;
+    CHECK(safe_amount(4) == 0 && safe_amount(5) == 1000 && safe_amount(10) == 32000 && safe_amount(14) == 32000);
+    {   // all right: a million; the levels climb
+        Game g; g.start(5);
+        for (int s = 0; s < kSteps; ++s) {
+            CHECK(g.phase == Phase::Asking && g.step == s && g.q >= 0);
+            const int lv = s < 5 ? 0 : s < 10 ? 1 : 2;
+            CHECK(trivia::difficulty(g.q) == lv && !trivia::true_false(g.q));
+            CHECK(g.lock(g.right_slot()) && g.reveal());
+            if (s + 1 < kSteps) CHECK(g.phase == Phase::Right && g.next_question());
+        }
+        CHECK(g.phase == Phase::Over && g.won == 1000000);
+    }
+    {   // wrong on question 8: back to $1,000; walking away keeps what you have
+        Game g; g.start(6);
+        for (int s = 0; s < 7; ++s) { g.lock(g.right_slot()); g.reveal(); g.next_question(); }
+        CHECK(g.step == 7 && g.banked() == 4000);
+        CHECK(g.lock((g.right_slot() + 1) % 4) && g.reveal() && g.phase == Phase::Over && g.won == 1000);
+        Game h; h.start(6);
+        for (int s = 0; s < 3; ++s) { h.lock(h.right_slot()); h.reveal(); h.next_question(); }
+        CHECK(h.walk_away() && h.won == 300 && h.walked);
+    }
+    {   // lifelines: once each; 50:50 never takes the right answer; the poll adds to 100
+        for (uint32_t seed = 1; seed < 200; ++seed) {
+            Game g; g.start(seed);
+            CHECK(g.use(kFifty) && !g.use(kFifty));
+            int gone = 0;
+            for (int s = 0; s < 4; ++s) gone += g.hidden >> s & 1;
+            CHECK(gone == 2 && !(g.hidden >> g.right_slot() & 1));
+            CHECK(!g.lock(__builtin_ctz(g.hidden)));             // a removed answer can't be picked
+            CHECK(g.use(kAudience));
+            int sum = 0;
+            for (int s = 0; s < 4; ++s) { sum += g.poll[s]; if (g.hidden >> s & 1) CHECK(g.poll[s] == 0); }
+            CHECK(sum == 100);
+            CHECK(g.use(kPhone) && g.friend_pick >= 0 && !(g.hidden >> g.friend_pick & 1));
+        }
+    }
+    {   // no repeats until a level runs out; a fits() filter is obeyed
+        Game g; g.start(9);
+        std::set<int> seen;
+        bool repeat = false;
+        for (int k = 0; k < 300; ++k) {
+            if (!seen.insert(g.q).second) repeat = true;
+            g.start(1000 + k);
+        }
+        CHECK(!repeat);
+        static auto short_only = [](int q) { trivia::Question t; return trivia::get(q, t) && strlen(t.text) < 60; };
+        Game f; f.start(3, +[](int q) { return short_only(q); });
+        trivia::Question t;
+        CHECK(trivia::get(f.q, t) && strlen(t.text) < 60);
+    }
+    {   // save round trip; bad saves rejected
+        Game g; g.start(77);
+        g.use(kAudience);
+        std::vector<uint8_t> buf(Game::kSaveBytes);
+        CHECK(g.serialize(buf.data(), buf.size()) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf.data(), buf.size()) && h.q == g.q && !memcmp(h.poll, g.poll, 4) && !memcmp(h.played, g.played, sizeof g.played));
+        std::vector<uint8_t> bad = buf; bad[7] = bad[8];                      // order not a shuffle
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+        bad = buf; bad[4] = 15;
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+    }
+    {   // stats lines
+        Record r; r.won = 32000; r.reached = 11; r.seconds = 125;
+        char line[64] = "7,";
+        format_body(line + 2, sizeof line - 2, r);
+        Record back;
+        CHECK(parse_line(line, back) && back.won == 32000 && back.reached == 11 && back.seconds == 125);
+    }
+    trivia::release();
+}
+
 int main()
 {
     test_fourconnect();
@@ -3165,6 +3287,8 @@ int main()
     test_cardsharks();
     test_sorrycyd();
     test_escape();
+    test_trivia();
+    test_whowants();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

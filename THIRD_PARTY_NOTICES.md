@@ -34,9 +34,22 @@ LGPL for the binaries published in Releases.
 |---|---|---|
 | [ENABLE2K](https://github.com/dolph/dictionary) word list (five-letter words, `assets/words/enable_5.txt`) | CYD-dle: accepted guesses | Public domain |
 | [ESDB / SCOWL](https://github.com/en-wl/wordlist) by Kevin Atkinson, size 35 five-letter words (`assets/words/scowl35_5.txt`) | CYD-dle: answers (common words) | Permissive; notice below and in `assets/words/SCOWL-Copyright.txt` |
+| [Open Trivia DB](https://opentdb.com) verified questions (`assets/trivia/opentdb_raw.json`, fetched by `tools/fetch_trivia.py`; packed into `src/games/common/trivia_data.cpp` by `tools/make_trivia.py`) | The trivia games (Who Wants To Be A CYD?, and the planned Hollywood CYDs, Jeopar-CYD!, Trivial CYD) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) - see below |
 
 CYD-dle never uses the words in `assets/words/blocklist.txt` and never
 picks those in `assets/words/answers_exclude.txt` as answers.
+
+**Trivia questions.** The questions are from Open Trivia DB (opentdb.com),
+licensed under Creative Commons Attribution-ShareAlike 4.0 International
+(CC BY-SA 4.0). Changed: screened - the questions listed in
+`assets/trivia/drop.txt` are left out (subjects inappropriate for young
+players; Tom, 2026-10-06: drop only those and stale answers, keep hard or
+specialised questions) - and edited: text turned into plain ASCII for the
+screen fonts, a few questions with characters the fonts can't show left
+out. The screened and edited data (`assets/trivia/`, `trivia_data.cpp`) is
+shared under CC BY-SA 4.0 too. It is a separate collection inside the
+firmware: the code, including the code that reads the bank
+(`trivia_bank.*`, `inflate.*`), stays MIT.
 
 > Copyright 2000-2026 by Kevin Atkinson
 >

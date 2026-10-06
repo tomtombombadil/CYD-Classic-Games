@@ -45,6 +45,7 @@ GAME(holdem, "Texas Hold'em", Cards, kSolo, "No-limit poker against three comput
 GAME(pyramid, "Pyramid", Cards, kSolo, "Pair up cards that add to 13 and take the pyramid apart; Kings go alone")
 GAME(golf, "Golf", Cards, kSolo, "Clear seven columns onto the waste, one rank up or down at a time")
 GAME(cyddle, "CYD-dle", Word, kSolo, "Guess the five-letter word in six tries; green, gold and grey hints")
+GAME(whowants, "Who Wants To Be A CYD?", Shows, kSolo, "Fifteen questions from $100 to a million - with 50:50, Ask the Audience and Phone a Friend")
 GAME(dealcyd, "Deal or No CYD", Shows, kSolo, "26 cases, one is yours: open the others and decide - take the Banker's offer, or play on?")
 GAME(presscyd, "Press Your CYD", Shows, kVsComputer, "Stop the jumping light on money and extra spins - but not on a Gremlin! You against Max and Zoe")
 GAME(cardsharks, "Card Sharks CYD", Shows, kVsComputer | kPassAndPlay, "Higher or lower? Call your way across five cards before they do - and freeze to keep your place")
