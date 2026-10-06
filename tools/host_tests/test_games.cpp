@@ -49,6 +49,7 @@
 #include "../../src/games/whowants/whowants_core.h"
 #include "../../src/games/jeoparcyd/jeoparcyd_core.h"
 #include "../../src/games/hollywood/hollywood_core.h"
+#include "../../src/games/trivialcyd/trivialcyd_core.h"
 #include <chrono>
 #include <string>
 #include <set>
@@ -3397,6 +3398,82 @@ static void test_hollywood()
     trivia::release();
 }
 
+static void test_trivialcyd()
+{
+    using namespace tcyd;
+    {   // the track: six HQs, six Roll Again squares, every colour four more times
+        int hq = 0, again = 0, per[kColors] = {};
+        for (int s = 0; s < kSquares; ++s) {
+            const int c = square_color(s);
+            if (is_hq(s)) { ++hq; CHECK(c == s / 6); }
+            else if (c == kRollAgain) ++again;
+            else ++per[c];
+        }
+        CHECK(hq == 6 && again == 6);
+        for (int c = 0; c < kColors; ++c) CHECK(per[c] == 4);
+        // every bank category has a colour with questions
+        int qs[kColors] = {};
+        for (int i = 0; i < trivia::count(); ++i) ++qs[color_of(trivia::category(i))];
+        for (int c = 0; c < kColors; ++c) CHECK(qs[c] > 200);
+    }
+    {   // a roll, a move, a question in the square's colour; right on an HQ = a wedge and roll again
+        Game g; g.start(5, 3, 1, 1);
+        CHECK(g.roll() && g.phase == Phase::Move && g.die >= 1 && g.die <= 6);
+        CHECK(g.dest[0] == (3 + g.die) % kSquares && g.dest[1] == (3 + kSquares - g.die) % kSquares);
+        g.dest[0] = 6;                                         // as if the die let us land on HQ 1
+        CHECK(g.move(6) && g.phase == Phase::Ask && g.q_color == 1 && color_of(trivia::category(g.q)) == 1);
+        CHECK(g.answer(g.right_slot()) && g.won_wedge && (g.wedges[0] & 2));
+        CHECK(g.next() && g.turn == 0 && g.phase == Phase::Roll);
+        // wrong passes the turn
+        g.roll(); g.move(g.dest[0]);
+        if (g.phase == Phase::Ask) {
+            CHECK(g.answer((g.right_slot() + 1) % g.answers) && !g.right);
+            CHECK(g.next() && g.turn == 1);
+        }
+    }
+    {   // six wedges: the winning question
+        Game g; g.start(6, 2, 2, 1);
+        g.wedges[0] = 63;
+        CHECK(g.roll() && g.final_q && g.phase == Phase::Ask);
+        CHECK(g.answer(g.right_slot()) && g.winner == 0 && g.next() && g.phase == Phase::Over);
+    }
+    {   // whole games end; Hard beats two Easy more often than a third
+        int hard = 0;
+        const int N = 30;
+        for (int s = 0; s < N; ++s) {
+            Game g; g.start(200 + s, 3, 0, 0);
+            g.people = 0;
+            int k = 0;
+            for (; k < 20000 && g.phase != Phase::Over; ++k) {
+                g.level = g.turn == 0 ? 2 : 0;
+                switch (g.phase) {
+                    case Phase::Roll: CHECK(g.roll()); break;
+                    case Phase::Move: CHECK(g.move(g.cpu_move())); break;
+                    case Phase::Ask: CHECK(g.answer(g.cpu_answer())); break;
+                    case Phase::Reveal: CHECK(g.next()); break;
+                    default: break;
+                }
+            }
+            CHECK(g.phase == Phase::Over);
+            hard += g.winner == 0;
+        }
+        printf("trivialcyd: Hard won %d of %d against two Easy\n", hard, N);
+        CHECK(hard * 2 > N);
+    }
+    {   // save round trip; bad saves
+        Game g; g.start(9, 4, 2, 2); g.roll(); g.move(g.dest[1]);
+        std::vector<uint8_t> buf(Game::kSaveBytes);
+        CHECK(g.serialize(buf.data(), buf.size()) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf.data(), buf.size()) && h.q == g.q && h.phase == g.phase && h.players == 4);
+        std::vector<uint8_t> bad = buf; bad[4] = 7;
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+        bad = buf; bad[7] = 40;
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+    }
+    trivia::release();
+}
+
 int main()
 {
     test_fourconnect();
@@ -3443,6 +3520,7 @@ int main()
     test_whowants();
     test_jeoparcyd();
     test_hollywood();
+    test_trivialcyd();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

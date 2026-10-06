@@ -279,6 +279,13 @@ write("hollywood", [
  TP,
 ], two_player=True)
 
+write("trivialcyd", [
+ ("The Idea", "Win a wedge in all six colours: Geography (blue), Entertainment (pink), History (yellow), Arts & Literature (brown), Science & Nature (green) and Sports & Leisure (orange).\nYou against Max and Zoe, or 2-4 people (menu: Pass and Play)."),
+ ("A Turn", "Roll, then tap one of the two framed squares (either way round). Answer a question in that square's colour.\nRight: roll again. Wrong: the next player's turn.\nA die square = roll again, no question."),
+ ("Wedges", "Every sixth square is a colour's headquarters (a wedge in a white circle). Answer right there to win that colour's wedge for your pie in the middle.\nWith all six, your next turn is one question in a random colour: get it right to win!"),
+ ("The Computer", "Easy knows fewer answers and doesn't aim for wedges; Medium and Hard head for the wedges they need and know more.\nQuestions: Open Trivia DB (CC BY-SA 4.0). Stats keep your place and wedges."),
+])
+
 write("dealcyd", [
  ("The Idea", "26 cases hide 26 amounts, from 1 cent to $1,000,000. Pick one to be yours - it stays shut until the end.\nThen open the other cases a few at a time. Every amount you open is one your case can't hold: it turns grey on the boards at the sides."),
  ("The Banker", "After each round the Banker calls with an offer for your case. Deal takes the money and ends the game. No Deal plays on.\nRounds open 6, 5, 4, 3 and 2 cases, then one at a time. The offers grow as the game goes on - but so does the risk."),

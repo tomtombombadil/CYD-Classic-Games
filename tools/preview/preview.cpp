@@ -91,6 +91,8 @@ namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool 
 namespace dealcyd_preview { dealcyd::Game* game(); void reveal(bool on); void redraw(); }
 #include "games/presscyd/presscyd_core.h"
 #include "games/cardsharks/cardsharks_core.h"
+#include "games/trivialcyd/trivialcyd_core.h"
+namespace trivialcyd_preview { tcyd::Game* game(); void hold(bool on); void news_line(const char* t); void people(); }
 #include "games/hollywood/hollywood_core.h"
 namespace hollywood_preview { hcyd::Board* board(); void sync(); void reveal(bool on); }
 #include "games/jeoparcyd/jeoparcyd_core.h"
@@ -1627,6 +1629,56 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Trivial CYD: part-way with a roll to place, a question for a wedge, dark
+        using namespace tcyd;
+        remove_game("trivialcyd");
+        ui::app_open_game_now(games::find("trivialcyd"));
+        trivialcyd_preview::hold(true);
+        Game* g = trivialcyd_preview::game();
+        if (g) {
+            g->people = 1;
+            for (int k = 0; k < 400 && !(g->turns > 30 && g->turn == 0 && g->phase == Phase::Roll && g->wedge_count(0) >= 2); ++k) {
+                switch (g->phase) {
+                    case Phase::Roll: g->roll(); break;
+                    case Phase::Move: g->move(g->cpu_move()); break;
+                    case Phase::Ask: g->answer(g->cpu_answer()); break;
+                    case Phase::Reveal: g->next(); break;
+                    default: break;
+                }
+                if (g->phase == Phase::Over) break;
+            }
+            if (g->phase == Phase::Roll) g->roll();
+            trivialcyd_preview::news_line("Zoe won the History wedge!");
+            shot(out + "_light_48_trivialcyd.ppm");
+            ui::app_set_theme(ui::Theme::Dark);
+            trivialcyd_preview::hold(true);
+            ui::app_go_home_now();
+            ui::app_open_game_now(games::find("trivialcyd"));
+            trivialcyd_preview::hold(true);
+            g = trivialcyd_preview::game();
+            shot(out + "_dark_48_trivialcyd.ppm");
+            ui::app_set_theme(ui::Theme::Light);
+            ui::app_go_home_now();
+            ui::app_open_game_now(games::find("trivialcyd"));
+            trivialcyd_preview::hold(true);
+            g = trivialcyd_preview::game();
+            if (g->phase == Phase::Move) {
+                g->dest[0] = 6;
+                g->move(6);
+                trivialcyd_preview::hold(true);
+                shot(out + "_light_48_trivialcyd_ask.ppm");
+                g->answer(g->right_slot());
+                trivialcyd_preview::hold(true);
+                shot(out + "_light_48_trivialcyd_right.ppm");
+            }
+            trivialcyd_preview::people();
+            shot(out + "_light_48_trivialcyd_people.ppm");
+            ui::close_overlays();
+            trivialcyd_preview::hold(false);
+        }
         ui::app_go_home_now();
     }
 

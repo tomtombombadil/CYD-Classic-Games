@@ -40,6 +40,7 @@ SHOTS = {
     "s_light_45_whowants_audience": "small_whowants",
     "s_light_46_jeoparcyd": "small_jeoparcyd",
     "s_light_47_hollywood": "small_hollywood",
+    "s_light_48_trivialcyd": "small_trivialcyd",
     "s_light_37_pegs": "small_pegs",
     "s_light_38_memory": "small_memory",
     "s_light_39_nonogram": "small_nonogram",

@@ -48,6 +48,7 @@ GAME(cyddle, "CYD-dle", Word, kSolo, "Guess the five-letter word in six tries; g
 GAME(whowants, "Who Wants To Be A CYD?", Shows, kSolo, "Fifteen questions from $100 to a million - with 50:50, Ask the Audience and Phone a Friend")
 GAME(jeoparcyd, "Jeopar-CYD!", Shows, kVsComputer, "Pick a category and a value, then buzz in first with the answer - you against Max and Zoe")
 GAME(hollywood, "Hollywood CYDs", Shows, kVsComputer | kPassAndPlay, "Nine stars answer trivia - agree or disagree to win their squares, three in a row")
+GAME(trivialcyd, "Trivial CYD", Shows, kVsComputer, "Roll round the board and win a wedge in all six colours of trivia - against the computer or 2-4 people")
 GAME(dealcyd, "Deal or No CYD", Shows, kSolo, "26 cases, one is yours: open the others and decide - take the Banker's offer, or play on?")
 GAME(presscyd, "Press Your CYD", Shows, kVsComputer, "Stop the jumping light on money and extra spins - but not on a Gremlin! You against Max and Zoe")
 GAME(cardsharks, "Card Sharks CYD", Shows, kVsComputer | kPassAndPlay, "Higher or lower? Call your way across five cards before they do - and freeze to keep your place")
