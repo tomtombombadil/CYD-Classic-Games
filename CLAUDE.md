@@ -499,7 +499,30 @@ never typed (SPEC section 5).
   draw 0.65 s, show the card 0.9 s, move; sounds your move Place, theirs
   Turn, your pawn sent back "aww", your pawn Home Hint, Win / Lose; save
   "SRY1"; stats "#,Place,Home,Level,Seconds,Time", a vs-computer game left
-  after 4 turns counts at your place then).
+  after 4 turns counts at your place then), Escape from CYD (id `escape`,
+  Strategy, kVsComputer; Tom's name for Escape from Atlantis, 2026-10-06;
+  a small own version: 9 x 11 pointy-top hex sea (odd rows half a hex
+  right), island = hexes within 3 of col 4 row 5 - 18 beaches, 12
+  forests, 7 mountains in rings; one safe hex in each corner (3-hex corner
+  islands let nearly everyone escape); 4 colours x 9 explorers 5 4 3 3 2
+  2 1 1 1, values hidden from the others (the computer uses 2.4 for
+  theirs); 8 boats (3 seats), 2 sea serpents; setup: best first, a colour
+  at a time, Place For Me; a turn = 3 moves (explorer / boat one hex each,
+  a swimmer once a turn, max 3 on a tile or swimming in a hex, never into
+  a creature), sink a tile (lowest kind touching the sea; under it Shark /
+  Whale / Boat / Whirlpool / Volcano / nothing), roll the creature die
+  (Shark 2 eats swimmers, Whale 3 tips boats, Serpent 1 eats swimmers and
+  boats) or Skip; the Volcano (a mountain) ends it - so ~33 sinks; score =
+  saved values; computer Easy runs (no danger, random sinks and creature
+  moves), Medium weighs creatures and the others (x0.35), Hard also looks
+  2 moves ahead (Medium beat 3 Easy ~83 %, Hard ~89 %); all in the main
+  loop (no AI task); taps on release at the press point: a hex with your
+  pieces picks your boat first, then explorers best first, again = next;
+  gold frames (dark edge) = where to go / place, red frames = sinkable;
+  white ring = swimming; banner 1.3 s for what was under a tile; sounds
+  step Place / Turn, sink Move, a boat Hint, losses "aww", Volcano Boom;
+  Pass and Play 2-4 like Sorry-CYD!; save "ESC1" (on the heap, ~0.5 KB);
+  stats "#,Place,Saved,Level,Seconds,Time").
   The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random

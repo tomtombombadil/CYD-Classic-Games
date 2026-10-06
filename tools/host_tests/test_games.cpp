@@ -43,6 +43,7 @@
 #include "../../src/games/presscyd/presscyd_core.h"
 #include "../../src/games/cardsharks/cardsharks_core.h"
 #include "../../src/games/sorrycyd/sorrycyd_core.h"
+#include "../../src/games/escape/escape_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -3006,6 +3007,122 @@ static void test_sorrycyd()
     }
 }
 
+static void test_escape()
+{
+    using namespace escape;
+    int8_t nb[6];
+    CHECK(neighbours(hex_at(4, 5), nb) == 6 && neighbours(0, nb) == 2 && distance(0, 98) == 13);
+    CHECK(distance(hex_at(4, 5), hex_at(4, 2)) == 3 && distance(hex_at(4, 4), hex_at(4, 5)) == 1 && distance(hex_at(3, 4), hex_at(4, 5)) == 2);
+    {   // the board
+        Game g; g.start(9);
+        int land[5] = {}, volcano = 0;
+        for (int h = 0; h < kHexes; ++h) {
+            ++land[g.terrain[h]];
+            if (g.under[h] == kVolcano) { ++volcano; CHECK(g.terrain[h] == kMountain); }
+        }
+        CHECK(land[kBeach] == 18 && land[kForest] == 12 && land[kMountain] == 7 && land[kSafe] == 4 && volcano == 1);
+        CHECK(g.boats == 8 && g.creatures == 2);
+        for (int b = 0; b < g.boats; ++b) CHECK(g.terrain[g.boat[b]] == kSea);
+        // setup: the best first, a colour at a time
+        CHECK(g.next_to_place() == 0 && g.ex[0].value == 5);
+        for (int k = 0; k < kExplorers; ++k) CHECK(g.apply(g.ai(1)));
+        CHECK(g.phase == Phase::Move && g.turn == 0 && g.moves_left == kMoves);
+        for (int h = 0; h < kHexes; ++h) CHECK(g.land_count(h) <= 1);
+    }
+    {   // steps: land, into a boat, swimming once a turn, no creature hexes, boat control
+        Game g; g.start(9);
+        for (int k = 0; k < kExplorers; ++k) g.apply(g.ai(0));
+        // explorer 0 (Red) on the beach next to the boat at hex 12 (col 3, row 1)
+        const int beach = hex_at(3, 2), boat_hex = 12;
+        for (int e = 0; e < kExplorers; ++e) if (g.ex[e].hex == beach) g.ex[e].hex = g.ex[0].hex;
+        g.ex[0].hex = int8_t(beach);
+        Action a; a.act = kStepExplorer; a.who = 0; a.to = int8_t(boat_hex);
+        CHECK(g.apply(a) && g.ex[0].where == kAboard && g.ex[0].boat == 0 && g.moves_left == 2);
+        Action b; b.act = kStepBoat; b.who = 0; b.to = 11;
+        CHECK(g.apply(b) && g.ex[0].hex == 11 && g.boat[0] == 11);
+        Action c; c.act = kStepExplorer; c.who = 0; c.to = 10;               // off the boat: swimming
+        CHECK(g.apply(c) && g.ex[0].where == kSwim && g.phase == Phase::Sink);
+        // the next Red turn: one swim step only, never into a creature
+        g.phase = Phase::Move; g.moves_left = 3; g.swam = 0;
+        g.cr[0].hex = 1;
+        Action d; d.act = kStepExplorer; d.who = 0; d.to = 1;
+        CHECK(!g.can(d));
+        g.cr[0].hex = 4;
+        Action s; s.act = kStepExplorer; s.who = 0; s.to = 9;
+        CHECK(g.apply(s) && g.ex[0].hex == 9 && g.ex[0].where == kSwim);
+        Action t; t.act = kStepExplorer; t.who = 0; t.to = 0;
+        CHECK(!g.can(t));                                                    // swam already this turn
+        g.swam = 0;
+        CHECK(g.apply(t) && g.ex[0].where == kSaved && g.score(0) == 5);
+        // boat control: Blue in a boat with one Red - tie, both may move it
+        Game h; h.start(9);
+        for (int k = 0; k < kExplorers; ++k) h.apply(h.ai(0));
+        h.ex[0].where = kAboard; h.ex[0].boat = 1; h.ex[0].hex = h.boat[1];
+        h.ex[9].where = kAboard; h.ex[9].boat = 1; h.ex[9].hex = h.boat[1];
+        CHECK(h.controls(0, 1) && h.controls(1, 1) && !h.controls(2, 1));
+        h.ex[10].where = kAboard; h.ex[10].boat = 1; h.ex[10].hex = h.boat[1];
+        CHECK(!h.controls(0, 1) && h.controls(1, 1));
+    }
+    {   // sinking: beaches first; a shark tile eats the swimmers there; creatures
+        Game g; g.start(9);
+        for (int k = 0; k < kExplorers; ++k) g.apply(g.ai(0));
+        Action e; e.act = kEndMoves;
+        CHECK(g.apply(e) && g.phase == Phase::Sink);
+        Action list[160];
+        const int n = g.actions(list, 160);
+        CHECK(n == 18);
+        for (int i = 0; i < n; ++i) CHECK(g.terrain[list[i].to] == kBeach);
+        int shark = -1;
+        for (int i = 0; i < n; ++i) if (g.under[list[i].to] == kSharkTile) shark = list[i].to;
+        CHECK(shark >= 0);
+        const int on = g.land_count(shark);
+        Action s; s.act = kSinkTile; s.to = int8_t(shark);
+        CHECK(g.apply(s) && g.terrain[shark] == kSea && g.news.lost == on && g.creature_at(shark) >= 0);
+        CHECK(g.phase == Phase::Creature);
+        // a whale tips a boat over; a serpent eats a boat
+        Game w; w.start(9);
+        for (int k = 0; k < kExplorers; ++k) w.apply(w.ai(0));
+        w.ex[0].where = kAboard; w.ex[0].boat = 0; w.ex[0].hex = w.boat[0];
+        w.cr[w.creatures].kind = kWhale; w.cr[w.creatures].hex = int8_t(hex_at(2, 1)); ++w.creatures;
+        w.phase = Phase::Creature; w.die = kWhale;
+        Action m; m.act = kMoveCreature; m.who = int8_t(w.creatures - 1); m.to = w.boat[0];
+        const int8_t was = w.boat[0];
+        CHECK(w.apply(m) && w.boat[0] == -1 && w.ex[0].where == kSwim && w.ex[0].hex == was && w.news.c_tipped == 1);
+        CHECK(w.turn == 1 && w.phase == Phase::Move);
+        Game v = w;
+        v.turn = 0; v.phase = Phase::Creature; v.die = kSerpent;
+        v.cr[m.who].hex = int8_t(hex_at(1, 1));                            // the whale swims off
+        v.cr[0].hex = int8_t(hex_at(3, 0));
+        Action m2; m2.act = kMoveCreature; m2.who = 0; m2.to = was;
+        CHECK(v.apply(m2) && v.ex[0].where == kLost);
+    }
+    {   // save round trip and bad saves
+        Game g; g.start(31);
+        for (int k = 0; k < 200 && g.phase != Phase::Over; ++k) g.apply(g.ai(1));
+        std::vector<uint8_t> buf(Game::kSaveBytes);
+        CHECK(g.serialize(buf.data(), buf.size()) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf.data(), buf.size()) && h.turns == g.turns && !memcmp(h.terrain, g.terrain, sizeof g.terrain));
+        std::vector<uint8_t> bad = buf; bad[4] = 9;
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+        bad = buf; bad[4 + 2 * kHexes + 1] = 9;                               // a value of 9
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+    }
+    {   // whole games end; Hard (Red) against three Easy
+        int wins = 0, games = 20, saved = 0;
+        for (int s = 0; s < games; ++s) {
+            Game g; g.start(500 + s);
+            int k = 0;
+            for (; k < 20000 && g.phase != Phase::Over; ++k) CHECK(g.apply(g.ai(g.turn == 0 ? 2 : 0)));
+            CHECK(g.phase == Phase::Over);
+            wins += g.winner() == 0;
+            saved += g.score(0);
+        }
+        printf("escape: Hard won %d of %d against three Easy (saved %.1f of 22 a game)\n", wins, games, saved / double(games));
+        CHECK(wins * 2 > games);
+    }
+}
+
 int main()
 {
     test_fourconnect();
@@ -3047,6 +3164,7 @@ int main()
     test_presscyd();
     test_cardsharks();
     test_sorrycyd();
+    test_escape();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

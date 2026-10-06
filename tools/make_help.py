@@ -242,6 +242,14 @@ write("sank", [
  WL,
 ], two_player=True)
 
+write("escape", [
+ ("The Idea", "The island is sinking! Each colour has 9 explorers worth 1 to 5 (only you see your values). Get them to the safe islands in the corners - by land, swimming or by boat.\nWhen the Volcano erupts the game ends: the most points saved wins."),
+ ("A Turn", "1. Three moves: an explorer one hex (land, sea, boat or a safe island), or a boat one hex. A swimmer moves once a turn.\n2. Sink a tile: beaches first, then forests, then mountains.\n3. The creature die: move one Shark (2 hexes), Whale (3) or Sea Serpent (1) - or Skip."),
+ ("Under The Tiles", "A sunk tile can hide a Shark (it eats the swimmers there), a Whale, a Boat (swimmers climb in), a Whirlpool (swimmers and boats in and around it are lost) - or the Volcano.\nSharks eat swimmers, whales tip boats over, sea serpents eat swimmers and boats."),
+ ("Boats", "A boat has 3 seats. You may move an empty boat, or one where most of the explorers are yours.\nNo one moves into a creature's hex. At most 3 explorers stand on a tile or swim in a hex."),
+ ("On The Screen", "Tap a hex with your piece: your boat first, then your explorers, best first - tap again for the next. Then tap a framed hex.\nRed frames: tiles you may sink. A white ring = swimming.\nComputer: Easy only runs; Medium also uses the creatures; Hard looks 2 moves ahead."),
+])
+
 write("sorrycyd", [
  ("The Idea", "Race your four pawns out of Start, once round the board and into Home. All four Home wins.\nYou are Red, at the bottom; Max, Zoe and Ada are Blue, Yellow and Green. Tap Draw Card (or the deck in the middle), then move as the card says."),
  ("The Cards", "1 or 2: start a pawn, or move. A 2 draws again.\n3, 5, 8, 12: move. 4: move 4 back.\n7: move 7, or split it over two pawns.\n10: move 10, or 1 back.\n11: move 11, or switch places with another pawn on the track.\nSorry!: a pawn from Start takes another pawn's square."),

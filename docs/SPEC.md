@@ -105,7 +105,7 @@ Candidates, grouped. Order of building is in section 6.
 | Strategy Go! (Stratego) | *Built 2026-10-06*: id `strategygo`; 10x10, two lakes, 40 a side, ISF-style battles; swap-to-set-up; vs computer / pass-and-play / wireless key 11 |
 | Acquisitions (Acquire) | *Built 2026-10-06*: id `acquisitions`; you vs Ada, Max, Zoe (Easy / Medium / Hard); 7 hotels Sunrise, Oakwood (cheap), Harbor, Meadow, Lagoon, Royal, Crimson (dear); full rules incl. safe chains, dead tiles, ties |
 | Sorry-CYD! (Sorry!) | *Built 2026-10-06*: id `sorrycyd`; classic 45-card rules (Sorry!, 7 split, 11 switch, slides, exact Home); you vs Max, Zoe, Ada (Easy / Medium / Hard) or 2-4 people pass-and-play |
-| Escape from CYD (Escape from Atlantis) | *Planned (Tom, 2026-10-06)*: sinking hex island, sharks and whales |
+| Escape from CYD (Escape from Atlantis) | *Built 2026-10-06*: id `escape`; 9 x 11 hex sea, 37-tile island (beach / forest / mountain rings), a safe hex in each corner, 9 explorers each (5 4 3 3 2 2 1 1 1, hidden), boats, sharks, whales, sea serpents, the Volcano ends it; vs computer (3 levels) or 2-4 people pass-and-play |
 | You Sank My CYD! (Battleship) | Two grids, flip between them (*built 2026-10-05*: id `sank`; classic rules - ships may touch; manual placement by default, Random in Options; wireless key 8, version 2) |
 
 **Word**

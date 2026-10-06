@@ -91,6 +91,8 @@ namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool 
 namespace dealcyd_preview { dealcyd::Game* game(); void reveal(bool on); void redraw(); }
 #include "games/presscyd/presscyd_core.h"
 #include "games/cardsharks/cardsharks_core.h"
+#include "games/escape/escape_core.h"
+namespace escape_preview { escape::Game* game(); void hold(bool on); void select(int kind, int idx, int hex); void news_line(const char* t); void show_banner(bool on); }
 #include "games/sorrycyd/sorrycyd_core.h"
 namespace sorrycyd_preview { sorry::Game* game(); void pick(int p); void hold(bool on); void news_line(const char* t); void people(); }
 namespace cardsharks_preview { csh::Board* board(); void redraw_all(); }
@@ -1618,6 +1620,56 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Escape from CYD: placing, part-way with a boat picked, sinking, a creature roll, dark
+        using namespace escape;
+        auto stage = [&](const Game& g) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 7, 0);
+            g.serialize(buf.data(), buf.size());
+            buf[Game::kSaveBytes + 1] = 1;
+            buf[Game::kSaveBytes + 6] = 1;
+            save_game("escape", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("escape"));
+            escape_preview::hold(true);
+        };
+        Game g; g.start(321);
+        for (int k = 0; k < 12; ++k) g.apply(g.ai(1));
+        stage(g);
+        shot(out + "_light_44_escape_place.ppm");
+        ui::app_go_home_now();
+        for (int k = 0; k < 4000 && !(g.turns >= 12 && g.turn == 0 && g.phase == Phase::Move && g.moves_left == 3); ++k)
+            if (!g.apply(g.ai(1))) break;
+        stage(g);
+        {   // pick a piece that can move: a boat if one is yours to move
+            Action l[200]; const int n = g.actions(l, 200);
+            int kind = 0, idx = -1, hex = -1;
+            for (int i = 0; i < n; ++i) if (l[i].act == kStepBoat) { kind = 2; idx = l[i].who; hex = g.boat[idx]; }
+            if (idx < 0) for (int i = 0; i < n; ++i) if (l[i].act == kStepExplorer) { kind = 1; idx = l[i].who; hex = g.ex[idx].hex; }
+            escape_preview::select(kind, idx, hex);
+        }
+        escape_preview::news_line("Ada's Shark took 1!");
+        shot(out + "_light_44_escape.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        stage(g);
+        shot(out + "_dark_44_escape.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        Game s2 = g;
+        { Action e; e.act = kEndMoves; s2.apply(e); }
+        stage(s2);
+        shot(out + "_light_44_escape_sink.ppm");
+        ui::app_go_home_now();
+        Game c = s2;
+        { Action l[200]; const int n = c.actions(l, 200); if (n) c.apply(l[0]); }
+        c.phase = Phase::Creature; c.die = kSerpent;
+        stage(c);
+        escape_preview::show_banner(true);
+        shot(out + "_light_44_escape_banner.ppm");
+        escape_preview::show_banner(false);
+        shot(out + "_light_44_escape_creature.ppm");
         ui::app_go_home_now();
     }
 
