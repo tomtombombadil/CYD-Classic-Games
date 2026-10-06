@@ -91,6 +91,8 @@ namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool 
 namespace dealcyd_preview { dealcyd::Game* game(); void reveal(bool on); void redraw(); }
 #include "games/presscyd/presscyd_core.h"
 #include "games/cardsharks/cardsharks_core.h"
+#include "games/sorrycyd/sorrycyd_core.h"
+namespace sorrycyd_preview { sorry::Game* game(); void pick(int p); void hold(bool on); void news_line(const char* t); void people(); }
 namespace cardsharks_preview { csh::Board* board(); void redraw_all(); }
 namespace presscyd_preview { presscyd::Game* game(); void set_light(int q); void result(bool on); void news_line(const char* t); void hold(); }
 namespace piperace_preview { piperace::Game* game(); void unhold(); void redraw(); }
@@ -1616,6 +1618,59 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Sorry-CYD!: part-way, a 10 with a pawn picked; a Sorry! card; dark
+        using namespace sorry;
+        auto stage = [&](const Game& g) {
+            std::vector<uint8_t> buf(Game::kSaveBytes + 7, 0);
+            g.serialize(buf.data(), buf.size());
+            buf[Game::kSaveBytes + 1] = 1;                    // Medium
+            buf[Game::kSaveBytes + 6] = 1;                    // you against three computers
+            save_game("sorrycyd", buf.data(), buf.size());
+            ui::app_open_game_now(games::find("sorrycyd"));
+            sorrycyd_preview::hold(true);
+        };
+        Game g; g.start(4242);
+        for (int k = 0; k < 400 && !(g.turns >= 44 && g.turn == 0 && g.phase == Phase::Draw); ++k) {
+            if (g.phase == Phase::Draw) g.draw();
+            Move ms[96];
+            if (g.moves(ms, 96)) g.play(g.ai_move(1)); else g.lose_turn();
+        }
+        Game a = g;
+        a.phase = Phase::Play; a.card = 10;
+        stage(a);
+        int pick = -1;
+        { Move ms[96]; const int n = a.moves(ms, 96); for (int i = 0; i < n; ++i) if (a.pos[0][ms[i].pawn] != kStart) pick = ms[i].pawn; }
+        sorrycyd_preview::pick(pick);
+        shot(out + "_light_43_sorrycyd.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Dark);
+        stage(a);
+        sorrycyd_preview::pick(pick);
+        shot(out + "_dark_43_sorrycyd.ppm");
+        ui::app_go_home_now();
+        ui::app_set_theme(ui::Theme::Light);
+        Game b = g;
+        b.phase = Phase::Play; b.card = kSorry;
+        stage(b);
+        { Move ms[96]; const int n = b.moves(ms, 96); if (n) sorrycyd_preview::pick(ms[0].pawn); }
+        shot(out + "_light_43_sorrycyd_sorry.ppm");
+        ui::app_go_home_now();
+        Game c = g;                                           // a computer's turn, its card showing
+        for (int k = 0; k < 40 && !(c.turn != 0 && c.phase == Phase::Draw); ++k) {
+            if (c.phase == Phase::Draw) c.draw();
+            Move ms[96];
+            if (c.moves(ms, 96)) c.play(c.ai_move(1)); else c.lose_turn();
+        }
+        c.draw();
+        stage(c);
+        sorrycyd_preview::news_line("Max sent your pawn back!");
+        shot(out + "_light_43_sorrycyd_cpu.ppm");
+        sorrycyd_preview::people();
+        shot(out + "_light_43_sorrycyd_people.ppm");
+        ui::close_overlays();
         ui::app_go_home_now();
     }
 

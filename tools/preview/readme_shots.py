@@ -35,6 +35,7 @@ SHOTS = {
     "s_light_39_dealcyd_offer": "small_dealcyd",
     "s_light_41_presscyd_spin": "small_presscyd",
     "s_light_42_cardsharks": "small_cardsharks",
+    "s_light_43_sorrycyd": "small_sorrycyd",
     "s_light_37_pegs": "small_pegs",
     "s_light_38_memory": "small_memory",
     "s_light_39_nonogram": "small_nonogram",

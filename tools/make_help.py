@@ -242,6 +242,14 @@ write("sank", [
  WL,
 ], two_player=True)
 
+write("sorrycyd", [
+ ("The Idea", "Race your four pawns out of Start, once round the board and into Home. All four Home wins.\nYou are Red, at the bottom; Max, Zoe and Ada are Blue, Yellow and Green. Tap Draw Card (or the deck in the middle), then move as the card says."),
+ ("The Cards", "1 or 2: start a pawn, or move. A 2 draws again.\n3, 5, 8, 12: move. 4: move 4 back.\n7: move 7, or split it over two pawns.\n10: move 10, or 1 back.\n11: move 11, or switch places with another pawn on the track.\nSorry!: a pawn from Start takes another pawn's square."),
+ ("Bumps And Slides", "Land on another colour's pawn and it goes back to its Start. You can't land on your own.\nLand on the first square of another colour's slide and you slide to its end, sending back every pawn on it - yours too.\nOnly your colour goes into your Safety Zone; Home needs the exact count."),
+ ("Your Move", "The pawns that can move have a gold ring: tap one, then a dot. A 7 split: tap the dot short of 7, then the other pawn goes the rest.\nSorry! or a switch: the pawns you can take the place of get rings.\nNo move fits: the turn is lost. A 4 back from near Start gets you close to Home!"),
+ ("The Computer", "Easy moves its own pawns as far as it can.\nMedium also sends others back and keeps its pawns out of reach.\nHard also thinks about its next card.\nThe cards decide a lot - even Hard loses often. Stats keep your place and pawns Home."),
+])
+
 write("dealcyd", [
  ("The Idea", "26 cases hide 26 amounts, from 1 cent to $1,000,000. Pick one to be yours - it stays shut until the end.\nThen open the other cases a few at a time. Every amount you open is one your case can't hold: it turns grey on the boards at the sides."),
  ("The Banker", "After each round the Banker calls with an offer for your case. Deal takes the money and ends the game. No Deal plays on.\nRounds open 6, 5, 4, 3 and 2 cases, then one at a time. The offers grow as the game goes on - but so does the risk."),

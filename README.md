@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Thirty-seven games and an RPG dice roller so far: **Sudoku** (from
+> under way. Thirty-eight games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **Pipe Race**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **Strategy Go!**, **Acquisitions**, **CYD-dle**, **Wheel of CYD**, **Deal or No CYD**, **Press Your CYD**, **Card Sharks CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **Strategy Go!**, **Acquisitions**, **Sorry-CYD!**, **CYD-dle**, **Wheel of CYD**, **Deal or No CYD**, **Press Your CYD**, **Card Sharks CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, Strategy Go!, Acquisitions, CYD-dle, Wheel of CYD (and its wheel), Deal or No CYD, Press Your CYD, Card Sharks CYD, Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, Strategy Go!, Acquisitions, Sorry-CYD!, CYD-dle, Wheel of CYD (and its wheel), Deal or No CYD, Press Your CYD, Card Sharks CYD, Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Pipe Race, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -49,6 +49,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_dealcyd.png" width="240" alt="Deal or No CYD: the Banker's offer">
 <img src="docs/screenshots/small_strategygo.png" width="240" alt="Strategy Go!: your army at the bottom, theirs hidden">
 <img src="docs/screenshots/small_acquisitions.png" width="240" alt="Acquisitions: hotel chains on the board, your tiles at the bottom">
+<img src="docs/screenshots/small_sorrycyd.png" width="240" alt="Sorry-CYD!: a 10 drawn, a pawn picked and the squares it can go to framed">
 <img src="docs/screenshots/small_pegs.png" width="240" alt="Peg Solitaire, English board">
 <img src="docs/screenshots/small_memory.png" width="240" alt="Memory Match with a missed pair showing">
 <img src="docs/screenshots/small_nonogram.png" width="240" alt="Nonograms 10x10 part-way">
@@ -109,6 +110,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Nine Men's Morris | Strategy Games | Place, move and fly; mills take men; vs computer or pass-and-play |
 | Strategy Go! | Strategy Games | Hidden armies, capture the Flag; vs computer, pass-and-play or another CYD |
 | Acquisitions | Strategy Games | Hotel chains and shares: you against Ada, Max and Zoe (Easy / Medium / Hard) |
+| Sorry-CYD! | Strategy Games | Draw a card, race four pawns home and send the others back; you against Max, Zoe and Ada (Easy / Medium / Hard) or 2-4 people pass-and-play |
 | Ultimate Tic-Tac-Toe | Strategy Games | Nine boards in one; vs computer (Easy / Medium / Hard) or pass-and-play |
 | Gomoku | Strategy Games | Five in a row on 15x15; vs computer (Easy / Medium / Hard) or pass-and-play |
 | You Sank My CYD! | Strategy Games | Hide a fleet, fire at theirs; vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -613,6 +615,20 @@ Their pieces show only once they've fought; a dot marks one that has moved
 (no Bomb or Flag). Capture the Flag, or leave them no move, to win. The
 Pieces key lists what each side has lost. vs computer (it sees only what
 you would), pass-and-play (a cover between turns) or wireless.
+
+## Sorry-CYD!
+
+Race your four pawns out of Start, once round the board and into Home.
+Each turn: **Draw Card** (or tap the deck) and move as it says - 1 or 2
+start a pawn, 4 goes back, 7 can be split over two pawns, 10 can go 1
+back, 11 can switch places with another pawn, and **Sorry!** takes a pawn
+from Start onto another colour's pawn, sending it back. Landing on a pawn
+sends it to its Start; landing on the first square of another colour's
+slide slides you to its end, sending back everything on it. Pawns that can
+move have a gold ring: tap one, then one of the framed squares. You are
+Red against Max, Zoe and Ada (Easy / Medium / Hard), or 2-4 people pass
+the board (Pass and Play in the menu). The cards decide a lot: even Hard
+wins only about a third of its games against three Easy players.
 
 ## Acquisitions
 

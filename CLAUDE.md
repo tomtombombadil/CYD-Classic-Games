@@ -480,7 +480,26 @@ never typed (SPEC section 5).
   call holds 750 ms (`busy`); keys Freeze | Change over Higher | Lower;
   rows: the other side on top, yours (pass-and-play Gold) at the bottom;
   the gold freeze bar only once frozen past the base; sounds right Place /
-  Turn, miss "aww", round Trill, Freeze / Change silent; save "CSC1").
+  Turn, miss "aww", round Trill, Freeze / Change silent; save "CSC1"),
+  Sorry-CYD! (id `sorrycyd`, Strategy, kVsComputer; Tom's name for Sorry!,
+  2026-10-06; classic rules: 45 cards (five 1s, four each of 2 3 4 5 7 8
+  10 11 12 Sorry!), 60-square track, side s = colour s (Red, Blue,
+  Yellow, Green = piece_a, frame, piece_b, win), slides on each side r1->4
+  and r9->13 (not your own colour's), start onto r4, Safety from r2, 5
+  Safety squares, exact Home; a 2 draws again; 7 splits over two pawns; 11
+  move or switch (pass only when 11 forward can't); 4 back / 10 one back;
+  progress -1 = r3 behind your start; you vs Max, Zoe, Ada at Easy (own
+  progress) / Medium (+ others' losses x0.3 and the chance each pawn is
+  hit) / Hard (Medium + expected best next card) - luck-heavy: Hard ~31 %
+  vs three Easy (25 % = chance); or Pass and Play (menu Options key) for
+  2-4 people, leftover colours Medium, not recorded; board turned so Red
+  is at the bottom; movable pawns gold-ringed, picked pawn orange, targets
+  = framed squares (a dot looked like a green pawn); a single movable pawn
+  is picked for you; taps act on release at the press point; computers
+  draw 0.65 s, show the card 0.9 s, move; sounds your move Place, theirs
+  Turn, your pawn sent back "aww", your pawn Home Hint, Win / Lose; save
+  "SRY1"; stats "#,Place,Home,Level,Seconds,Time", a vs-computer game left
+  after 4 turns counts at your place then).
   The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random
@@ -925,7 +944,8 @@ Backgammon, most chess engines) are reference only. Update
   is a race against the water), **Acquisitions** (Acquire), **Strategy
   Go!** (Stratego) (Tom, 2026-10-06), **Deal or No CYD** (Deal or No
   Deal), **Press Your CYD** (Press Your Luck - the bad square is a
-  "Gremlin", never a Whammy), **Card Sharks CYD** (Card Sharks) (Tom,
+  "Gremlin", never a Whammy), **Card Sharks CYD** (Card Sharks), **Sorry-CYD!**
+  (Sorry!), **Escape from CYD** (Escape from Atlantis) (Tom,
   2026-10-06). Game shows live in their own picker category, **Game
   Shows** (`Category::Shows`; Wheel of CYD moved there - Tom,
   2026-10-06). Classic public-domain games (chess,

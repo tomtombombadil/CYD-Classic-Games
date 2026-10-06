@@ -42,6 +42,7 @@
 #include "../../src/games/dealcyd/dealcyd_core.h"
 #include "../../src/games/presscyd/presscyd_core.h"
 #include "../../src/games/cardsharks/cardsharks_core.h"
+#include "../../src/games/sorrycyd/sorrycyd_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -2871,6 +2872,140 @@ static void test_cardsharks()
     }
 }
 
+static void test_sorrycyd()
+{
+    using namespace sorry;
+    CHECK(track_square(0, 0) == 4 && track_square(1, 0) == 19 && track_square(0, -1) == 3 && track_square(0, 58) == 2);
+    CHECK(track_square(3, 58) == 47 && track_square(0, kStart) == -1 && track_square(0, 60) == -1);
+    CHECK(slide_len(16, 0) == 3 && slide_len(24, 0) == 4 && slide_len(1, 0) == 0 && slide_len(1, 2) == 3);
+    auto find = [](const Game& g, auto pred) {
+        Move ms[96]; const int n = g.moves(ms, 96);
+        for (int i = 0; i < n; ++i) if (pred(ms[i])) return ms[i];
+        return Move{};
+    };
+    {   // a 1 starts a pawn, bumping whoever sits on the start square
+        Game g; g.start(5);
+        g.pos[1][0] = 45;             // Blue on square 4: progress (4 - 19 - 4) mod 60 = 41
+        CHECK(track_square(1, g.pos[1][0]) == 4);
+        g.phase = Phase::Play; g.card = 1;
+        Move m = find(g, [](const Move& x) { return x.kind == Kind::Move && x.to == 0; });
+        CHECK(m.kind == Kind::Move && g.play(m));
+        CHECK(g.pos[0][m.pawn] == 0 && g.pos[1][0] == kStart && (g.last.bumped & (1u << 4)) && g.turn == 1);
+    }
+    {   // nothing fits: no moves (all in Start, a 3)
+        Game g; g.start(5); g.phase = Phase::Play; g.card = 3;
+        Move ms[96];
+        CHECK(g.moves(ms, 96) == 0 && !g.may_pass());
+        g.lose_turn(); CHECK(g.turn == 1 && g.phase == Phase::Draw);
+        Game h; h.start(5); h.phase = Phase::Play; h.card = 2;   // a 2 with no move: draw again
+        h.pos[0][0] = 63;
+        h.lose_turn(); CHECK(h.turn == 0 && h.phase == Phase::Draw);
+    }
+    {   // a 2: start a pawn and draw again
+        Game g; g.start(5); g.phase = Phase::Play; g.card = 2;
+        Move m = find(g, [](const Move& x) { return x.to == 0; });
+        CHECK(g.play(m) && g.turn == 0 && g.phase == Phase::Draw);
+    }
+    {   // a slide of another colour: Blue lands on square 1 (Red's short slide) and slides to 4
+        Game g; g.start(5);
+        g.turn = 1; g.phase = Phase::Play; g.card = 3;
+        g.pos[1][0] = 39;                                     // square (15+4+39) % 60 = 58
+        g.pos[0][0] = 0;                                      // Red on square 4 (the slide's end)
+        g.pos[1][1] = 42;                                     // Blue's own pawn on square 1 + 1 = 2
+        CHECK(track_square(1, 42) == 1);
+        g.pos[1][1] = 43;                                     // square 2
+        Move m = find(g, [](const Move& x) { return x.pawn == 0; });
+        CHECK(m.to == 42 && g.play(m));
+        CHECK(track_square(1, g.pos[1][0]) == 4 && g.pos[0][0] == kStart && g.pos[1][1] == kStart && g.last.slid);
+        // Red doesn't slide on its own slide
+        Game h; h.start(5); h.phase = Phase::Play; h.card = 1;
+        h.pos[0][0] = 56;                                     // square 0 -> 1 (own slide start)
+        Move k = find(h, [](const Move& x) { return x.pawn == 0; });
+        CHECK(h.play(k) && h.pos[0][0] == 57 && !h.last.slid);
+    }
+    {   // 4 back from just past Start, then into Safety; exact count Home
+        Game g; g.start(5); g.phase = Phase::Play; g.card = 4;
+        g.pos[0][0] = 1;
+        Move m = find(g, [](const Move& x) { return x.pawn == 0; });
+        CHECK(m.to == 57 && g.play(m));
+        g.turn = 0; g.phase = Phase::Play; g.card = 2;
+        Move m2 = find(g, [](const Move& x) { return x.pawn == 0 && x.to != 0; });
+        CHECK(m2.to == 59 && track_square(0, 59) == -1);
+        g.pos[0][0] = 62;
+        g.card = 3; Move ms[96];
+        CHECK(g.moves(ms, 96) == 0);                          // 62 + 3 > Home
+        g.card = 2;
+        Move h = find(g, [](const Move& x) { return x.pawn == 0 && x.to == kHome; });
+        CHECK(h.kind == Kind::Move && g.play(h) && g.pos[0][0] == kHome && g.last.home);
+        // 10 one back out of Safety
+        Game b; b.start(5); b.phase = Phase::Play; b.card = 10; b.pos[0][0] = 59;
+        Move bk = find(b, [](const Move& x) { return x.pawn == 0; });
+        CHECK(bk.to == 58);
+    }
+    {   // own pawn blocks; another colour's is bumped
+        Game g; g.start(5); g.phase = Phase::Play; g.card = 5;
+        g.pos[0][0] = 10; g.pos[0][1] = 15;
+        Move ms[96];
+        const int n = g.moves(ms, 96);
+        CHECK(n == 1 && ms[0].pawn == 1);
+    }
+    {   // 7 split, 11 switch (and pass when 11 forward can't), Sorry!
+        Game g; g.start(5); g.phase = Phase::Play; g.card = 7;
+        g.pos[0][0] = 10; g.pos[0][1] = 20;
+        Move s = find(g, [](const Move& x) { return x.kind == Kind::Split && x.pawn == 0 && x.to == 13; });
+        CHECK(s.pawn2 == 1 && s.to2 == 24 && g.play(s) && g.pos[0][0] == 13 && g.pos[0][1] == 24);
+        Game w; w.start(5); w.phase = Phase::Play; w.card = 11;
+        w.pos[0][0] = 60; w.pos[2][3] = 21;                   // Red in Safety: no 11, no switch from Safety
+        CHECK(w.may_pass());
+        w.pos[0][1] = 5;
+        Move sw = find(w, [](const Move& x) { return x.kind == Kind::Switch; });
+        CHECK(sw.kind == Kind::Switch && !w.may_pass());
+        const int a = track_square(0, 5), b = track_square(2, 21);
+        CHECK(w.play(sw) && track_square(0, w.pos[0][1]) == b && track_square(2, w.pos[2][3]) == a);
+        Game y; y.start(5); y.phase = Phase::Play; y.card = kSorry;
+        y.pos[3][2] = 30;
+        Move so = find(y, [](const Move& x) { return x.kind == Kind::Sorry; });
+        const int sq = track_square(3, 30);
+        CHECK(so.oc == 3 && y.play(so) && y.pos[3][2] == kStart && track_square(0, y.pos[0][so.pawn]) == sq);
+    }
+    {   // save round trip and bad saves
+        Game g; g.start(77);
+        for (int k = 0; k < 40 && g.phase != Phase::Over; ++k) {
+            g.draw();
+            Move ms[96];
+            if (g.moves(ms, 96)) g.play(g.ai_move(1)); else g.lose_turn();
+        }
+        std::vector<uint8_t> buf(Game::kSaveBytes);
+        CHECK(g.serialize(buf.data(), buf.size()) == Game::kSaveBytes);
+        Game h;
+        CHECK(h.deserialize(buf.data(), buf.size()) && h.turns == g.turns && !memcmp(h.pos, g.pos, sizeof g.pos));
+        std::vector<uint8_t> bad = buf; bad[4] = 70;
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+        bad = buf; bad[4] = 10; bad[5] = 10;                  // two Red pawns on one square
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+        bad = buf; bad[20] = 6;
+        CHECK(!h.deserialize(bad.data(), bad.size()));
+    }
+    {   // whole games end; Hard (Red) against three Easy
+        int wins = 0, games = 200, longest = 0;
+        for (int s = 0; s < games; ++s) {
+            Game g; g.start(1000 + s);
+            int k = 0;
+            for (; k < 4000 && g.phase != Phase::Over; ++k) {
+                g.draw();
+                Move ms[96];
+                if (g.moves(ms, 96)) CHECK(g.play(g.ai_move(g.turn == 0 ? 2 : 0)));
+                else g.lose_turn();
+            }
+            CHECK(g.phase == Phase::Over);
+            if (k > longest) longest = k;
+            wins += g.winner == 0;
+        }
+        printf("sorrycyd: Hard won %d of %d against three Easy (longest %d turns)\n", wins, games, longest);
+        CHECK(wins * 100 > games * 22);
+    }
+}
+
 int main()
 {
     test_fourconnect();
@@ -2911,6 +3046,7 @@ int main()
     test_dealcyd();
     test_presscyd();
     test_cardsharks();
+    test_sorrycyd();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;
