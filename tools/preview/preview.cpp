@@ -1394,11 +1394,9 @@ int main(int argc, char** argv)
             if (g->turn != 0 || g->phase == wheel::Phase::RoundOver) { run(1000); continue; }
             if (g->phase == wheel::Phase::Choose && g->can_spin()) {
                 wheel_preview::action(0);                            // Spin
-                run(300);
-                if (!spun_shot) shot(out + "_light_27_wheel_spin_fast.ppm");   // smeared
-                run(800);
+                run(1100);
                 if (!spun_shot) { shot(out + "_light_27_wheel_spin.ppm"); spun_shot = true; }
-                run(2700);
+                run(7500);
             }
             if (g->turn == 0 && g->phase == wheel::Phase::Consonant) {
                 if (!pick_shot) { shot(out + "_light_27_wheel_pick.ppm"); pick_shot = true; }

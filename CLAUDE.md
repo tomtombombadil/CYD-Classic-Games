@@ -342,7 +342,7 @@ never typed (SPEC section 5).
   (only uncalled letters), Delete / Cancel / Solve; a call showing the last
   letter solves it; a solve banks round money, at least $500; most banked
   wins; ties = Draw in the two-player stats CSV (Side1 = you / Player 1);
-  the wheel fills the screen while it turns (2.6 s ease-out, 1.1 s hold)
+  the wheel fills the screen while it turns (3.5-7 s, 1.1 s hold)
   and is decided by the core first (the save never waits on it); letters
   reveal one tile at a time; puzzles `assets/wheel/phrases.txt` ->
   `tools/make_phrases.py` (checks A-Z ' - & ., words <= 12, 4 rows of 12,
@@ -365,10 +365,13 @@ never typed (SPEC section 5).
   a spin ends only after its last position was drawn + 1.1 s (or 10 s
   late), so the result is always seen; v0.27.3, Tom: the spin "flashes
   more than spins" - at ~10-20 frames a second a fast wheel jumped
-  several wedges a frame (wagon-wheel effect), so it is drawn with
-  motion blur: from 5 deg a frame (speed x measured frame time) the
-  wedges fade toward their average colour, up to 80 % at 18 deg, labels
-  hidden above 35 %; sharp again as it slows; v0.27.4: the core passes
+  several wedges a frame (wagon-wheel effect). v0.27.3's motion blur:
+  Tom "not a fan" - never blur it. v0.27.5: the spin is a show (the
+  result is decided first), planned so the wheel never turns more than
+  7 deg (a third of a wedge) between frames: a short push (10 %), a
+  steady turn (25 %), an even slow-down like friction (65 %); distance =
+  whole turns as far as that allows in ~4.5 s at the measured frame time
+  (`frame_ms`, kept between spins), 3.5-7 s; v0.27.4: the core passes
   the turn on BUST / SKIP the moment the spin is decided, so while the
   wheel turns the header and the gold player box show the spinner
   (`shown_turn()`), not `g.turn` - Tom saw Max named during his spin), Ultimate Tic-Tac-Toe (id `ultimate`, Strategy; X / O,

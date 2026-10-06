@@ -33,7 +33,7 @@ using twoplayer::Mode;
 constexpr const char* kId = "wheel";
 const twoplayer::Sides kSides{"Player 1", "Player 2"};
 const char* const kComputers[2] = {"Max", "Zoe"};
-constexpr uint32_t kSpinMs = 2600, kHoldMs = 1100, kRevealMs = 280, kStepMs = 750;
+constexpr uint32_t kHoldMs = 1100, kRevealMs = 280, kStepMs = 750;
 
 struct State {
     Game     g;
@@ -58,7 +58,8 @@ bool       pending_call = false;                        // a computer spun money
 // For the log (Tom, 2026-10-05: a Spin that seemed to pass straight to Max):
 // how often the wheel was drawn during a spin, and the longest gap
 uint32_t   spin_draws = 0, spin_gap = 0, last_draw_ms = 0;
-float      frame_ms = 60;      // how often the wheel is drawn (a running average)
+float      frame_ms = 50;      // how often the wheel is drawn (a running average, kept between spins)
+uint32_t   spin_ms = 4500;     // this spin's length
 bool       final_full = false; // the whole wheel area redrawn once at the stop (the result line)
 // The spin ends only once its last position has been on screen for kHoldMs
 bool       final_drawn = false;
@@ -185,6 +186,31 @@ void anim_on(bool on)
     if (!on && anim_timer) { lv_timer_delete(anim_timer); anim_timer = nullptr; }
 }
 
+// The spin is a show - the core has already decided where it lands - so it
+// is planned to look smooth on this panel. A frame comes only every
+// ~30-80 ms (the measured `frame_ms`), and a wheel that turns more than a
+// third of a wedge between frames seems to flash or run backwards (Tom,
+// v0.27.2: "flashes more than spins"; v0.27.3's motion blur: "not a fan").
+// So the wheel never turns more than kMaxStep degrees a frame: a short
+// push up to speed, a steady turn, then a long, even slow-down (like
+// friction), and the distance is picked to fit that.
+constexpr float kMaxStep = 7.0f;                 // degrees a frame at the top speed
+constexpr float kPush = 0.10f, kCruise = 0.25f;  // parts of the spin; the rest slows down
+constexpr float kSlow = 1 - kPush - kCruise;
+constexpr float kPathPerTop = kPush / 2 + kCruise + kSlow / 2;   // distance / (top speed x time)
+
+// How far through its turn the wheel is (0..1) at time t (0..1)
+float spin_pos(float t)
+{
+    const float v = 1 / kPathPerTop;
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+    if (t < kPush) return v * t * t / (2 * kPush);
+    if (t < kPush + kCruise) return v * (kPush / 2 + (t - kPush));
+    const float u = t - kPush - kCruise;
+    return v * (kPush / 2 + kCruise + u - u * u / (2 * kSlow));
+}
+
 // The player to go spins: the core decides where it lands, the wheel shows it
 void do_spin()
 {
@@ -196,9 +222,17 @@ void do_spin()
     const float step = 360.0f / kWedges;
     rot_from = fmodf(rot, 360.0f);
     float target = 270.0f - step * w - step / 2;
-    while (target < rot_from + 3 * 360.0f) target += 360.0f;
     // Not dead centre: somewhere inside the wedge
     target += (float(int((fresh_seed() >> 8) % 61)) - 30.0f) / 100.0f * step;
+    while (target < rot_from + step) target += 360.0f;          // at least a wedge on
+    // As far as kMaxStep a frame allows in about 4.5 s (whole turns more);
+    // if even the shortest way is too far for that, take longer (up to 7 s)
+    const float fr = frame_ms < 20 ? 20 : frame_ms;
+    const float reach = kMaxStep / fr * kPathPerTop * 4500.0f;   // degrees
+    while (target + 360.0f - rot_from <= reach) target += 360.0f;
+    const float dist = target - rot_from;
+    float ms = dist * fr / (kMaxStep * kPathPerTop);
+    spin_ms = uint32_t(ms < 3500 ? 3500 : ms > 7000 ? 7000 : ms);
     rot_to = target;
     anim_start = now_ms;
     ui_mode = Ui::Spinning;
@@ -564,63 +598,40 @@ void wheel_draw_cb(lv_event_t* e)
     const Palette& P = pal();
     const Metrics& M = metrics();
     kit::fill_rect(layer, a.x1, a.y1, a.x2, a.y2, P.screen);
-    // Where the wheel is: ease out over kSpinMs
-    float t = float(now_ms - anim_start) / float(kSpinMs);
+    // Where the wheel is (see spin_pos)
+    float t = float(now_ms - anim_start) / float(spin_ms);
     if (t > 1) t = 1;
     if (t >= 1 && ui_mode == Ui::Spinning && !final_drawn) { final_drawn = true; final_at = now_ms; }
-    const float k = 1 - (1 - t) * (1 - t) * (1 - t);
-    rot = rot_from + (rot_to - rot_from) * k;
+    rot = rot_from + (rot_to - rot_from) * spin_pos(t);
     const int w = lv_area_get_width(&a), h = lv_area_get_height(&a);
     const int R = (w < h ? w : h) / 2 - (M.large ? 10 : 6);
     const int cx = a.x1 + w / 2, cy = a.y1 + h / 2 + (M.large ? 8 : 5);
     const float step = 360.0f / kWedges;
     kit::fill_circle(layer, cx, cy, R + 3, P.stone_dark);
-    // Motion blur. The panel shows a new frame only every ~50-100 ms, so a
-    // fast wheel turned several wedges between frames and seemed to flash
-    // or even run backwards (the wagon-wheel effect - Tom: "flashes more
-    // than spins"). So, like a camera, a wheel that turns more than a few
-    // degrees a frame is drawn smeared: its wedges fade into their average
-    // colour, the numbers vanish, and it sharpens as it slows.
-    const float speed = t < 1 ? (rot_to - rot_from) * 3 * (1 - t) * (1 - t) / float(kSpinMs) : 0;   // deg / ms
-    const float per_frame = speed * frame_ms;
-    // (at most 80 %: a faint shimmer of the wedges is left, so it still reads as turning)
-    float blur = 0.8f * (per_frame - 5.0f) / (18.0f - 5.0f);
-    blur = blur < 0 ? 0 : blur > 0.8f ? 0.8f : blur;
-    uint32_t sr = 0, sg = 0, sb = 0;
+    // Each wedge is a fan of triangles from the hub: far cheaper to draw than
+    // thick arcs (v0.26.1's arcs were too slow for the 3.5" - Tom saw no wheel)
+    constexpr int kSeg = 4;
+    lv_draw_triangle_dsc_t wd;
+    lv_draw_triangle_dsc_init(&wd);
+    wd.opa = LV_OPA_COVER;
     for (int i = 0; i < kWedges; ++i) {
         lv_color_t ink;
-        const lv_color_t c = wedge_color(i, &ink);
-        sr += c.red; sg += c.green; sb += c.blue;
-    }
-    const lv_color_t avg = lv_color_make(uint8_t(sr / kWedges), uint8_t(sg / kWedges), uint8_t(sb / kWedges));
-    const lv_font_t* lf = M.large ? &lv_font_montserrat_14 : &lv_font_montserrat_10;
-    const int lh = lv_font_get_line_height(lf), lw = M.large ? 44 : 30;
-    {
-        // Each wedge is a fan of triangles from the hub: far cheaper to draw than
-        // thick arcs (v0.26.1's arcs were too slow for the 3.5" - Tom saw no wheel)
-        constexpr int kSeg = 4;
-        lv_draw_triangle_dsc_t wd;
-        lv_draw_triangle_dsc_init(&wd);
-        wd.opa = LV_OPA_COVER;
-        const uint8_t keep = uint8_t(255 * (1 - blur));
-        for (int i = 0; i < kWedges; ++i) {
-            lv_color_t ink;
-            wd.color = lv_color_mix(wedge_color(i, &ink), avg, keep);
-            const float s0 = (rot + step * i) * 3.14159265f / 180.0f, ds = step / kSeg * 3.14159265f / 180.0f;
-            for (int k2 = 0; k2 < kSeg; ++k2) {
-                const float a0 = s0 + ds * k2, a1 = a0 + ds + 0.02f;          // a hair of overlap: no seams
-                wd.p[0].x = cx; wd.p[0].y = cy;
-                wd.p[1].x = cx + int(lroundf(cosf(a0) * R)); wd.p[1].y = cy + int(lroundf(sinf(a0) * R));
-                wd.p[2].x = cx + int(lroundf(cosf(a1) * R)); wd.p[2].y = cy + int(lroundf(sinf(a1) * R));
-                lv_draw_triangle(layer, &wd);
-            }
+        wd.color = wedge_color(i, &ink);
+        const float s0 = (rot + step * i) * 3.14159265f / 180.0f, ds = step / kSeg * 3.14159265f / 180.0f;
+        for (int k2 = 0; k2 < kSeg; ++k2) {
+            const float a0 = s0 + ds * k2, a1 = a0 + ds + 0.02f;          // a hair of overlap: no seams
+            wd.p[0].x = cx; wd.p[0].y = cy;
+            wd.p[1].x = cx + int(lroundf(cosf(a0) * R)); wd.p[1].y = cy + int(lroundf(sinf(a0) * R));
+            wd.p[2].x = cx + int(lroundf(cosf(a1) * R)); wd.p[2].y = cy + int(lroundf(sinf(a1) * R));
+            lv_draw_triangle(layer, &wd);
         }
     }
-    // Labels: upright, near the rim (not while they'd be a smear)
-    for (int i = 0; i < kWedges && blur < 0.35f; ++i) {
+    // Labels: upright, near the rim
+    const lv_font_t* lf = M.large ? &lv_font_montserrat_14 : &lv_font_montserrat_10;
+    const int lh = lv_font_get_line_height(lf), lw = M.large ? 44 : 30;
+    for (int i = 0; i < kWedges; ++i) {
         lv_color_t ink;
-        const lv_color_t wc = wedge_color(i, &ink);
-        if (blur > 0) ink = lv_color_mix(ink, lv_color_mix(wc, avg, uint8_t(255 * (1 - blur))), uint8_t(255 * (1 - blur * 2.5f)));
+        wedge_color(i, &ink);
         const float mid = (rot + step * i + step / 2) * 3.14159265f / 180.0f;
         const int lx = cx + int(cosf(mid) * R * 0.74f), ly = cy + int(sinf(mid) * R * 0.74f);
         char s[8];
@@ -757,7 +768,7 @@ void ui_tick()
 {
     // (if the wheel somehow can't be drawn, give up waiting after 10 s more)
     if (ui_mode == Ui::Spinning && ((final_drawn && now_ms - final_at >= kHoldMs)
-                                    || now_ms - anim_start >= kSpinMs + kHoldMs + 10000)) {
+                                    || now_ms - anim_start >= spin_ms + kHoldMs + 10000)) {
         ui_mode = Ui::Idle;
         anim_on(false);
         rot = fmodf(rot_to, 360.0f);
