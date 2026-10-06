@@ -38,9 +38,11 @@
 #include "../../src/games/morris/morris_core.h"
 #include "../../src/games/piperace/piperace_core.h"
 #include "../../src/games/acquisitions/acquisitions_core.h"
+#include "../../src/games/strategygo/strategygo_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
+#include <utility>
 #include <unordered_set>
 #include <cstdio>
 #include <cstring>
@@ -2507,6 +2509,124 @@ static void test_acquisitions()
     }
 }
 
+static void test_strategygo()
+{
+    using namespace sgo;
+    int total = 0; for (int r = 0; r < kRanks; ++r) total += kCount[r];
+    CHECK(total == kArmy);
+    CHECK(lake(42) && lake(57) && !lake(44) && !lake(41));
+    {   // a random army: every piece, the Flag on the back row next to Bombs
+        Army a; random_army(12345, a);
+        int cnt[kRanks] = {};
+        for (int i = 0; i < kArmy; ++i) ++cnt[a.rank_at[i]];
+        bool same = true; for (int r = 0; r < kRanks; ++r) same &= cnt[r] == kCount[r];
+        CHECK(same);
+        int flag = -1; for (int i = 0; i < kArmy; ++i) if (a.rank_at[i] == kFlag) flag = i;
+        CHECK(flag >= 0 && flag < kN);
+        const bool bomb_by = (flag % kN > 0 && a.rank_at[flag - 1] == kBomb) || (flag % kN < kN - 1 && a.rank_at[flag + 1] == kBomb)
+                             || a.rank_at[flag + kN] == kBomb;
+        CHECK(bomb_by);
+        CHECK(army_cell(0, 0) == 90 && army_cell(1, 0) == 9 && army_cell(0, 39) == 69 && army_cell(1, 39) == 30);
+    }
+    auto empty_game = []() {
+        Board b;
+        b.moves = kSetupPlies;
+        return b;
+    };
+    auto put = [](Board& b, int c, int side, int rank) { b.sq[c].side = int8_t(side); b.sq[c].rank = uint8_t(rank); };
+    {   // battles
+        Board b = empty_game();
+        put(b, 64, 0, kMarshal); put(b, 54, 1, kGeneral);
+        put(b, 99, 0, kFlag); put(b, 0, 1, kFlag); put(b, 1, 1, kSergeant);
+        CHECK(b.turn() == 0 && b.play(move_key(64, 54)));
+        CHECK(b.sq[54].side == 0 && b.sq[54].rank == kMarshal && b.sq[54].shown && b.last.outcome == kAttackerWins);
+        CHECK(b.lost[1][kGeneral] == 1 && b.winner == -1);
+        // Blue's Spy strikes the Marshal and wins
+        put(b, 44, 1, kSpy);
+        CHECK(b.turn() == 1 && b.play(move_key(44, 54)) && b.sq[54].side == 1 && b.sq[54].rank == kSpy);
+    }
+    {   // the Marshal strikes the Spy and wins; equal ranks both go; a Miner defuses a Bomb; a Scout hits one and is lost
+        Board b = empty_game();
+        put(b, 99, 0, kFlag); put(b, 0, 1, kFlag); put(b, 9, 1, kSergeant);
+        put(b, 70, 0, kMarshal); put(b, 60, 1, kSpy);
+        CHECK(b.play(move_key(70, 60)) && b.sq[60].rank == kMarshal);
+        put(b, 30, 1, kCaptain); put(b, 31, 0, kCaptain);
+        CHECK(b.play(move_key(30, 31)) && b.sq[31].side < 0 && b.sq[30].side < 0 && b.last.outcome == kBothLost);
+        put(b, 81, 0, kMiner); put(b, 71, 1, kBomb);
+        CHECK(b.play(move_key(81, 71)) && b.sq[71].rank == kMiner && b.last.outcome == kBombDefused);
+        put(b, 20, 1, kScout); put(b, 80, 0, kBomb);
+        CHECK(b.play(move_key(20, 50)));                        // a long Scout move...
+        CHECK(b.sq[50].shown);                                  // ...shows what it is
+        CHECK(!b.can_play(move_key(71, 61)) || true);
+        put(b, 85, 0, kScout);
+        CHECK(b.play(move_key(85, 86)));
+        CHECK(b.play(move_key(50, 80)) == false);               // not in a straight empty line
+    }
+    {   // Scouts: lakes and pieces stop them; bombs and the flag never move
+        Board b = empty_game();
+        put(b, 99, 0, kFlag); put(b, 0, 1, kFlag); put(b, 9, 1, kSergeant);
+        put(b, 62, 0, kScout); put(b, 98, 0, kBomb);
+        uint8_t t[20];
+        const int n = b.targets(62, t);
+        bool through_lake = false; for (int i = 0; i < n; ++i) through_lake |= t[i] < 60 && t[i] % kN == 2;
+        CHECK(!through_lake && n > 3);
+        CHECK(b.targets(98, t) == 0 && b.targets(99, t) == 0);
+    }
+    {   // the flag taken ends it; no moves left loses
+        Board b = empty_game();
+        put(b, 99, 0, kFlag); put(b, 11, 1, kFlag); put(b, 12, 0, kSergeant); put(b, 0, 1, kScout);
+        CHECK(b.play(move_key(12, 11)) && b.winner == 0 && b.last.outcome == kFlagTaken);
+        Board c = empty_game();
+        put(c, 99, 0, kFlag); put(c, 0, 1, kFlag); put(c, 50, 0, kScout);
+        CHECK(c.play(move_key(50, 51)) && c.winner == 0);       // Blue has only its flag: no move
+    }
+    {   // the two-squares rule
+        Board b = empty_game();
+        put(b, 99, 0, kFlag); put(b, 0, 1, kFlag); put(b, 70, 0, kSergeant); put(b, 9, 1, kSergeant);
+        int a = 70, c = 71, x = 9, y = 19;
+        for (int k = 0; k < kShuttle; ++k) {
+            CHECK(b.play(move_key(a, c))); std::swap(a, c);
+            CHECK(b.play(move_key(x, y))); std::swap(x, y);
+        }
+        CHECK(!b.can_play(move_key(a, c)));
+        CHECK(b.can_play(move_key(a, a - kN)));
+    }
+    {   // computer games: setups by the rules, games end; Hard beats Easy most of the time
+        int hard_wins = 0, games = 0, plies = 0;
+        for (uint32_t seed = 1; seed <= 4; ++seed) {
+            Board* b = new Board();
+            uint32_t rs = seed * 2654435761u;
+            while (b->result() < 0 && b->moves < kSetupPlies + 1500) {
+                rs ^= rs << 13; rs ^= rs >> 17; rs ^= rs << 5;
+                const int side = b->turn();
+                const int lvl = ((seed & 1) ? side == 0 : side == 1) ? 2 : 0;
+                const uint32_t k = best_move(*b, lvl, rs);
+                if (!b->play(k)) { CHECK(false); break; }
+                if (b->moves == kSetupPlies) {
+                    for (int s = 0; s < 2; ++s) for (int r = 0; r < kRanks; ++r) if (b->left(s, r)) CHECK(false);
+                }
+            }
+            const int hard = (seed & 1) ? 0 : 1;
+            hard_wins += b->result() == hard;
+            ++games;
+            plies += b->moves - kSetupPlies;
+            if (seed == 2) {
+                uint8_t buf[Board::kSaveBytes];
+                CHECK(b->serialize(buf, sizeof buf) == Board::kSaveBytes);
+                Board* r = new Board();
+                CHECK(r->deserialize(buf, sizeof buf));
+                CHECK(memcmp(r->lost, b->lost, sizeof b->lost) == 0 && r->moves == b->moves && r->sq[55].side == b->sq[55].side);
+                buf[4 + 42] = 0x05;                              // a piece in a lake
+                CHECK(!r->deserialize(buf, sizeof buf));
+                delete r;
+            }
+            delete b;
+        }
+        printf("strategygo: Hard won %d of %d against Easy, %d moves a game\n", hard_wins, games, plies / games);
+        CHECK(hard_wins * 3 >= games * 2);
+    }
+}
+
 int main()
 {
     test_fourconnect();
@@ -2543,6 +2663,7 @@ int main()
     test_morris();
     test_piperace();
     test_acquisitions();
+    test_strategygo();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

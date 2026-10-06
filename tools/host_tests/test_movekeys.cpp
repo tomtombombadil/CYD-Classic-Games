@@ -25,6 +25,7 @@
 #include "games/sank/sank_core.h"
 #include "games/ultimate/ultimate_core.h"
 #include "games/gomoku/gomoku_core.h"
+#include "games/strategygo/strategygo_core.h"
 #include "games/tictactoe/tictactoe_core.h"
 #include "net/names.h"
 
@@ -200,6 +201,34 @@ uint32_t sank_hash()
     });
 }
 
+uint32_t strategygo_hash()
+{
+    return play_games([](Rng& r, Hash& h) {
+        auto* b = new sgo::Board();
+        // The armies, a piece a move (any home square, any rank still to place)
+        while (b->setup()) {
+            std::vector<uint32_t> keys;
+            for (int c = 0; c < sgo::kCells; ++c)
+                for (int k = 0; k < sgo::kRanks; ++k)
+                    if (b->can_play(sgo::setup_key(c, k))) keys.push_back(sgo::setup_key(c, k));
+            const uint32_t key = pick(keys, r);
+            h.add(key);
+            b->play(key);
+        }
+        for (int ply = 0; ply < 300 && b->result() == -1; ++ply) {
+            uint32_t m[256];
+            const int n = b->moves_for(b->turn(), m, 256);
+            std::vector<uint32_t> keys(m, m + n);
+            std::sort(keys.begin(), keys.end());
+            const uint32_t key = pick(keys, r);
+            h.add(key);
+            b->play(key);
+        }
+        h.add(uint32_t(b->result() + 1));
+        delete b;
+    });
+}
+
 uint32_t ultimate_hash()
 {
     return play_games([](Rng& r, Hash& h) {
@@ -248,6 +277,7 @@ uint32_t hash_for(const char* id)
     if (!strcmp(id, "sank"))        return sank_hash();
     if (!strcmp(id, "ultimate"))    return ultimate_hash();
     if (!strcmp(id, "gomoku"))      return gomoku_hash();
+    if (!strcmp(id, "strategygo"))  return strategygo_hash();
     return 0;
 }
 
@@ -290,7 +320,7 @@ int main()
     const size_t biggest[] = {fourconnect::Board::kSaveBytes, tictactoe::Board::kSaveBytes, reversi::Board::kSaveBytes,
                               checkers::Game::kSaveBytes, chess::Game::kSaveBytes, mancala::Board::kSaveBytes,
                               morris::Game::kSaveBytes, sank::Board::kSaveBytes,
-                              ultimate::Board::kSaveBytes, gomoku::Board::kSaveBytes};
+                              ultimate::Board::kSaveBytes, gomoku::Board::kSaveBytes, sgo::Board::kSaveBytes};
     for (size_t b : biggest) check(b + 8 < 1024, "a wireless game's save fits wplay's 1 KB stash buffer");
     // net_moves.txt: "<id> <key> <version> <hash>" per line, '#' comments
     std::vector<std::string> lines;

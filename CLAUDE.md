@@ -426,7 +426,26 @@ never typed (SPEC section 5).
   0.3-0.9 s, deciding only from the table (Hard: net worth + majority
   stakes - 0.3 x best rival, beat 3 Easy 36/40); Place / Turn / Trill
   (your bonus) / Error / Win / Lose; stats "#,Place,Money,Level,Seconds,
-  Time", a game left after a round counts at your place then). The match
+  Time", a game left after a round counts at your place then), Strategy
+  Go! (id `strategygo`, Strategy; Tom's name for Stratego, 2026-10-06;
+  Red / Blue, Red first; 10x10, lakes C-D / G-H rows 5-6; 40 a side
+  (10 Marshal ... 2 Scout, Spy, 6 Bombs, Flag); Scouts any distance and
+  may strike, a long Scout move shows it; Spy beats Marshal only
+  striking, Miner defuses, equal both go; flag taken or no move = loss,
+  2000 plies = draw; two-squares rule 5; moves: plies 0-39 Red's setup,
+  40-79 Blue's (`setup_key` = cell | rank << 7), then from | to << 7,
+  wireless key 11; setup = a sensible random army (Flag on the back row
+  behind Bombs, Scouts forward, Miners back) - tap two to swap, Shuffle,
+  Ready; `match::Game::no_pause` lets the computer lay its 40 at once;
+  board drawn from the viewer's side (turned for Blue); theirs plain until
+  they fight, a dot = has moved; your shown pieces get a gold corner dot;
+  battle banner 1.7 s (`busy`); Pieces page = losses by rank; computer
+  reads only what its side knows (seen ranks, moved, lost-by-rank pool),
+  all levels one move ahead by outcome chances: Easy material, Medium +
+  threats from seen pieces, Hard + from unseen ones by chance (Hard beat
+  Easy 18/20; 2-ply and hunting/flag-guard terms tested - no stronger,
+  dropped); sounds: battle won Trill / lost "aww" / both Draw / bomb Boom).
+  The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random
   seed; no deliberate blunders. Board games use `common/board8.*` (8x8
@@ -761,7 +780,8 @@ never typed (SPEC section 5).
   away, crossed requests, New Game, every game random) clean and 30 % loss.
   Run it after any wireless change.
 - Games: FourConnect, Tic-Tac-Toe, Reversi, Checkers, Chess, Mancala,
-  Morris, You Sank My CYD! (key 8), Ultimate Tic-Tac-Toe (9), Gomoku (10).
+  Morris, You Sank My CYD! (key 8), Ultimate Tic-Tac-Toe (9), Gomoku (10),
+  Strategy Go! (11).
   Farkle not yet. Internet play out of scope.
 - Battery (Tom, 2026-10-04, v0.22.0): the radio is never stopped and
   started to save power (esp_wifi init + start takes tens to hundreds of ms

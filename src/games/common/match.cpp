@@ -45,6 +45,7 @@ bool     start_failed = false;        // the AI task couldn't start (logged once
 bool     was_busy = false;            // the game's animation was running last tick
 uint32_t now_ms = 0;
 constexpr uint32_t kThinkPauseMs = 350;
+uint32_t think_pause() { return G.no_pause && G.no_pause() ? 0 : kThinkPauseMs; }
 
 // Wireless: the session's link lives in the Wireless Play service (wplay.*)
 int      link_look = -1;              // the link's state the screen shows
@@ -257,7 +258,7 @@ void after_move(bool by_other)
     if (r == -1) {
         if (G.move_sound) G.move_sound(by_other);
         else sound(by_other ? Sound::Turn : Sound::Place);
-        if (computer_to_move()) think_after_ms = now_ms + kThinkPauseMs;
+        if (computer_to_move()) think_after_ms = now_ms + think_pause();
     } else if (!S.recorded) {
         S.recorded = 1;
         twoplayer::Result res;
@@ -293,7 +294,7 @@ void start_new(Mode mode, twoplayer::Level level)
     S.seconds = 0;
     G.reset();
     if (G.redraw) G.redraw();
-    if (computer_to_move()) think_after_ms = now_ms + kThinkPauseMs;
+    if (computer_to_move()) think_after_ms = now_ms + think_pause();
     update_status();
 }
 
@@ -671,7 +672,7 @@ void restart_view()
     // A session for this game that the game doesn't know about (it never
     // switched to it - e.g. a crash in between): it can't be played; let it go
     if (!wl() && wplay::session_for(G.id)) wplay::clear_sessions();
-    if (computer_to_move()) think_after_ms = now_ms + kThinkPauseMs;
+    if (computer_to_move()) think_after_ms = now_ms + think_pause();
     update_status();
 }
 
@@ -764,7 +765,7 @@ void tick(uint32_t now)
     // A game still animating its last move holds the computer back; the
     // pause starts when the animation ends
     const bool busy = G.busy && G.busy();
-    if (was_busy && !busy && computer_to_move()) think_after_ms = now + kThinkPauseMs;
+    if (was_busy && !busy && computer_to_move()) think_after_ms = now + think_pause();
     was_busy = busy;
     if (busy) return;
     if (!thinking && computer_to_move() && !overlay_open() && int32_t(now - think_after_ms) >= 0) {

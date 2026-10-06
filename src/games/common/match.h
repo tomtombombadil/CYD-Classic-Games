@@ -60,6 +60,9 @@ struct Game {
     // Optional: the game's Options page (an "Options" key in its menu); the
     // page's back arrow should call match::open_menu()
     void (*options)() = nullptr;
+    // Optional: true when the computer's next move needs no thinking pause
+    // (Strategy Go!'s 40 setup pieces would otherwise take 14 s)
+    bool (*no_pause)() = nullptr;
     uint32_t ai_stack = 8192;      // the computer's task stack (bytes)
     // Wireless: is `move` legal for the side to move? nullptr = this game
     // has no wireless play.

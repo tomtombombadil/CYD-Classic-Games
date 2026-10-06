@@ -13,3 +13,4 @@ sunk 8 2 0af8d8c2
 sank 8 2 0af8d8c2
 ultimate 9 1 9bda7654
 gomoku 10 1 5a8ba7bd
+strategygo 11 1 7002d1e8

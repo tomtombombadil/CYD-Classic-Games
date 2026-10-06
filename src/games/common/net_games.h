@@ -36,6 +36,7 @@ constexpr Entry kGames[] = {
                              // (v1: a fleet seed a side, ships apart)
     {"ultimate",    9, 1},   // move = cell 0-80 (small board * 9 + square)
     {"gomoku",     10, 1},   // move = point 0-224 (row * 15 + column)
+    {"strategygo", 11, 1},   // plies 0-79 = the armies (sgo::setup_key: cell | rank << 7), then from | to << 7
 };
 constexpr int kCount = int(sizeof kGames / sizeof kGames[0]);
 

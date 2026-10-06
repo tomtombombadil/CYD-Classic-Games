@@ -102,7 +102,7 @@ Candidates, grouped. Order of building is in section 6.
 | Tic-Tac-Toe / Ultimate Tic-Tac-Toe | Ultimate is the interesting one (*built 2026-10-05*: id `ultimate`, wireless key 9) |
 | Nine Men's Morris | Big targets (*built 2026-10-03*) |
 | Gomoku | 15x15, 16 px cells on 240-wide boards (*built 2026-10-05*: freestyle five, wireless key 10) |
-| Strategy Go! (Stratego) | *Next (Tom, 2026-10-06)*: 10x10, hidden pieces - wireless like You Sank My CYD!, pass-and-play with a cover screen |
+| Strategy Go! (Stratego) | *Built 2026-10-06*: id `strategygo`; 10x10, two lakes, 40 a side, ISF-style battles; swap-to-set-up; vs computer / pass-and-play / wireless key 11 |
 | Acquisitions (Acquire) | *Built 2026-10-06*: id `acquisitions`; you vs Ada, Max, Zoe (Easy / Medium / Hard); 7 hotels Sunrise, Oakwood (cheap), Harbor, Meadow, Lagoon, Royal, Crimson (dear); full rules incl. safe chains, dead tiles, ties |
 | Sorry! / Trouble style race game | *Planned (Tom, 2026-10-06)*: 2-4 players, pass-and-play + computer; own name |
 | Escape from Atlantis style | *Planned (Tom, 2026-10-06)*: sinking hex island, sharks and whales; own name |

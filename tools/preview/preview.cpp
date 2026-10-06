@@ -85,6 +85,8 @@ void keyboard(int slot);
 #include "games/piperace/piperace_core.h"
 #include "games/acquisitions/acquisitions_core.h"
 namespace acq_preview { acq::Game* game(); void redraw(); void hold(bool on); void log(const char* t); void stocks(); }
+#include "games/strategygo/strategygo_core.h"
+namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool on); void ready(); void cover_ready(); void pass(); void pieces(); }
 namespace piperace_preview { piperace::Game* game(); void unhold(); void redraw(); }
 #include "games/mastercyd/mastercyd_core.h"
 #include "games/pegs/pegs_core.h"
@@ -1608,6 +1610,50 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Strategy Go!: the setup (a piece picked to swap), play part-way, a battle, the Pieces page
+        ui::app_open_game_now(games::find("strategygo"));
+        run(30);
+        sgo::Board* b = sgo_preview::board();
+        if (b) {
+            sgo_preview::pick(5);
+            shot(out + "_light_38_strategygo_setup.ppm");
+            sgo_preview::pick(-1);
+            sgo_preview::ready();
+            run(3000);                                        // the computer sets up
+            uint32_t rs = 777;
+            int battles = 0;
+            for (int k = 0; k < 400 && b->result() < 0 && battles < 7; ++k) {
+                for (int w = 0; w < 40 && !match::human_may_move(); ++w) run(250);
+                if (!match::human_may_move() || b->result() >= 0) break;
+                rs = rs * 1103515245u + 12345u;
+                const uint32_t key = sgo::best_move(*b, 2, rs);
+                match::human_move(int(key));
+                if (b->last.outcome != sgo::kNoBattle) ++battles;
+                run(2000);
+            }
+            for (int w = 0; w < 40 && !match::human_may_move(); ++w) run(250);
+            run(2000);                                        // any battle banner goes
+            // pick a piece that can move, so its squares light up
+            for (int c = sgo::kCells - 1; c >= 0; --c) {
+                uint8_t t[20];
+                if (b->sq[c].side == match::my_side() && b->targets(c, t) > 0) { sgo_preview::pick(c); break; }
+            }
+            shot(out + "_light_38_strategygo.ppm");
+            sgo_preview::pick(-1);
+            if (b->last.outcome != sgo::kNoBattle) { sgo_preview::battle(true); shot(out + "_light_38_strategygo_battle.ppm"); sgo_preview::battle(false); }
+            sgo_preview::pieces();
+            shot(out + "_light_38_strategygo_pieces.ppm");
+            ui::close_overlays();
+            ui::app_set_theme(ui::Theme::Dark);
+            ui::app_go_home_now();
+            ui::app_open_game_now(games::find("strategygo"));
+            run(100);
+            shot(out + "_dark_38_strategygo.ppm");
+            ui::app_set_theme(ui::Theme::Light);
+        }
         ui::app_go_home_now();
     }
 

@@ -10,10 +10,10 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 (Chrome or Edge on a computer).
 
 > **Status:** growing, built and tested on the PC preview; hardware testing
-> under way. Thirty-three games and an RPG dice roller so far: **Sudoku** (from
+> under way. Thirty-four games and an RPG dice roller so far: **Sudoku** (from
 > [CYD-Sudoku](https://github.com/tomtombombadil/CYD-Sudoku) v1.0.0),
 > **Light Switch**, **Sliding Tiles**, **Minesweeper**, **MasterCYD**, **Peg Solitaire**, **Memory Match**, **Nonograms**, **Pipe Race**, **2048**, **Solitaire**, **Spider**, **Pyramid**, **Golf**, **FreeCell**, **Blackjack**, **Video Poker**, **Texas Hold'em**, **FourConnect**, **Tic-Tac-Toe**,
-> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **Acquisitions**, **CYD-dle**, **Wheel of CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
+> **Reversi**, **Checkers**, **Chess**, **Mancala**, **Nine Men's Morris**, **You Sank My CYD!**, **Ultimate Tic-Tac-Toe**, **Gomoku**, **Strategy Go!**, **Acquisitions**, **CYD-dle**, **Wheel of CYD**, **Yaht-CYD**, **Farkle** and **RPG Dice**.
 > More are on the way; see [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 <img src="assets/splash/splash1_240x320.jpg" width="240" alt="Tom Tom Bombadil's CYD Classic Games splash screen">
@@ -22,7 +22,7 @@ I know you just want to flash this to your CYD right now, so here's the web flas
 
 **2.8" and 3.2" boards (240×320)**: the game picker, the Strategy Games
 page, Sudoku and its menu, Chess (and a tap showing where a piece can
-go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, Acquisitions, CYD-dle, Wheel of CYD (and its wheel), Yaht-CYD, Farkle,
+go), Checkers, Reversi, FourConnect, Tic-Tac-Toe, Mancala, Nine Men's Morris, You Sank My CYD!, Ultimate Tic-Tac-Toe, Gomoku, Strategy Go!, Acquisitions, CYD-dle, Wheel of CYD (and its wheel), Yaht-CYD, Farkle,
 RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, MasterCYD, 2048, Pipe Race, Peg Solitaire, Memory Match, Nonograms, Solitaire (and its win show), Spider, Pyramid, Golf, FreeCell, Blackjack, Video Poker, Texas Hold'em, a How To Play page, Sliding Tiles, Light Switch, Settings and the custom theme editor.
 
 <p>
@@ -44,6 +44,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 <img src="docs/screenshots/small_mastercyd.png" width="240" alt="MasterCYD, guess 5 of 10">
 <img src="docs/screenshots/small_2048.png" width="240" alt="2048 in progress">
 <img src="docs/screenshots/small_piperace.png" width="240" alt="Pipe Race: water running through the pipes">
+<img src="docs/screenshots/small_strategygo.png" width="240" alt="Strategy Go!: your army at the bottom, theirs hidden">
 <img src="docs/screenshots/small_acquisitions.png" width="240" alt="Acquisitions: hotel chains on the board, your tiles at the bottom">
 <img src="docs/screenshots/small_pegs.png" width="240" alt="Peg Solitaire, English board">
 <img src="docs/screenshots/small_memory.png" width="240" alt="Memory Match with a missed pair showing">
@@ -103,6 +104,7 @@ RPG Dice (a roll of every die, and a fighter's attacks preset), Minesweeper, Mas
 | Chess | Strategy Games | vs computer (Easy / Medium / Hard) or pass-and-play |
 | Mancala | Strategy Games | Kalah, six pits a side, sown seed by seed; vs computer or pass-and-play |
 | Nine Men's Morris | Strategy Games | Place, move and fly; mills take men; vs computer or pass-and-play |
+| Strategy Go! | Strategy Games | Hidden armies, capture the Flag; vs computer, pass-and-play or another CYD |
 | Acquisitions | Strategy Games | Hotel chains and shares: you against Ada, Max and Zoe (Easy / Medium / Hard) |
 | Ultimate Tic-Tac-Toe | Strategy Games | Nine boards in one; vs computer (Easy / Medium / Hard) or pass-and-play |
 | Gomoku | Strategy Games | Five in a row on 15x15; vs computer (Easy / Medium / Hard) or pass-and-play |
@@ -557,6 +559,20 @@ give the runs of filled cells in that line, in order. **Fill** fills a cell
 clue turns grey when its line matches, and the row and column you last
 tapped are tinted. Every puzzle has one answer and can be solved one line at
 a time, no guessing. 5x5, 8x8 or 10x10.
+
+## Strategy Go!
+
+Two hidden armies of 40 on a 10x10 board with two lakes. Your army is laid
+out for you: **tap two of your pieces to swap them**, Shuffle for a new
+layout, then Ready. Then tap a piece and a lit square: one square across or
+up and down (Scouts any distance in a straight line); Bombs and the Flag
+never move. Moving onto an enemy is a battle - a banner shows both pieces:
+the higher rank wins, equal ranks both go, the Spy beats the Marshal when it
+strikes, a Miner clears a Bomb and anything else that hits one is lost.
+Their pieces show only once they've fought; a dot marks one that has moved
+(no Bomb or Flag). Capture the Flag, or leave them no move, to win. The
+Pieces key lists what each side has lost. vs computer (it sees only what
+you would), pass-and-play (a cover between turns) or wireless.
 
 ## Acquisitions
 

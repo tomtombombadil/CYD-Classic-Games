@@ -31,6 +31,7 @@ SHOTS = {
     "s_light_35_twenty48": "small_2048",
     "s_light_36_piperace": "small_piperace",
     "s_light_37_acquisitions": "small_acquisitions",
+    "s_light_38_strategygo": "small_strategygo",
     "s_light_37_pegs": "small_pegs",
     "s_light_38_memory": "small_memory",
     "s_light_39_nonogram": "small_nonogram",
