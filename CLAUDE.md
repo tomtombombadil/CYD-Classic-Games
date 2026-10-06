@@ -466,7 +466,21 @@ never typed (SPEC section 5).
   redrawn; result banner 1.4 s; computers stop after 1.2-3 s and pass
   by a risk rule - the game is luck (that rule won no more than never
   passing), so no levels; Place / Hint / "aww" / Turn / Win / Lose;
-  stats "#,Place,Money,Seconds,Time").
+  stats "#,Place,Money,Seconds,Time"), Card Sharks CYD (id `cardsharks`,
+  Game Shows, kVsComputer | kPassAndPlay via match.*, sides Gold / Blue,
+  no wireless yet; each side a row of 5, only the base up; moves 0
+  Higher, 1 Lower, 2 Freeze (after a right call), 3 Change (base only,
+  once a turn, before the first call); equal = wrong; a miss clears back
+  to the freeze and shows the beating card crossed out; aces high; first
+  to the 5th card wins the round, rounds alternate who starts, 2 rounds
+  win; one deck, the table's cards kept out when it reshuffles; computer
+  Easy calls by the card and freezes after 2, Medium + changes 7-9 and
+  freezes under 55 %, Hard counts unseen cards and pushes when the other
+  side is 1-2 from winning (beat Easy 225/400 - it is mostly luck); each
+  call holds 750 ms (`busy`); keys Freeze | Change over Higher | Lower;
+  rows: the other side on top, yours (pass-and-play Gold) at the bottom;
+  the gold freeze bar only once frozen past the base; sounds right Place /
+  Turn, miss "aww", round Trill, Freeze / Change silent; save "CSC1").
   The match
   info line shows a game's note on its own, and drops the level when
   score + level would be cut short. Computer ties between equal moves are broken by a random

@@ -90,6 +90,8 @@ namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool 
 #include "games/dealcyd/dealcyd_core.h"
 namespace dealcyd_preview { dealcyd::Game* game(); void reveal(bool on); void redraw(); }
 #include "games/presscyd/presscyd_core.h"
+#include "games/cardsharks/cardsharks_core.h"
+namespace cardsharks_preview { csh::Board* board(); void redraw_all(); }
 namespace presscyd_preview { presscyd::Game* game(); void set_light(int q); void result(bool on); void news_line(const char* t); void hold(); }
 namespace piperace_preview { piperace::Game* game(); void unhold(); void redraw(); }
 #include "games/mastercyd/mastercyd_core.h"
@@ -1614,6 +1616,47 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Card Sharks CYD: vs computer part-way, a miss, dark theme
+        ui::app_open_game_now(games::find("cardsharks"));
+        run(30);
+        csh::Board* b = cardsharks_preview::board();
+        if (b) {
+            uint32_t rs = 91;
+            bool missed = false, main_done = false;
+            for (int k = 0; k < 300 && b->result() < 0 && !(missed && main_done); ++k) {
+                for (int w = 0; w < 40 && !match::human_may_move(); ++w) run(250);
+                run(1000);
+                if (!match::human_may_move() || b->result() >= 0) break;
+                const int me = match::my_side();
+                if (!missed && b->last == csh::Last::Wrong && b->last_side != me) {
+                    preview_press(20, 120, 80);
+                    shot(out + "_light_42_cardsharks_miss.ppm");
+                    missed = true;
+                }
+                if (!main_done && b->row[me].pos >= 2 && b->row[me ^ 1].pos >= 1 && b->last == csh::Last::Right) {
+                    preview_press(20, 120, 80);
+                    shot(out + "_light_42_cardsharks.ppm");
+                    ui::app_set_theme(ui::Theme::Dark);
+                    ui::app_go_home_now();
+                    ui::app_open_game_now(games::find("cardsharks"));
+                    run(100);
+                    b = cardsharks_preview::board();
+                    preview_press(20, 120, 80);
+                    shot(out + "_dark_42_cardsharks.ppm");
+                    ui::app_set_theme(ui::Theme::Light);
+                    ui::app_go_home_now();
+                    ui::app_open_game_now(games::find("cardsharks"));
+                    run(100);
+                    b = cardsharks_preview::board();
+                    main_done = true;
+                }
+                rs = rs * 1103515245u + 12345u;
+                match::human_move(csh::best_move(*b, 1, rs));
+            }
+        }
         ui::app_go_home_now();
     }
 

@@ -255,6 +255,14 @@ write("presscyd", [
  ("Max And Zoe", "The computer players spin, stop after a moment and pass when it suits them.\nStats keep your place and money for every game."),
 ])
 
+write("cardsharks", [
+ ("The Idea", "Each player has a row of five cards; only the first is face up. On your turn, call the next card Higher or Lower than the one before it.\nTurn over all five of your cards first to win the round. Two rounds win the game. Aces are high."),
+ ("Calls And Misses", "Right: the card stays and you call again - or Freeze to keep your place and pass the turn.\nWrong (the same rank is wrong too): every card since your last freeze goes and the turn passes. The card that beat you shows crossed out; a gold bar marks where you froze."),
+ ("Change", "Once a turn, before your first call, Change swaps the card in play for a fresh one - handy on a 7, 8 or 9.\nThe line in the middle says what the card in play is. The player who didn't start the last round starts the next one."),
+ ("The Computer", "Easy calls by the card alone and freezes after two right.\nMedium also changes middle cards and freezes before a risky call.\nHard counts the cards still unseen and takes chances when you are close to winning."),
+ TP,
+], two_player=True)
+
 write("wheel", [
  ("The Idea", "Solve the hidden phrase before the others. You play Max and Zoe (or a friend: Pass and Play). Three rounds, a new puzzle each; the category shows under the board.\nMost money banked after three rounds wins."),
  ("A Turn", "• Spin: the wheel stops on a money wedge - pick a consonant; each one in the puzzle pays that much and you go again. Not there: the next player's turn.\n• Vowel: buy a vowel for $250.\n• Solve: fill in the blanks."),

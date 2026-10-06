@@ -41,6 +41,7 @@
 #include "../../src/games/strategygo/strategygo_core.h"
 #include "../../src/games/dealcyd/dealcyd_core.h"
 #include "../../src/games/presscyd/presscyd_core.h"
+#include "../../src/games/cardsharks/cardsharks_core.h"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -2799,6 +2800,77 @@ static void test_presscyd()
     }
 }
 
+static void test_cardsharks()
+{
+    using namespace csh;
+    auto mk = [](int rank, int suit) { return uint8_t(suit * 13 + rank - 1); };
+    CHECK(value(mk(1, 0)) == 14 && value(mk(13, 2)) == 13 && value(mk(2, 3)) == 2);
+    {   // a right call, a freeze, a miss back to the freeze, change once before calling
+        Board b; b.reset(11);
+        CHECK(b.turn() == 0 && b.can_play(kChange) && !b.can_play(kFreeze));
+        b.row[0].card[0] = mk(2, 0);                           // a 2: Higher can't miss... unless another 2
+        // stack the deck: next card a 9
+        b.deck[b.deck_n - 1] = mk(9, 1);
+        CHECK(b.play(kHigher) && b.row[0].pos == 1 && b.turn() == 0 && b.last == Last::Right);
+        CHECK(!b.can_play(kChange));                           // only before the first call
+        CHECK(b.play(kFreeze) && b.row[0].frozen == 1 && b.turn() == 1);
+        // side 1 calls wrong: Lower on a 5 that turns up a King
+        b.row[1].card[0] = mk(5, 2);
+        b.deck[b.deck_n - 1] = mk(13, 3);
+        CHECK(b.play(kLower) && b.last == Last::Wrong && b.turn() == 0 && b.row[1].pos == 0);
+        CHECK(b.last_card == mk(13, 3));
+        // side 0 misses: back to its frozen 9
+        b.deck[b.deck_n - 1] = mk(9, 2);                        // an equal card is wrong
+        CHECK(b.play(kHigher) && b.last == Last::Wrong && b.row[0].pos == 1 && b.row[0].card[2] == kNoCard);
+        // side 1 may change its base
+        const uint8_t before = b.row[1].card[0];
+        CHECK(b.play(kChange) && b.row[1].card[0] != before && !b.can_play(kChange));
+    }
+    {   // five right wins the round; two rounds the match
+        Board b; b.reset(3);
+        for (int round = 0; round < 2; ++round) {
+            const int s = b.turn();
+            b.row[s].card[0] = mk(2, 0);
+            for (int k = 0; k < 4; ++k) {
+                b.deck[b.deck_n - 1] = mk(3 + k * 3, k);            // 3, 6, 9, 12: always higher
+                CHECK(b.play(kHigher));
+            }
+            CHECK(b.wins[s] == round + 1);
+            if (b.winner >= 0) break;
+            // let the same side win again next round: give it the turn
+            b.turn_side = uint8_t(s);
+        }
+        CHECK(b.winner >= 0);
+    }
+    {   // computer matches end; Hard beats Easy
+        int hard = 0;
+        const int N = 400;
+        for (uint32_t seed = 1; seed <= uint32_t(N); ++seed) {
+            Board b; b.reset(seed * 7919);
+            const int hard_side = seed & 1;
+            uint32_t rs = seed;
+            for (int k = 0; k < 5000 && b.result() < 0; ++k) {
+                rs = rs * 1103515245u + 12345u;
+                const int m = best_move(b, b.turn() == hard_side ? 2 : 0, rs);
+                if (!b.play(m)) { CHECK(false); break; }
+            }
+            CHECK(b.result() >= 0);
+            hard += b.result() == hard_side;
+        }
+        printf("cardsharks: Hard won %d of %d matches against Easy\n", hard, N);
+        CHECK(hard * 100 >= N * 55);
+    }
+    {   // saves
+        Board b; b.reset(21); b.play(kHigher);
+        uint8_t buf[Board::kSaveBytes];
+        CHECK(b.serialize(buf, sizeof buf) == Board::kSaveBytes);
+        Board r;
+        CHECK(r.deserialize(buf, sizeof buf) && r.deck_n == b.deck_n && r.row[0].pos == b.row[0].pos && r.rng == b.rng);
+        buf[4 + 5] = 4;                                          // pos past the row
+        CHECK(!r.deserialize(buf, sizeof buf));
+    }
+}
+
 int main()
 {
     test_fourconnect();
@@ -2838,6 +2910,7 @@ int main()
     test_strategygo();
     test_dealcyd();
     test_presscyd();
+    test_cardsharks();
     test_stats();
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

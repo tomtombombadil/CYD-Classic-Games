@@ -45,6 +45,7 @@ GAME(golf, "Golf", Cards, kSolo, "Clear seven columns onto the waste, one rank u
 GAME(cyddle, "CYD-dle", Word, kSolo, "Guess the five-letter word in six tries; green, gold and grey hints")
 GAME(dealcyd, "Deal or No CYD", Shows, kSolo, "26 cases, one is yours: open the others and decide - take the Banker's offer, or play on?")
 GAME(presscyd, "Press Your CYD", Shows, kVsComputer, "Stop the jumping light on money and extra spins - but not on a Gremlin! You against Max and Zoe")
+GAME(cardsharks, "Card Sharks CYD", Shows, kVsComputer | kPassAndPlay, "Higher or lower? Call your way across five cards before they do - and freeze to keep your place")
 GAME(wheel, "Wheel of CYD", Shows, kVsComputer | kPassAndPlay, "Spin the wheel, call letters and solve the phrase before Max and Zoe do")
 GAME(yahtcyd, "Yaht-CYD", Dice, kSolo, "Five dice, three rolls, thirteen boxes; chase the upper bonus and Yaht-CYDs")
 GAME(farkle, "Farkle", Dice, kVsComputer | kPassAndPlay, "Push your luck with six dice: bank your points or roll again, first to 10,000")

@@ -121,7 +121,7 @@ Candidates, grouped. Order of building is in section 6.
 |---|---|
 | Deal or No CYD (Deal or No Deal) | *Built 2026-10-06*: id `dealcyd`; 26 cases $0.01-$1M, rounds 6-5-4-3-2-1-1-1-1, offers 12 % -> 92 % of the average +-5 %, keep or swap at the end |
 | Press Your CYD (Press Your Luck) | *Built 2026-10-06*: id `presscyd`; 18 squares x 3 changing slots, Gremlins (4 = out), 3 then 4 spins, passing to the leader; you vs Max and Zoe |
-| Card Sharks CYD (Card Sharks) | Higher or lower on the shared cards |
+| Card Sharks CYD (Card Sharks) | *Built 2026-10-06*: id `cardsharks`; two rows of 5, Higher / Lower / Freeze / Change (once a turn, before the first call), two rounds win; vs computer (3 levels) or pass-and-play, no wireless yet |
 
 **Dice**
 | Game | Notes |
