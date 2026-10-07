@@ -934,6 +934,19 @@ void icon(lv_obj_t* parent, int size)
 
 // Preview staging (tools/preview)
 namespace acq_preview {
+// One step for you (the live check): what a player would choose, through the core
+int robot()
+{
+    if (!S) return -1;
+    if (S->g.phase == Phase::Over) return 2;
+    if (!my_turn()) return 0;
+    close_overlays();
+    page = Page::None;
+    S->g.ai_act(1);
+    update();
+    return 1;
+}
+int turns() { return S ? S->g.turns : 0; }
 acq::Game* game() { return S ? &S->g : nullptr; }
 void redraw() { if (S) { next_at = now_ms + 600000; update(); } }       // computers wait
 void hold(bool on) { if (S) next_at = on ? now_ms + 600000 : now_ms; }

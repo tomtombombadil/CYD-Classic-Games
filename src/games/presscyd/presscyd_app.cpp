@@ -52,6 +52,7 @@ bool        showing_result = false;
 char        news[48] = "";
 uint32_t    last_save_ms = 0;
 int         cycle_q = 0;
+int         stops = 0;                    // stops so far (the live check)
 
 void open_menu();
 void update();
@@ -310,6 +311,7 @@ void do_stop()
     Game& g = S->g;
     const int who = g.turn;
     if (!g.stop(light, shown[light])) return;
+    ++stops;
     const Slot& s = g.last.slot;
     char m[16];
     money(m, sizeof m, s.dollars);
@@ -591,6 +593,20 @@ void icon(lv_obj_t* parent, int size)
 } // namespace
 
 namespace presscyd_preview {
+// One step for you (the live check): spin, stop a moment later, start round 2
+int robot()
+{
+    if (!S) return -1;
+    Game& g = S->g;
+    if (g.phase == Phase::Over) return 2;
+    if (showing_result || overlay_open()) return 0;
+    if (g.phase == Phase::RoundOver) { lv_obj_send_event(key_w, LV_EVENT_CLICKED, nullptr); return 1; }
+    if (g.turn != 0) return 0;
+    if (g.phase == Phase::Ready) { start_spin(); return 1; }
+    if (g.phase == Phase::Spinning && int32_t(now_ms - next_jump) > -40) { do_stop(); return 1; }
+    return 0;
+}
+int spins() { return stops; }
 presscyd::Game* game() { return S ? &S->g : nullptr; }
 void set_light(int q) { light = q; update(); }
 void result(bool on) { showing_result = on; result_until = now_ms + (on ? 600000 : 0); update(); }

@@ -84,7 +84,7 @@ void keyboard(int slot);
 #include "games/twenty48/twenty48_core.h"
 #include "games/piperace/piperace_core.h"
 #include "games/acquisitions/acquisitions_core.h"
-namespace acq_preview { acq::Game* game(); void redraw(); void hold(bool on); void log(const char* t); void stocks(); }
+namespace acq_preview { int robot(); int turns(); acq::Game* game(); void redraw(); void hold(bool on); void log(const char* t); void stocks(); }
 #include "games/strategygo/strategygo_core.h"
 namespace sgo_preview { sgo::Board* board(); void pick(int c); void battle(bool on); void ready(); void cover_ready(); void pass(); void pieces(); }
 #include "games/dealcyd/dealcyd_core.h"
@@ -104,7 +104,7 @@ namespace escape_preview { int robot(); int turns(); escape::Game* game(); void 
 #include "games/sorrycyd/sorrycyd_core.h"
 namespace sorrycyd_preview { int robot(); int turns(); sorry::Game* game(); void pick(int p); void hold(bool on); void news_line(const char* t); void people(); }
 namespace cardsharks_preview { csh::Board* board(); void redraw_all(); }
-namespace presscyd_preview { presscyd::Game* game(); void set_light(int q); void result(bool on); void news_line(const char* t); void hold(); }
+namespace presscyd_preview { int robot(); int spins(); presscyd::Game* game(); void set_light(int q); void result(bool on); void news_line(const char* t); void hold(); }
 namespace piperace_preview { piperace::Game* game(); void unhold(); void redraw(); }
 #include "games/mastercyd/mastercyd_core.h"
 #include "games/pegs/pegs_core.h"
@@ -1639,6 +1639,8 @@ int main(int argc, char** argv)
             {"escape", escape_preview::robot, escape_preview::turns, 20, 10},
             {"trivialcyd", trivialcyd_preview::robot, trivialcyd_preview::turns, 20, 6},
             {"jeoparcyd", jeoparcyd_preview::robot, jeoparcyd_preview::clues, 8, 6},
+            {"acquisitions", acq_preview::robot, acq_preview::turns, 30, 20},
+            {"presscyd", presscyd_preview::robot, presscyd_preview::spins, 5, 12},
         };
         for (const Live& l : live) {
             remove_game(l.id);
@@ -1646,7 +1648,7 @@ int main(int argc, char** argv)
             int done = 0;
             for (int t = 0; t < l.minutes * 60 * 4 && done != 2; ++t) { run(250); done = l.robot(); }
             const int n = l.count();
-            printf("LIVE %-12s %s (%d after %d min)\n", l.id, n >= l.want || done == 2 ? "ok" : "STUCK", n, l.minutes);
+            printf("LIVE %-12s %s (%d after %d min%s)\n", l.id, n >= l.want || done == 2 ? "ok" : "STUCK", n, l.minutes, done == 2 ? ", finished" : "");
             ui::app_go_home_now();
         }
         remove_game("jeoparcyd");

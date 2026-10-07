@@ -712,8 +712,10 @@ never typed (SPEC section 5).
   CYD-dle has no Restart (the word is known); Light Switch / Sliding Tiles
   Restart of a solved puzzle doesn't record again (Sudoku keeps v1.0.0's
   behaviour); chess repetition ignores an en passant square nobody can use.
-- The preview's LIVE check (v0.39.1) plays Sorry-CYD!, Escape from CYD,
-  Trivial CYD and Jeopar-CYD! in simulated real time with a robot for you
+- The preview's LIVE check (v0.39.1; Acquisitions and Press Your CYD
+  added in v0.39.2 - both play to the end) plays Sorry-CYD!, Escape from
+  CYD, Trivial CYD, Jeopar-CYD!, Acquisitions and Press Your CYD in
+  simulated real time with a robot for you
   (`<id>_preview::robot()`) and prints "LIVE <id> ok / STUCK" - frozen
   staging renders can't catch a game that stops moving. Add new games with
   computers to it and check the output after any change to their flow.
