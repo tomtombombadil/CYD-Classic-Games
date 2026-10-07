@@ -871,6 +871,16 @@ void icon(lv_obj_t* parent, int size)
 } // namespace
 
 namespace escape_preview {
+int robot()
+{
+    if (!S) return -1;
+    if (S->g.phase == Phase::Over) return 2;
+    if (!my_turn()) return 0;
+    const Action a = S->g.ai(1);
+    do_action(a);
+    return 1;
+}
+int turns() { return S ? S->g.turns : 0; }
 escape::Game* game() { return S ? &S->g : nullptr; }
 void hold(bool on) { frozen = on; waiting = false; banner = false; update(); }
 void select(int kind, int idx, int hex) { sel_kind = int8_t(kind); sel = int8_t(idx); sel_hex = int8_t(hex); update(); }

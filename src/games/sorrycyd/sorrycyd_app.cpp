@@ -459,7 +459,8 @@ void after_play(int who)
     save();
     if (S->g.phase == Phase::Over) game_over();
     waiting = true;
-    wait_until = now_ms + (human(who) ? 250 : kAfterMs);
+    // after your move, a moment before a computer draws; after theirs, time to see it
+    wait_until = now_ms + (human(who) ? (human(S->g.turn) ? 250 : kCpuDrawMs) : kAfterMs);
     update();
 }
 
@@ -766,11 +767,14 @@ void tick(uint32_t now)
         waiting = false;
         if (g.phase == Phase::Play && human(g.turn)) {
             refresh_moves();
-            if (ms_n == 0) { g.lose_turn(); save(); }
-            else if (movable_count() == 1 && picked < 0)
+            if (ms_n == 0) {
+                g.lose_turn();
+                save();
+                // the next player is a computer: a moment before it draws
+                if (!human(g.turn)) { waiting = true; wait_until = now + kCpuDrawMs; }
+            } else if (movable_count() == 1 && picked < 0)
                 for (int p = 0; p < kPawns; ++p) if (pawn_can_move(p)) picked = int8_t(p);
         }
-        if (g.phase != Phase::Over && !human(g.turn)) { waiting = true; wait_until = now + (g.phase == Phase::Draw ? kCpuDrawMs : kCpuShowMs); }
         update();
     }
     // The computers: draw, show the card, move
@@ -855,6 +859,22 @@ void icon(lv_obj_t* parent, int size)
 } // namespace
 
 namespace sorrycyd_preview {
+// One step for you, as a player would (the live check)
+int robot()
+{
+    if (!S) return -1;
+    Game& g = S->g;
+    if (g.phase == Phase::Over) return 2;
+    if (human(g.turn) && g.phase == Phase::Draw && !waiting) { draw_mine(); return 1; }
+    if (my_play()) {
+        refresh_moves();
+        if (ms_n > 0) play_mine(ms[0]);
+        else if (g.may_pass()) { Move pass; play_mine(pass); }
+        return 1;
+    }
+    return 0;
+}
+int turns() { return S ? S->g.turns : 0; }
 sorry::Game* game() { return S ? &S->g : nullptr; }
 void pick(int p) { picked = int8_t(p); update(); }
 void hold(bool on) { frozen = on; waiting = false; update(); }

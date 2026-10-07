@@ -35,7 +35,8 @@ using namespace ui;
 constexpr const char* kId = "jeoparcyd";
 const char* const kNames[kPlayers] = {"You", "Max", "Zoe"};
 const char* const kLevels[3] = {"Easy", "Medium", "Hard"};
-constexpr uint32_t kClueMs = 12000, kBuzzShowMs = 1000, kLockMs = 700, kRevealMs = 1700, kCpuPickMs = 1100;
+constexpr uint32_t kClueMs = 12000, kBuzzShowMs = 1400, kLockMs = 700, kRevealMs = 2800, kCpuPickMs = 1300;
+constexpr uint32_t kReadBaseMs = 3000, kReadPerCharMs = 55, kReadMinMs = 5000, kReadMaxMs = 16000, kReopenReadMs = 2500;
 
 struct State {
     Game     g;
@@ -60,6 +61,7 @@ lv_obj_t*   keys[4] = {};             // wagers / Play Again
 int         pad = 4, cell_w = 30, cell_h = 30, name_w = 80, board_top = 0, scores_y = 0, ans_w = 0, q_w = 0;
 int         keys_y = 0, life_y = 0;
 uint32_t    now_ms = 0, clue_start = 0, wait_until = 0, last_save_ms = 0, paused_at = 0;
+uint32_t    read_ms = kReadMinMs;            // nobody else buzzes while you read the clue
 bool        frozen = false;
 lv_point_t  press_pt{0, 0};
 // the clue's moment-to-moment state (not saved: a reopened clue starts its clock again)
@@ -376,7 +378,18 @@ void game_over()
     if (won) kit::flash();
 }
 
-void start_clue_clock() { clue_start = now_ms; locking = lock_slot = -1; set_status(""); }
+// Reading time from the clue's length (question and answers): ~18 characters a second
+uint32_t reading_time()
+{
+    const Game& g = S->g;
+    if (g.q < 0 || !trivia::get(g.q, S->q)) return kReadMinMs;
+    size_t chars = strlen(S->q.text);
+    for (int a = 0; a < S->q.answers; ++a) chars += strlen(S->q.answer[a]);
+    uint32_t t = kReadBaseMs + uint32_t(chars) * kReadPerCharMs;
+    return t < kReadMinMs ? kReadMinMs : t > kReadMaxMs ? kReadMaxMs : t;
+}
+
+void start_clue_clock() { clue_start = now_ms; read_ms = reading_time(); locking = lock_slot = -1; set_status(""); }
 
 void after_answer(int p)
 {
@@ -393,6 +406,7 @@ void after_answer(int p)
         set_status(t);
         g.plan_clue();
         clue_start = now_ms;
+        read_ms = kReopenReadMs;
     }
     locking = lock_slot = -1;
     save();
@@ -648,6 +662,7 @@ void open()
     wait_until = 0;
     build();
     clue_start = 0;                     // a clue showing starts its clock again
+    read_ms = S->g.phase == Phase::Clue ? reading_time() : kReadMinMs;
 }
 
 void close()
@@ -701,7 +716,13 @@ void tick(uint32_t now)
                 if (!waiting) { const int p = locking; g.answer(p, lock_slot); after_answer(p); }
                 break;
             }
-            const uint32_t t = now - clue_start;
+            // reading first: the bar and the others start after it
+            const uint32_t since = now - clue_start;
+            if (since < read_ms) {
+                if (timebar && lv_obj_get_width(timebar) != metrics().w - 2 * pad) lv_obj_set_width(timebar, metrics().w - 2 * pad);
+                break;
+            }
+            const uint32_t t = since - read_ms;
             if (timebar) {
                 const int full = metrics().w - 2 * pad;
                 const int w = t >= kClueMs ? 0 : int(int64_t(full) * (kClueMs - t) / kClueMs);
@@ -816,6 +837,38 @@ void icon(lv_obj_t* parent, int size)
 } // namespace
 
 namespace jeoparcyd_preview {
+// You: pick when it's your pick, bet the least, answer (A) only the Final; the computers do the rest
+int robot()
+{
+    if (!S) return -1;
+    Game& g = S->g;
+    if (g.phase == Phase::Over) return 2;
+    if (int32_t(now_ms - wait_until) < 0) return 0;
+    if (g.phase == Phase::Board && g.chooser == 0) {
+        int c, r;
+        g.pick_cell(1, &c, &r);
+        if (g.pick(c, r)) { if (g.phase == Phase::Clue) start_clue_clock(); save(); update(); }
+        return 1;
+    }
+    if (g.phase == Phase::Wager && g.chooser == 0) { g.set_wager(5); start_clue_clock(); update(); return 1; }
+    if (g.phase == Phase::FinalWager && final_step == 0 && g.in_final(0)) {
+        g.final_bet(0, 0);
+        for (int p = 1; p < kPlayers; ++p) if (g.in_final(p)) g.final_bet(p, g.cpu_final_wager(p));
+        final_step = 1;
+        update();
+        return 1;
+    }
+    if ((g.phase == Phase::FinalWager || g.phase == Phase::FinalClue) && final_step == 1 && g.in_final(0) && g.final_slot[0] < 0) {
+        g.final_answer(0, 0);
+        for (int p = 1; p < kPlayers; ++p) if (g.in_final(p)) g.final_answer(p, g.cpu_final_slot(p));
+        if (g.phase == Phase::Over) wait_until = now_ms + kRevealMs;
+        update();
+        return 1;
+    }
+    return 0;
+}
+int clues() { return S ? kCats * kRows * (S->g.round + 1) - S->g.clues_left() : 0; }
+uint32_t reading() { return read_ms; }
 jcyd::Game* game() { return S ? &S->g : nullptr; }
 void hold(bool on) { frozen = on; }
 void refresh() { update(); }

@@ -723,6 +723,18 @@ void icon(lv_obj_t* parent, int size)
 } // namespace
 
 namespace trivialcyd_preview {
+int robot()
+{
+    if (!S) return -1;
+    Game& g = S->g;
+    if (g.phase == Phase::Over) return 2;
+    if (!human(g.turn) || int32_t(now_ms - wait_until) < 0) return 0;
+    if (g.phase == Phase::Roll) { do_roll(); return 1; }
+    if (g.phase == Phase::Move) { do_move(g.dest[0]); return 1; }
+    if (g.phase == Phase::Ask) { if (g.answer(0)) after_answer(); return 1; }
+    return 0;
+}
+int turns() { return S ? S->g.turns : 0; }
 tcyd::Game* game() { return S ? &S->g : nullptr; }
 void hold(bool on) { frozen = on; wait_until = 0; update(); }
 void news_line(const char* t) { snprintf(news, sizeof news, "%s", t); update(); }

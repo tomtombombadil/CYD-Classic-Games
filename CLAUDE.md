@@ -499,7 +499,10 @@ never typed (SPEC section 5).
   draw 0.65 s, show the card 0.9 s, move; sounds your move Place, theirs
   Turn, your pawn sent back "aww", your pawn Home Hint, Win / Lose; save
   "SRY1"; stats "#,Place,Home,Level,Seconds,Time", a vs-computer game left
-  after 4 turns counts at your place then), Escape from CYD (id `escape`,
+  after 4 turns counts at your place then; v0.39.1 fix, Tom: after his
+  first card had no move nothing happened - every end of a wait re-armed
+  the computer's wait, so computers never moved: only a lost turn of yours
+  starts the computer's draw delay), Escape from CYD (id `escape`,
   Strategy, kVsComputer; Tom's name for Escape from Atlantis, 2026-10-06;
   a small own version: 9 x 11 pointy-top hex sea (odd rows half a hex
   right), island = hexes within 3 of col 4 row 5 - 18 beaches, 12
@@ -553,6 +556,11 @@ never typed (SPEC section 5).
   sounds your right Place, wrong "aww", theirs Turn, Daily Double Call,
   round 2 Trill, end Win / Lose; save "JCY1" (the clue clock restarts on
   reopen); stats "#,Place,Score,Level,Seconds,Time").
+  v0.39.1 (Tom: "way too fast" - the others answered before he had read
+  the clue): every clue first gets a reading time - 3 s + 55 ms a
+  character of question and answers (5-16 s); nobody else buzzes and the
+  12 s bar waits until it's over (you may answer during it); after a
+  wrong answer 2.5 s; a computer's buzz shows 1.4 s, the answer 2.8 s.
   Hollywood CYDs (id `hollywood`, Game Shows, kVsComputer | kPassAndPlay
   via match.*, sides X / O, no wireless; nine made-up stars (Captain
   Comet ... Sir Giggles - never real people) drawn as simple faces with a
@@ -704,6 +712,11 @@ never typed (SPEC section 5).
   CYD-dle has no Restart (the word is known); Light Switch / Sliding Tiles
   Restart of a solved puzzle doesn't record again (Sudoku keeps v1.0.0's
   behaviour); chess repetition ignores an en passant square nobody can use.
+- The preview's LIVE check (v0.39.1) plays Sorry-CYD!, Escape from CYD,
+  Trivial CYD and Jeopar-CYD! in simulated real time with a robot for you
+  (`<id>_preview::robot()`) and prints "LIVE <id> ok / STUCK" - frozen
+  staging renders can't catch a game that stops moving. Add new games with
+  computers to it and check the output after any change to their flow.
 - Taps on boards with small cells act on release at the PRESS point with
   an own 750 ms long-press (board8, Minesweeper's flag) - never
   SHORT_CLICKED + LVGL's 400 ms long-press.

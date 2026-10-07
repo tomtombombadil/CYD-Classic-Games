@@ -92,17 +92,17 @@ namespace dealcyd_preview { dealcyd::Game* game(); void reveal(bool on); void re
 #include "games/presscyd/presscyd_core.h"
 #include "games/cardsharks/cardsharks_core.h"
 #include "games/trivialcyd/trivialcyd_core.h"
-namespace trivialcyd_preview { tcyd::Game* game(); void hold(bool on); void news_line(const char* t); void people(); }
+namespace trivialcyd_preview { int robot(); int turns(); tcyd::Game* game(); void hold(bool on); void news_line(const char* t); void people(); }
 #include "games/hollywood/hollywood_core.h"
 namespace hollywood_preview { hcyd::Board* board(); void sync(); void reveal(bool on); }
 #include "games/jeoparcyd/jeoparcyd_core.h"
-namespace jeoparcyd_preview { jcyd::Game* game(); void hold(bool on); void refresh(); void status_line(const char* t); void final_clue(); }
+namespace jeoparcyd_preview { int robot(); int clues(); uint32_t reading(); jcyd::Game* game(); void hold(bool on); void refresh(); void status_line(const char* t); void final_clue(); }
 #include "games/whowants/whowants_core.h"
 namespace whowants_preview { whowants::Game* game(); void refresh(); void hold(bool on); void advance(int n); void ladder(); }
 #include "games/escape/escape_core.h"
-namespace escape_preview { escape::Game* game(); void hold(bool on); void select(int kind, int idx, int hex); void news_line(const char* t); void show_banner(bool on); }
+namespace escape_preview { int robot(); int turns(); escape::Game* game(); void hold(bool on); void select(int kind, int idx, int hex); void news_line(const char* t); void show_banner(bool on); }
 #include "games/sorrycyd/sorrycyd_core.h"
-namespace sorrycyd_preview { sorry::Game* game(); void pick(int p); void hold(bool on); void news_line(const char* t); void people(); }
+namespace sorrycyd_preview { int robot(); int turns(); sorry::Game* game(); void pick(int p); void hold(bool on); void news_line(const char* t); void people(); }
 namespace cardsharks_preview { csh::Board* board(); void redraw_all(); }
 namespace presscyd_preview { presscyd::Game* game(); void set_light(int q); void result(bool on); void news_line(const char* t); void hold(); }
 namespace piperace_preview { piperace::Game* game(); void unhold(); void redraw(); }
@@ -1629,6 +1629,30 @@ int main(int argc, char** argv)
         ui::app_set_theme(ui::Theme::Light);
         stage(0, 30, -1, false, false, 64);
         shot(out + "_light_34_minesweeper_won.ppm");
+        ui::app_go_home_now();
+    }
+
+    {   // Live check: the turn-based games with computers keep going in real (simulated) time
+        struct Live { const char* id; int (*robot)(); int (*count)(); int want; int minutes; };
+        const Live live[] = {
+            {"sorrycyd", sorrycyd_preview::robot, sorrycyd_preview::turns, 40, 6},
+            {"escape", escape_preview::robot, escape_preview::turns, 20, 10},
+            {"trivialcyd", trivialcyd_preview::robot, trivialcyd_preview::turns, 20, 6},
+            {"jeoparcyd", jeoparcyd_preview::robot, jeoparcyd_preview::clues, 8, 6},
+        };
+        for (const Live& l : live) {
+            remove_game(l.id);
+            ui::app_open_game_now(games::find(l.id));
+            int done = 0;
+            for (int t = 0; t < l.minutes * 60 * 4 && done != 2; ++t) { run(250); done = l.robot(); }
+            const int n = l.count();
+            printf("LIVE %-12s %s (%d after %d min)\n", l.id, n >= l.want || done == 2 ? "ok" : "STUCK", n, l.minutes);
+            ui::app_go_home_now();
+        }
+        remove_game("jeoparcyd");
+        ui::app_open_game_now(games::find("jeoparcyd"));
+        for (int t = 0; t < 40; ++t) { run(250); jeoparcyd_preview::robot(); }
+        printf("LIVE jeoparcyd reading time %u ms\n", unsigned(jeoparcyd_preview::reading()));
         ui::app_go_home_now();
     }
 
